@@ -2,8 +2,8 @@
 
 Spring boot based backend for ketchup.
 
-# Project has following structure:
-
+# Project has following structure
+```
 ketchup-core
 	configuration
 	service1
@@ -23,7 +23,7 @@ ketchup-core
 	service3
 	...
 	...
-
+```
 Top level configuration package for holding project level configs.
 Followed by functionality divided into services, each service will have its own configuration, entities, dtos, repositories, services, controllers and exceptions.
 
