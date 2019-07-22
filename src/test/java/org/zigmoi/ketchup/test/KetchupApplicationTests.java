@@ -1,4 +1,4 @@
-package org.zigmoi.ketchup;
+package org.zigmoi.ketchup.test;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

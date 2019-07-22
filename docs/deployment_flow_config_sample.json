@@ -1,0 +1,49 @@
+{
+  "tenant-id" : "1",
+  "project-id" : "1",
+  "deployment-id" : "1",
+  "deployment-type" : "basic-spring-boot-app",
+  "config-template-version" : "v1",
+  "build-dependencies" : [],
+  "stages" : [
+    {
+      "command"  : "pull-from-remote",
+      "args" : [
+        {
+          "vendor"       : "bitbucket",
+          "url"          : "https://bitbucket.org/gammadev/gridmaze-analytics.git",
+          "base-path"    : "/tmp/zigmoi/ketchup/builds/1",
+          "repo-name"    : "gridmaze-analytics",
+          "userame"      : "btapo",
+          "password"     : "<sample-password>"
+        }
+      ]
+    },
+    {
+      "command"  : "maven-clean-install",
+      "args" : [
+        {
+          "base-path"                    : "/tmp/zigmoi/ketchup/builds/1",
+          "repo-name"                    : "gridmaze-analytics",
+          "build-path"                   : ".",
+          "maven-private-repo-settings"  : "/tmp/zigmoi/ketchup/builds/1",
+          "branch-name"                  : "",
+          "commit-id"                    : ""
+        }
+      ]
+    },
+    {
+      "command"  : "create-spring-boot-docker-image",
+      "args" : [
+        {
+          "base-path"    : "/tmp/zigmoi/ketchup/builds/1",
+          "repo-name"    : "gridmaze-analytics",
+          "build-path"   : ".",
+          "java-args"    : "",
+          "port"         : "",
+          "timezone"     : ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # DB Model
 
-1. For an app to be depoyed these are the mandatory information
+1. For an app to be deployed these are the mandatory information
 ```
 Tenant > Project > Kubernetes Cluster ID > Kubernetes Cluster Namespace
 ```
@@ -20,7 +20,7 @@ Tenant > Project > Kubernetes Cluster ID > Kubernetes Cluster Namespace
 - tenant_id
 - project_id
 - config_id
-- config_type (repository/cloud-aws/kubeconfig)
+- config_type (maven-repository/docker-repository/cloud-aws/kubeconfig)
 - config_display_name
 - config_file_name
 - config_blob

@@ -1,14 +1,16 @@
 package org.zigmoi.ketchup.iam.services.controllers;
 
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.zigmoi.ketchup.common.ConfigUtility;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
+
+import java.util.List;
 
 @RestController
 public class UserController {
@@ -18,9 +20,13 @@ public class UserController {
 	@Autowired
 	private UserRepository userRepository;
 
-	@GetMapping("/users")
+	@GetMapping("api/v1/users")
 	public List<User> listUsers() {
 		return userRepository.findAll();
 	}
 
+	@GetMapping("api/v1/getProp")
+	public String getProp(@RequestParam String key) {
+		return ConfigUtility.instance().getProperty(key);
+	}
 }

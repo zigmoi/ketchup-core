@@ -15,5 +15,4 @@ public class KetchupApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(KetchupApplication.class, args);
 	}
-
 }
