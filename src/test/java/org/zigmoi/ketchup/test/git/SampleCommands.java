@@ -8,7 +8,6 @@ import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.zigmoi.ketchup.common.ConfigUtility;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,8 +21,8 @@ public class SampleCommands {
     private final static String GIT_PASSWORD = "pass";
 
     public static void main(String[] args) throws IOException, GitAPIException {
-        String repoPath = ConfigUtility.instance().getDataOutDirPath("git", "testrepos");
-        run(repoPath);
+//        String repoPath = ConfigUtility.instance().getDataOutDirPath("git", "testrepos");
+//        run(repoPath);
     }
 
     private static void run(String repoPath) throws IOException, GitAPIException {

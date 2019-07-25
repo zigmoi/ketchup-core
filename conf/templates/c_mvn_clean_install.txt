@@ -1,0 +1,1 @@
+${maven-command-path} clean && ${maven-command-path} install -s ${maven-private-repo-settings-path}

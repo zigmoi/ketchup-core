@@ -6,4 +6,7 @@ public class DeploymentFlowConstants {
     public final static String C_PULL_FROM_REMOTE = "pull-from-remote";
     public final static String C_MAVEN_CLEAN_INSTALL = "maven-clean-install";
     public final static String C_CREATE_DOCKER_IMAGE = "create-spring-boot-docker-image";
+
+    // Template Path
+    public final static String TP_MVN_CLEAN_INSTALL = "ketchup.deployment-template.mvn-clean-install";
 }

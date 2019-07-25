@@ -1,39 +1,45 @@
 {
-  "tenant-id" : "1",
-  "project-id" : "1",
-  "deployment-id" : "1",
-  "deployment-type" : "basic-spring-boot-app",
-  "config-template-version" : "v1",
-  "build-dependencies" : [],
+  "tenant-id"                 : "1",
+  "project-id"                : "1",
+  "deployment-id"             : "1",
+  "deployment-flow-type"      : "basic-spring-boot-app",
+  "config-template-version"   : "v1",
+  "build-dependencies" : [
+    "git", "maven", "java8", "docker17+"
+  ],
   "stages" : [
     {
       "command"  : "pull-from-remote",
+      "arg-schema" : "v1",
       "args" : [
         {
           "vendor"       : "bitbucket",
-          "url"          : "https://bitbucket.org/gammadev/gridmaze-analytics.git",
+          "url"          : "https://btapo@bitbucket.org/gammadev/aws-cicd-autoscale-spring-boot.git",
           "base-path"    : "/tmp/zigmoi/ketchup/builds/1",
-          "repo-name"    : "gridmaze-analytics",
-          "userame"      : "btapo",
-          "password"     : "<sample-password>"
+          "repo-name"    : "aws-cicd-autoscale-spring-boot",
+          "username"     : "btapo",
+          "password"     : "<pass>"
         }
       ]
     },
     {
       "command"  : "maven-clean-install",
+      "arg-schema" : "v1",
       "args" : [
         {
-          "base-path"                    : "/tmp/zigmoi/ketchup/builds/1",
-          "repo-name"                    : "gridmaze-analytics",
-          "build-path"                   : ".",
-          "maven-private-repo-settings"  : "/tmp/zigmoi/ketchup/builds/1",
-          "branch-name"                  : "",
-          "commit-id"                    : ""
+          "base-path"                         : "/tmp/zigmoi/ketchup/builds/1",
+          "repo-name"                         : "gridmaze-analytics",
+          "build-path"                        : ".",
+          "maven-command-path"                : "/opt/maven3/bin/mvn",
+          "maven-private-repo-settings-path"  : "/home/tapo/.m2/settings.xml",
+          "branch-name"                       : "",
+          "commit-id"                         : ""
         }
       ]
     },
     {
       "command"  : "create-spring-boot-docker-image",
+      "arg-schema" : "v1",
       "args" : [
         {
           "base-path"    : "/tmp/zigmoi/ketchup/builds/1",

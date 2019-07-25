@@ -5,18 +5,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 public class FileUtility {
 
     public static String readDataFromFile(File file) throws IOException {
-        return Arrays.toString(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
+        return new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
     }
 
     public static String readDataFromFile(String path) throws IOException {
-        return Arrays.toString(Files.readAllBytes(Paths.get(path)));
+        return new String(Files.readAllBytes(Paths.get(path)));
     }
 
     public static void createAndWrite(File file, String data) throws IOException {
