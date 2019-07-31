@@ -1,0 +1,78 @@
+package org.zigmoi.ketchup.iam.controllers;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.zigmoi.ketchup.common.ConfigUtility;
+import org.zigmoi.ketchup.iam.dtos.UserDto;
+import org.zigmoi.ketchup.iam.entities.User;
+import org.zigmoi.ketchup.iam.services.UserServiceImpl;
+
+import javax.validation.Valid;
+import java.security.Principal;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@RestController
+public class UserController {
+
+    private static final Log logger = LogFactory.getLog(UserController.class);
+
+    @Autowired
+    private UserServiceImpl userService;
+
+    @PostMapping("/v1/user")
+    public void createUser(@RequestBody @Valid User user, Principal principal) {
+        userService.createUser(user);
+    }
+
+    @GetMapping("/v1/user/{username}")
+    public UserDto getUser(@PathVariable("username") String userName) {
+        User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
+        return prepareUserDto(user);
+    }
+
+    @DeleteMapping("/v1/user/{username}")
+    public void deleteUser(@PathVariable("username") String userName) {
+        userService.deleteUser(userName);
+    }
+
+    @PutMapping("/v1/user/{username}/enable/{status}")
+    public void updateUserStatus(@PathVariable("username") String userName, @PathVariable("status") boolean status) {
+        userService.updateUserStatus(userName, status);
+    }
+
+    @PutMapping("/v1/user/{username}/displayName/{displayName}")
+    public void updateUserDisplayName(@PathVariable("username") String userName, @PathVariable("displayName") String displayName) {
+        userService.updateUserDisplayName(userName, displayName);
+    }
+
+    @GetMapping("/v1/users")
+    public Set<UserDto> listUsers() {
+        return userService.listAllUsers().stream().map(user -> {
+            return prepareUserDto(user);
+        }).collect(Collectors.toSet());
+    }
+
+    public UserDto prepareUserDto(User user) {
+        UserDto userDto = new UserDto();
+        userDto.setUserName(user.getUsername());
+        userDto.setTenantId(user.getTenantId());
+        userDto.setDisplayName(user.getDisplayName());
+        userDto.setEnabled(user.isEnabled());
+        userDto.setEmail(user.getEmail());
+        userDto.setFirstName(user.getFirstName());
+        userDto.setLastName(user.getLastName());
+        userDto.setCreationDate(user.getCreationDate());
+        userDto.setRoles(user.getRoles());
+        return userDto;
+    }
+
+    @GetMapping("/v1/getProp")
+    public String getProp(@RequestParam String key) {
+        return ConfigUtility.instance().getProperty(key);
+    }
+}

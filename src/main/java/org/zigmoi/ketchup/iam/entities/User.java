@@ -1,84 +1,142 @@
 package org.zigmoi.ketchup.iam.entities;
 
-import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import java.util.ArrayList;
+import javax.persistence.*;
 import java.util.Collection;
-import java.util.List;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-@Data
 @Entity
 @Table(name = "users")
-public class User implements UserDetails {
+public class User extends TenantEntity implements UserDetails {
 
-	static final long serialVersionUID = 1L;
+    @Id
+    private String userName; //fully qualified username user@tenant example: test@zigmoi.com
+    // private String tenantId;
+    private String password;
+    private String displayName;
+    private boolean enabled;
+    private String email;
+    private String firstName;
+    private String lastName;
 
-	@Id
-	@Size(min = 3, max = 20)
-	@Column(name = "username", nullable = false, unique = true)
-	private String username;
 
-//	@NotNull
-//	@Size(min = 1)
-	@Column(name = "password", nullable = false)
-	private String password;
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date creationDate;
 
-	@NotNull
-	@Column(name = "enabled", nullable = false)
-	private boolean enabled;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
+    @Column(name = "role")
+    Set<String> roles = new HashSet<>();
 
-//	@NotNull
-//	@Size(min = 1)
-	@Column(name = "role", nullable = false)
-	private String role;
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        Set<GrantedAuthority> authorities = roles.stream().map(role -> {
+            SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority(role);
+            return simpleGrantedAuthority;
+        }).collect(Collectors.toSet());
+        return authorities;
+    }
 
-	@NotNull
-	@Size(min = 1)
-	@Column(name = "email", nullable = false)
-	private String email;
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
-	@Size(min = 1, max = 20)
-	@Column(name = "firstname", nullable = false)
-	private String firstname;
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
-	@Size(max = 20)
-	@Column(name = "lastname", nullable = false)
-	private String lastname;
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
-	@Override
-	public Collection<? extends GrantedAuthority> getAuthorities() {
-		List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
-		authorities.add(new GrantedAuthority() {
-			@Override
-			public String getAuthority() {
-				return role;
-			}
-		});
-		return authorities;
-	}
+    @Override
+    public String getUsername() {
+        return userName;
+    }
 
-	@Override
-	public boolean isAccountNonExpired() {
-		return true;
-	}
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
 
-	@Override
-	public boolean isAccountNonLocked() {
-		// we never lock accounts
-		return true;
-	}
+    public String getTenantId() {
+        return tenantId;
+    }
 
-	@Override
-	public boolean isCredentialsNonExpired() {
-		// credentials never expire
-		return true;
-	}
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public Date getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
+    }
+
+    public Set<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<String> roles) {
+        this.roles = roles;
+    }
+
 }

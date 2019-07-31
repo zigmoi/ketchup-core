@@ -1,32 +1,30 @@
 package org.zigmoi.ketchup.iam.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.zigmoi.ketchup.iam.entities.User;
-import org.zigmoi.ketchup.iam.repositories.UserRepository;
 
+import java.util.List;
+import java.util.Optional;
 
+public interface UserService {
 
-@Service("userDetailsService")
-public class UserService implements UserDetailsService {
+    // @PreAuthorize("T(org.zigmoi.ketchup.iam.commons.AuthUtils).isTenantValid(authentication.name) and hasRole('ROLE_TENANT_ADMIN')")
+    void createUser(User user);
 
-	@Autowired
-	private UserRepository userRepository;
+    // @PreAuthorize("T(org.zigmoi.ketchup.iam.commons.AuthUtils).isTenantValid(authentication.name) and hasRole('ROLE_TENANT_ADMIN')")
+    // @PostAuthorize("hasRole('ROLE_TENANT_ADMIN') or returnObject.isPresent()?returnObject.get().getUsername()==authentication.name:false")
+    Optional<User> getUser(String userName);
 
-	@Override
-	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		Assert.hasLength(username, "Username cannot be empty.");
-		User user = userRepository.findById(username)
-				.orElseThrow(() -> new UsernameNotFoundException("Bamboo account can not be located!"));
-		return user;
-	}
+    // @PreAuthorize("T(org.zigmoi.ketchup.iam.commons.AuthUtils).isTenantValid(authentication.name) and hasRole('ROLE_TENANT_ADMIN')")
+    void updateUserStatus(String userName, boolean status);
 
-	public Boolean matchesPolicy(String passwd) {
-		String pattern = "(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])(?=\\S+$).{8,}";
-		return passwd.matches(pattern);
-	}
+    // @PreAuthorize("T(org.zigmoi.ketchup.iam.commons.AuthUtils).isTenantValid(authentication.name) and hasRole('ROLE_TENANT_ADMIN')")
+    void updateUserDisplayName(String userName, String displayName);
+
+    // @PreAuthorize("T(org.zigmoi.ketchup.iam.commons.AuthUtils).isTenantValid(authentication.name) and hasRole('ROLE_TENANT_ADMIN')")
+    void deleteUser(String userName);
+
+    // @PreAuthorize("T(org.zigmoi.ketchup.iam.commons.AuthUtils).isTenantValid(authentication.name) and hasRole('ROLE_TENANT_ADMIN')")
+    List<User> listAllUsers();
 }
