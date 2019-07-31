@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.common.ConfigUtility;
 import org.zigmoi.ketchup.iam.dtos.UserDto;
+import org.zigmoi.ketchup.iam.dtos.UserRequestDto;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.services.UserServiceImpl;
 
@@ -25,7 +26,16 @@ public class UserController {
     private UserServiceImpl userService;
 
     @PostMapping("/v1/user")
-    public void createUser(@RequestBody @Valid User user, Principal principal) {
+    public void createUser(@RequestBody UserRequestDto userRequestDto) {
+        User user = new User();
+        user.setUserName(userRequestDto.getUserName());
+        user.setDisplayName(userRequestDto.getDisplayName());
+        user.setPassword(userRequestDto.getPassword());
+        user.setEmail(userRequestDto.getEmail());
+        user.setFirstName(userRequestDto.getFirstName());
+        user.setLastName(userRequestDto.getLastName());
+        user.setEnabled(userRequestDto.isEnabled());
+        user.setRoles(userRequestDto.getRoles());
         userService.createUser(user);
     }
 

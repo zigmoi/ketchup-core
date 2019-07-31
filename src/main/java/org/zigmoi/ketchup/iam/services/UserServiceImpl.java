@@ -18,6 +18,7 @@ import org.zigmoi.ketchup.iam.exceptions.TenantNotFoundException;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
 
 import javax.transaction.Transactional;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -69,6 +70,7 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
                     String.format("User Password %s is invalid!", user.getPassword()));
         }
 
+        user.setCreationDate(new Date());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }
