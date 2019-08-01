@@ -52,7 +52,7 @@ public class TenantServiceImpl implements TenantService {
                     String.format("User Password %s is invalid!", userPassword));
         }
         User user = new User();
-        user.setUserName("tenantadmin@".concat(tenantId));
+        user.setUserName("admin@".concat(tenantId));
         user.setTenantId(tenantId);
         user.setEmail(userEmail);
         user.setPassword(passwordEncoder.encode(userPassword));

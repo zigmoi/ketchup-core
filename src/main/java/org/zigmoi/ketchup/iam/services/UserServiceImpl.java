@@ -1,5 +1,6 @@
 package org.zigmoi.ketchup.iam.services;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,9 +16,11 @@ import org.zigmoi.ketchup.iam.entities.Tenant;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.exceptions.TenantInActiveException;
 import org.zigmoi.ketchup.iam.exceptions.TenantNotFoundException;
+import org.zigmoi.ketchup.iam.exceptions.UserConfigurationException;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
 
 import javax.transaction.Transactional;
+import javax.validation.Valid;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -53,7 +56,7 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
 
     @Override
     @Transactional
-    public void createUser(User user) {
+    public void createUser(@Valid User user) {
         //        String userName = UserServiceImpl.getCurrentUsername(principal.getName());
 //        String tenantId = UserServiceImpl.getCurrentTenantId(principal.getName());
 
@@ -69,6 +72,19 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("User Password %s is invalid!", user.getPassword()));
         }
+
+        String rootTenantId = "zigmoi.com";
+        String currentTenantId = AuthUtils.getCurrentTenantId();
+        if (currentTenantId.equals(rootTenantId)) {
+            user.setTenantId(rootTenantId);
+        }
+
+        String tenantIdInQualifiedUserName = StringUtils.substringAfterLast(user.getUsername(), "@");
+        if (tenantIdInQualifiedUserName.equals(currentTenantId) == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Invalid Organization Id in fully qualified user name, expecting %s.", currentTenantId));
+        }
+
 
         user.setCreationDate(new Date());
         user.setPassword(passwordEncoder.encode(user.getPassword()));

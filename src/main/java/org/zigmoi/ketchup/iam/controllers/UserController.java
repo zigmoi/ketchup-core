@@ -26,7 +26,7 @@ public class UserController {
     private UserServiceImpl userService;
 
     @PostMapping("/v1/user")
-    public void createUser(@RequestBody UserRequestDto userRequestDto) {
+    public void createUser(@RequestBody @Valid UserRequestDto userRequestDto) {
         User user = new User();
         user.setUserName(userRequestDto.getUserName());
         user.setDisplayName(userRequestDto.getDisplayName());
