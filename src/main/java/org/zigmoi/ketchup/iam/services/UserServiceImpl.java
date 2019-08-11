@@ -57,34 +57,22 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
     @Override
     @Transactional
     public void createUser(@Valid User user) {
-        //        String userName = UserServiceImpl.getCurrentUsername(principal.getName());
-//        String tenantId = UserServiceImpl.getCurrentTenantId(principal.getName());
-
         if (userRepository.findById(user.getUsername()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("User with user name %s already exists!", user.getUsername()));
         }
-        if (userRepository.countByEmail(user.getEmail()) != 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("User with email %s already exists!", user.getEmail()));
-        }
+
         if (AuthUtils.matchesPolicy(user.getPassword()) == false) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("User Password %s is invalid!", user.getPassword()));
         }
 
-        String rootTenantId = "zigmoi.com";
         String currentTenantId = AuthUtils.getCurrentTenantId();
-        if (currentTenantId.equals(rootTenantId)) {
-            user.setTenantId(rootTenantId);
-        }
-
         String tenantIdInQualifiedUserName = StringUtils.substringAfterLast(user.getUsername(), "@");
         if (tenantIdInQualifiedUserName.equals(currentTenantId) == false) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Invalid Organization Id in fully qualified user name, expecting %s.", currentTenantId));
         }
-
 
         user.setCreationDate(new Date());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
