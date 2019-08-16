@@ -21,28 +21,28 @@ public class TenantResourceController {
     TenantResourceService service;
 
     /* Git provider apis */
-    @PostMapping("/v1/git-provider")
+    @PostMapping("/v1/tenant-git-provider")
     public void createGitProvider(HttpServletRequest servletRequest, @RequestBody @Valid GitProviderDto gitProviderDto) {
         service.createGitProvider(gitProviderDto);
     }
 
-    @GetMapping("/v1/git-providers")
+    @GetMapping("/v1/tenant-git-providers")
     public List<GitProvider> listAllGitProviders(HttpServletRequest servletRequest) {
         return service.listAllGitProviders();
     }
 
-    @GetMapping("/v1/git-provider/{id}")
+    @GetMapping("/v1/tenant-git-provider/{id}")
     public Optional<GitProvider> getGitProvider(HttpServletRequest servletRequest, @PathVariable("id") String id) {
         return service.getGitProvider(id);
     }
 
-    @DeleteMapping("/v1/git-provider/{id}")
+    @DeleteMapping("/v1/tenant-git-provider/{id}")
     public void deleteGitProvider(HttpServletRequest servletRequest, @PathVariable("id") String id) {
         service.deleteGitProvider(id);
     }
 
     /* Build tool apis */
-    @PostMapping("/v1/build-tool-file-upload")
+    @PostMapping("/v1/tenant-build-tool-file-upload")
     public void saveBuildToolSettings(HttpServletRequest servletRequest,
                                       @RequestParam("file[]") MultipartFile[] files,
                                       @RequestParam String provider,
@@ -59,65 +59,65 @@ public class TenantResourceController {
         }
     }
 
-    @GetMapping("/v1/build-tools")
+    @GetMapping("/v1/tenant-build-tools")
     public List<BuildTool> listAllBuildTools(HttpServletRequest servletRequest) {
         return service.listAllBuildTools();
     }
 
-    @GetMapping("/v1/build-tool/{id}")
+    @GetMapping("/v1/tenant-build-tool/{id}")
     public Optional<BuildTool> getBuildTool(HttpServletRequest servletRequest, @PathVariable("id") String id) {
         return service.getBuildTool(id);
     }
 
-    @DeleteMapping("/v1/build-tool/{id}")
+    @DeleteMapping("/v1/tenant-build-tool/{id}")
     public void deleteBuildTool(HttpServletRequest servletRequest, @PathVariable("id") String id) {
         service.deleteBuildTool(id);
     }
 
     /* Cloud credentials apis */
-    @PostMapping("/v1/cloud-credential")
+    @PostMapping("/v1/tenant-cloud-credential")
     public void saveCloudCredentialSetting(HttpServletRequest servletRequest, CloudCredentialDto cloudCredentialDto) {
         service.createCloudCredential(cloudCredentialDto);
     }
 
-    @GetMapping("/v1/cloud-credentials")
+    @GetMapping("/v1/tenant-cloud-credentials")
     public List<CloudCredential> listAllCloudCredentials(HttpServletRequest servletRequest) {
         return service.listAllCloudCredentials();
     }
 
-    @GetMapping("/v1/cloud-credential/{id}")
+    @GetMapping("/v1/tenant-cloud-credential/{id}")
     public Optional<CloudCredential> getCloudCredential(HttpServletRequest servletRequest, @PathVariable("id") String id) {
         return service.getCloudCredential(id);
     }
 
-    @DeleteMapping("/v1/cloud-credential/{id}")
+    @DeleteMapping("/v1/tenant-cloud-credential/{id}")
     public void deleteCloudCredential(HttpServletRequest servletRequest, @PathVariable("id") String id) {
         service.deleteCloudCredential(id);
     }
 
     /* Cloud registry apis */
-    @PostMapping("/v1/cloud-registry")
+    @PostMapping("/v1/tenant-cloud-registry")
     public void saveCloudRegistrySetting(HttpServletRequest servletRequest, CloudRegistryDto cloudRegistryDto) {
         service.createCloudRegistry(cloudRegistryDto);
     }
 
-    @GetMapping("/v1/cloud-registries")
+    @GetMapping("/v1/tenant-cloud-registries")
     public List<CloudRegistry> listAllCloudRegistries(HttpServletRequest servletRequest) {
         return service.listAllCloudRegistries();
     }
 
-    @GetMapping("/v1/cloud-registry/{id}")
+    @GetMapping("/v1/tenant-cloud-registry/{id}")
     public Optional<CloudRegistry> getCloudRegistry(HttpServletRequest servletRequest, @PathVariable("id") String id) {
         return service.getCloudRegistry(id);
     }
 
-    @DeleteMapping("/v1/cloud-registry/{id}")
+    @DeleteMapping("/v1/tenant-cloud-registry/{id}")
     public void deleteCloudRegistry(HttpServletRequest servletRequest, @PathVariable("id") String id) {
         service.deleteCloudRegistry(id);
     }
 
     /* Build tool apis */
-    @PostMapping("/v1/cloud-cluster-file-upload")
+    @PostMapping("/v1/tenant-cloud-cluster-file-upload")
     public void saveCloudClusterSettings(HttpServletRequest servletRequest,
                                          @RequestParam("file[]") MultipartFile[] files,
                                          @RequestParam String provider,
@@ -134,17 +134,17 @@ public class TenantResourceController {
         }
     }
 
-    @GetMapping("/v1/cloud-clusters")
+    @GetMapping("/v1/tenant-cloud-clusters")
     public List<CloudCluster> listAllCloudClusters(HttpServletRequest servletRequest) {
         return service.listAllCloudClusters();
     }
 
-    @GetMapping("/v1/cloud-cluster/{id}")
+    @GetMapping("/v1/tenant-cloud-cluster/{id}")
     public Optional<CloudCluster> getCloudCluster(HttpServletRequest servletRequest, @PathVariable("id") String id) {
         return service.getCloudCluster(id);
     }
 
-    @DeleteMapping("/v1/cloud-cluster/{id}")
+    @DeleteMapping("/v1/tenant-cloud-cluster/{id}")
     public void deleteCloudCluster(HttpServletRequest servletRequest, @PathVariable("id") String id) {
         service.deleteCloudCluster(id);
     }
