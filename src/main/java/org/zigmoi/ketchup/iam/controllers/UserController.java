@@ -7,13 +7,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.common.ConfigUtility;
+import org.zigmoi.ketchup.deployment.entities.DeploymentId;
+import org.zigmoi.ketchup.globalsetting.entities.GlobalSettingId;
+import org.zigmoi.ketchup.project.entities.ProjectId;
+import org.zigmoi.ketchup.project.entities.ProjectSettingId;
 import org.zigmoi.ketchup.iam.dtos.UserDto;
 import org.zigmoi.ketchup.iam.dtos.UserRequestDto;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.services.UserServiceImpl;
 
 import javax.validation.Valid;
-import java.security.Principal;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -66,6 +69,30 @@ public class UserController {
             return prepareUserDto(user);
         }).collect(Collectors.toSet());
     }
+
+//    @GetMapping("/v1/user/{username}/projects")
+//    public Set<ProjectId> listUserProjects(@PathVariable("username") String userName) {
+//        return userService.getUser(userName).get().getProjects();
+//    }
+//
+//    @GetMapping("/v1/user/{username}/globalSettings")
+//    public Set<GlobalSettingId> listUserGlobalSettings(@PathVariable("username") String userName) {
+//        return userService.getUser(userName).get().getGlobalSettings();
+//    }
+//
+//    @GetMapping("/v1/user/{username}/project/{projectId}/projectSettings")
+//    public Set<ProjectSettingId> listUserProjectSettings(@PathVariable("username") String userName, @PathVariable("projectId") String projectId) {
+//        //filter projects in memory or in sql based on projectId.
+//        return userService.getUser(userName).get().getProjectSettings();
+//    }
+//
+//    @GetMapping("/v1/user/{username}/project/{projectId}/deployments")
+//    public Set<DeploymentId> listUserDeployments(@PathVariable("username") String userName, @PathVariable("projectId") String projectId) {
+//        //filter projects in memory or in sql based on projectId.
+//        return userService.getUser(userName).get().getDeployments();
+//    }
+
+    //add and remove methods for projects, deployments, project settings and global settings.
 
     public UserDto prepareUserDto(User user) {
         UserDto userDto = new UserDto();
