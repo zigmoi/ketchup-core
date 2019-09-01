@@ -3,7 +3,7 @@ package org.zigmoi.ketchup.deployment;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.zigmoi.ketchup.common.FileUtility;
-import org.zigmoi.ketchup.deployment.model.CommandsBasicSpringBootDeploymentFlow_V1;
+import org.zigmoi.ketchup.deployment.model.MCArgBuildSpringBootDockerImageV1;
 import org.zigmoi.ketchup.deployment.model.MCArgMvnInstallV1;
 import org.zigmoi.ketchup.deployment.model.MCArgPullFromRemoteV1;
 import org.zigmoi.ketchup.deployment.model.MCommandStatus;
@@ -12,7 +12,7 @@ import org.zigmoi.ketchup.exception.KConfigurationException;
 import java.io.File;
 import java.io.IOException;
 
-public class BasicSpringBootDeploymentFlow_V1 {
+public class BasicSpringBootDeploymentFlow {
 
     public void execute(String config) {
         JSONObject jo = new JSONObject(config);
@@ -30,17 +30,26 @@ public class BasicSpringBootDeploymentFlow_V1 {
         switch (command) {
             case DeploymentFlowConstants.C_PULL_FROM_REMOTE: {
                 MCArgPullFromRemoteV1 arg = (MCArgPullFromRemoteV1) getArgPullFromRemote(args);
-                ICommandsBasicSpringBootDeployment_V1 commands = new CommandsBasicSpringBootDeploymentFlow_V1();
-                return commands.execPullFromRemote(arg);
+                IBasicSpringBootDeploymentCommands commands = new BasicSpringBootDeploymentCommandsFlow();
+                return commands.pullFromRemote(arg);
             }
             case DeploymentFlowConstants.C_MAVEN_CLEAN_INSTALL: {
                 MCArgMvnInstallV1 arg = (MCArgMvnInstallV1) getArgMvnInstallV1(args);
-                ICommandsBasicSpringBootDeployment_V1 commands = new CommandsBasicSpringBootDeploymentFlow_V1();
-                return commands.execMvnInstall(arg);
+                IBasicSpringBootDeploymentCommands commands = new BasicSpringBootDeploymentCommandsFlow();
+                return commands.mvnInstall(arg);
+            }
+            case DeploymentFlowConstants.C_BUILD_SPRING_BOOT_DOCKER_IMAGE: {
+                MCArgBuildSpringBootDockerImageV1 arg = (MCArgBuildSpringBootDockerImageV1) getArgBuildSpringBootDockerImageV1(args);
+                IBasicSpringBootDeploymentCommands commands = new BasicSpringBootDeploymentCommandsFlow();
+                return commands.buildSprintBootDockerImage(arg);
             }
             default:
                 throw new KConfigurationException("Unknown command : " + command);
         }
+    }
+
+    private Object getArgBuildSpringBootDockerImageV1(JSONArray args) {
+        return null;
     }
 
     private Object getArgMvnInstallV1(JSONArray args) {
@@ -80,8 +89,8 @@ public class BasicSpringBootDeploymentFlow_V1 {
     }
 
     public static void main(String[] args) throws IOException {
-        String flowConfigFile = "/home/tapo/IdeaProjects/zigmoi/ketchup/ketchup-core/docs/deployment_flow_config_sample.json";
+        String flowConfigFile = "/home/tapo/IdeaProjects/zigmoi/ketchup/ketchup-core/conf/private/deployment_flow_config_sample.json";
         String deploymentFlowConfigJSON = FileUtility.readDataFromFile(new File(flowConfigFile));
-        new BasicSpringBootDeploymentFlow_V1().execute(deploymentFlowConfigJSON);
+        new BasicSpringBootDeploymentFlow().execute(deploymentFlowConfigJSON);
     }
 }

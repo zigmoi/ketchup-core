@@ -8,6 +8,7 @@ import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.zigmoi.ketchup.common.ConfigUtility;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,15 +19,15 @@ import java.util.Set;
 public class SampleCommands {
 
     private final static String GIT_USERNAME = "btapo";
-    private final static String GIT_PASSWORD = "pass";
+    private final static String GIT_PASSWORD = "";
 
     public static void main(String[] args) throws IOException, GitAPIException {
-//        String repoPath = ConfigUtility.instance().getDataOutDirPath("git", "testrepos");
-//        run(repoPath);
+        String repoPath = ConfigUtility.instance().getTmpDir() + File.separator + "git-testrepos";
+        run(repoPath);
     }
 
     private static void run(String repoPath) throws IOException, GitAPIException {
-        clone("https://btapo@bitbucket.org/gammadev/mbusa-data-preparation.git", repoPath);
+        clone("https://gitlab.com/zigmoi/ketchup/ketchup-demo-basicspringboot.git", repoPath);
         System.out.println(getRemoteUrl(repoPath));
         treeWalk(repoPath);
         pull(repoPath);

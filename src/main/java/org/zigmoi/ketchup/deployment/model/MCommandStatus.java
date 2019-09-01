@@ -9,12 +9,10 @@ import java.util.List;
 public class MCommandStatus {
 
     private boolean successful;
-    private List<String> logs;
+    private List<String> logs = new ArrayList<>();
 
-    public void addLogs(String log) {
-        if (logs == null) {
-            logs = new ArrayList<>();
-        }
+    public MCommandStatus addLog(String log) {
         logs.add(log);
+        return this;
     }
 }
