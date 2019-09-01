@@ -1,13 +1,10 @@
-package org.zigmoi.ketchup.deployment;
+package org.zigmoi.ketchup.deployment.basicSpringBoot;
 
+import io.kubernetes.client.ApiException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.zigmoi.ketchup.common.ConfigUtility;
-import org.zigmoi.ketchup.common.FileUtility;
-import org.zigmoi.ketchup.common.GitUtils;
-import org.zigmoi.ketchup.deployment.model.MCArgBuildSpringBootDockerImageV1;
-import org.zigmoi.ketchup.deployment.model.MCArgMvnInstallV1;
-import org.zigmoi.ketchup.deployment.model.MCArgPullFromRemoteV1;
-import org.zigmoi.ketchup.deployment.model.MCommandStatus;
+import org.apache.commons.lang3.tuple.Triple;
+import org.zigmoi.ketchup.common.*;
+import org.zigmoi.ketchup.deployment.basicSpringBoot.model.*;
 import org.zigmoi.ketchup.exception.KUnexpectedException;
 
 import java.io.BufferedReader;
@@ -50,7 +47,11 @@ public class BasicSpringBootDeploymentCommandsFlow implements IBasicSpringBootDe
 
     @Override
     public MCommandStatus deployInKubernetes(Object arg) {
-        return null;
+        if (arg instanceof MCArgDeploySpringBootOnKubernetesV1) {
+            return execDeploySpringBootOnKubernetesV1((MCArgDeploySpringBootOnKubernetesV1) arg);
+        } else {
+            throw new UnsupportedOperationException("Unknown arg instance : " + arg);
+        }
     }
 
     // versioned arg schema implementations execMvnInstallV1 starts
@@ -66,9 +67,11 @@ public class BasicSpringBootDeploymentCommandsFlow implements IBasicSpringBootDe
                     new InputStreamReader(process.getErrorStream()));
             String line;
             while ((line = inputReader.readLine()) != null) {
+                System.out.println(line);
                 commandStatus.addLog(line);
             }
             while ((line = errorReader.readLine()) != null) {
+                System.out.println(line);
                 commandStatus.addLog(line);
             }
             int exitVal = process.waitFor();
@@ -86,7 +89,8 @@ public class BasicSpringBootDeploymentCommandsFlow implements IBasicSpringBootDe
     }
 
     private String[] getCommandFromTemplateForMvnInstallV1(MCArgMvnInstallV1 arg) throws IOException { // todo script file cleanup
-        String commandString = FileUtility.readDataFromFile(
+        String commandString = "cd " + arg.getBuildPath() + ";\n"
+                + FileUtility.readDataFromFile(
                 ConfigUtility.instance().getProperty(DeploymentFlowConstants.TP_MVN_CLEAN_INSTALL)
         ).replace("${maven-private-repo-settings-path}", arg.getPrivateRepoSettingsPath())
                 .replace("${maven-command-path}", arg.getMvnCommandPath());
@@ -101,12 +105,12 @@ public class BasicSpringBootDeploymentCommandsFlow implements IBasicSpringBootDe
         MCommandStatus commandStatus = new MCommandStatus();
         try {
             if (arg.getRepoPath().exists()) {
-                GitUtils.instance(arg.getUsername(), arg.getPassword())
+                GitUtility.instance(arg.getGitVendorArg().getUsername(), arg.getGitVendorArg().getPassword())
                         .pull(arg.getRepoPath());
             } else {
                 if (arg.getRepoPath().mkdirs()) {
-                    GitUtils.instance(arg.getUsername(), arg.getPassword())
-                            .clone(arg.getUrl(), arg.getRepoPath().getAbsolutePath());
+                    GitUtility.instance(arg.getGitVendorArg().getUsername(), arg.getGitVendorArg().getPassword())
+                            .clone(arg.getGitVendorArg().getUrl(), arg.getRepoPath().getAbsolutePath());
                 } else {
                     throw new KUnexpectedException("Failed to create directory : " + arg.getRepoPath());
                 }
@@ -122,7 +126,62 @@ public class BasicSpringBootDeploymentCommandsFlow implements IBasicSpringBootDe
 
     // versioned arg schema implementations execBuildSpringBootDockerImageV1 starts
     protected MCommandStatus execBuildSpringBootDockerImageV1(MCArgBuildSpringBootDockerImageV1 arg) {
-        return null;
+        MCommandStatus mCommandStatus = new MCommandStatus();
+        try {
+            createDockerFile(arg);
+
+            Triple<String, String, String> dockerAccessDetails = null;
+            String tag = null;
+            if (DeploymentFlowConstants.DV_AWS_ECR.equalsIgnoreCase(arg.getDockerRegistryVendor())) {
+                dockerAccessDetails = AWSECRUtility.getDockerAccessDetails(
+                        arg.getDockerVendorArg().getRegistryId(),
+                        arg.getDockerVendorArg().getAwsAccessKeyId(),
+                        arg.getDockerVendorArg().getAwsSecretKey()
+                );
+                tag = AWSECRUtility.getTag(arg.getDockerVendorArg().getRegistryBaseUrl(),
+                        arg.getDockerVendorArg().getRepo(), arg.getDockerBuildImageTag());
+            }
+            assert dockerAccessDetails != null;
+            DockerUtility.buildAndPushImage(dockerAccessDetails.getLeft(),
+                    dockerAccessDetails.getMiddle(),
+                    dockerAccessDetails.getRight(),
+                    tag,
+                    new File(arg.getBasePath()),
+                    new File(arg.getDockerFilePath()));
+            mCommandStatus.setSuccessful(true);
+        } catch (Exception e) {
+            mCommandStatus.setSuccessful(false);
+        }
+        return mCommandStatus;
+    }
+
+    private void createDockerFile(MCArgBuildSpringBootDockerImageV1 arg) throws IOException {
+        File dockerFilePath = new File(arg.getDockerFilePath());
+        String templateData = FileUtility.readDataFromFile(arg.getDockerFileTemplatePath());
+        String dockerFileContent = TemplateUtility.parse(templateData, arg.getDockerFileTemplateArgs());
+        FileUtility.createAndWrite(dockerFilePath, dockerFileContent);
     }
     // versioned arg schema implementations execBuildSpringBootDockerImageV1 ends
+
+    // versioned arg schema implementations execDeploySpringBootOnKubernetesV1 starts
+    protected MCommandStatus execDeploySpringBootOnKubernetesV1(MCArgDeploySpringBootOnKubernetesV1 arg) {
+        MCommandStatus commandStatus = new MCommandStatus();
+        try {
+            String tag = AWSECRUtility.getTag(arg.getDockerVendorArg().getRegistryBaseUrl(),
+                    arg.getDockerVendorArg().getRepo(), arg.getDockerBuildImageTag());
+            KubernetesUtility.deployInAws(new File(arg.getKubeconfigFilePath()),
+                    arg.getNamespace(),
+                    arg.getAppId(),
+                    tag,
+                    arg.getPort(),
+                    arg.getIpHostnameMap()
+            );
+            commandStatus.setSuccessful(true);
+        } catch (IOException | ApiException e) {
+            e.printStackTrace();
+            commandStatus.setSuccessful(false);
+        }
+        return commandStatus;
+    }
+    // versioned arg schema implementations execDeploySpringBootOnKubernetesV1 ends
 }

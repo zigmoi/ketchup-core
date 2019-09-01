@@ -1,6 +1,6 @@
-package org.zigmoi.ketchup.deployment;
+package org.zigmoi.ketchup.deployment.basicSpringBoot;
 
-import org.zigmoi.ketchup.deployment.model.MCommandStatus;
+import org.zigmoi.ketchup.deployment.basicSpringBoot.model.MCommandStatus;
 
 public interface IBasicSpringBootDeploymentCommands {
 

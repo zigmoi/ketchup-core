@@ -1,4 +1,4 @@
-package org.zigmoi.ketchup.deployment.model;
+package org.zigmoi.ketchup.deployment.basicSpringBoot.model;
 
 import lombok.Data;
 
