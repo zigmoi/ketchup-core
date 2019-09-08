@@ -27,15 +27,9 @@ public interface UserService {
     // @PreAuthorize("T(org.zigmoi.ketchup.iam.commons.AuthUtils).isTenantValid(authentication.name) and hasRole('ROLE_TENANT_ADMIN')")
     List<User> listAllUsers();
 
-//    boolean verifyProjectExists(String userName, ProjectId projectId);
+    //    boolean verifyProjectExists(String userName, ProjectId projectId);
 //
-<<<<<<< HEAD
     void addProject(String userName, ProjectId projectId);
 
     void removeProject(String userName, ProjectId projectId);
-=======
-//    void addProject(String userName, ProjectId projectId);
-//
-//    void removeProject(String userName, ProjectId projectId);
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 }

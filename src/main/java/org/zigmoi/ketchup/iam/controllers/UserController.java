@@ -7,14 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.common.ConfigUtility;
-import org.zigmoi.ketchup.deployment.entities.DeploymentId;
-import org.zigmoi.ketchup.globalsetting.entities.GlobalSettingId;
-<<<<<<< HEAD
 import org.zigmoi.ketchup.iam.services.UserService;
-=======
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
+
 import org.zigmoi.ketchup.project.entities.ProjectId;
-import org.zigmoi.ketchup.project.entities.ProjectSettingId;
 import org.zigmoi.ketchup.iam.dtos.UserDto;
 import org.zigmoi.ketchup.iam.dtos.UserRequestDto;
 import org.zigmoi.ketchup.iam.entities.User;
@@ -73,20 +68,12 @@ public class UserController {
         }).collect(Collectors.toSet());
     }
 
-<<<<<<< HEAD
     @GetMapping("/v1/user/{username}/projects")
     public Set<ProjectId> listUserProjects(@PathVariable("username") String userName) {
         User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
         return user.getProjects();
     }
 
-=======
-//    @GetMapping("/v1/user/{username}/projects")
-//    public Set<ProjectId> listUserProjects(@PathVariable("username") String userName) {
-//        return userService.getUser(userName).get().getProjects();
-//    }
-//
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 //    @GetMapping("/v1/user/{username}/globalSettings")
 //    public Set<GlobalSettingId> listUserGlobalSettings(@PathVariable("username") String userName) {
 //        return userService.getUser(userName).get().getGlobalSettings();

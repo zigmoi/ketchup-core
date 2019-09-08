@@ -4,29 +4,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-<<<<<<< HEAD
 import org.zigmoi.ketchup.iam.authz.services.ProjectAclService;
 import org.zigmoi.ketchup.iam.common.AuthUtils;
-import org.zigmoi.ketchup.iam.exceptions.CrossTenantOperationException;
 import org.zigmoi.ketchup.iam.services.UserService;
-=======
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 import org.zigmoi.ketchup.project.entities.Project;
 import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.project.repositories.ProjectRepository;
 
 import javax.transaction.Transactional;
-import java.util.List;
-<<<<<<< HEAD
 import java.util.Optional;
-=======
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 import java.util.Set;
 
 @Service
 public class ProjectServiceImpl implements ProjectService {
 
-<<<<<<< HEAD
     private final ProjectRepository projectRepository;
 
     private final UserService userService;
@@ -39,17 +30,13 @@ public class ProjectServiceImpl implements ProjectService {
         this.userService = userService;
         this.projectAclService = projectAclService;
     }
-=======
-    @Autowired
-    private ProjectRepository projectRepository;
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
+
 
 //    @Override
 //    @Transactional
 //    public boolean verifyMemberExists(ProjectId projectId, String member) {
 //        return projectRepository.existsByIdAndMembersExists(projectId, member);
 //    }
-<<<<<<< HEAD
 
     @Override
     @Transactional
@@ -89,30 +76,11 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
         return project.getMembers();
     }
-=======
-//
-//    @Override
-//    @Transactional
-//    public void addMember(ProjectId projectId, String member) {
-//        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ""));
-//        Set<String> members = project.getMembers();
-//        members.add(member);
-//        project.setMembers(members);
-//        projectRepository.save(project);
-//    }
-//
-//    @Override
-//    @Transactional
-//    public void removeMember(ProjectId projectId, String member) {
-//
-//    }
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 
     @Override
     public Set<ProjectId> findAllProjectIds() {
         return projectRepository.findAllProjectIds();
     }
-<<<<<<< HEAD
 
     @Override
     public Optional<Project> findById(ProjectId projectId) {
@@ -149,7 +117,4 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
     }
-
-=======
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 }

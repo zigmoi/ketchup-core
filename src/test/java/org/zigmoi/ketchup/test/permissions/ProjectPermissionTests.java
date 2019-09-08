@@ -35,6 +35,7 @@ public class ProjectPermissionTests {
 
 //    @Autowired
 //    private BCryptPasswordEncoder passwordEncoder;
+    @Autowired
     private ProjectAclService projectAclService;
  //   private ProjectService projectService;
     //private UserService userService;
@@ -43,7 +44,7 @@ public class ProjectPermissionTests {
     void initUseCase() {
        // userService = new UserServiceImpl();
 //        projectService = new ProjectServiceImpl(projectRepository, userService, projectAclService);
-        projectAclService = new ProjectAclServiceImpl(projectAclRepository, projectRepository);
+       // projectAclService = new ProjectAclServiceImpl(projectAclRepository, projectRepository);
     }
 
 

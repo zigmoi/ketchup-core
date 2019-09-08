@@ -3,14 +3,9 @@ package org.zigmoi.ketchup.iam.entities;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-<<<<<<< HEAD
+
 import org.zigmoi.ketchup.project.entities.ProjectId;
-=======
-import org.zigmoi.ketchup.deployment.entities.DeploymentId;
-import org.zigmoi.ketchup.globalsetting.entities.GlobalSettingId;
-import org.zigmoi.ketchup.project.entities.ProjectId;
-import org.zigmoi.ketchup.project.entities.ProjectSettingId;
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
+
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
@@ -44,29 +39,11 @@ public class User extends TenantEntity implements UserDetails {
     @Column(name = "role")
     Set<String> roles = new HashSet<>();
 
-<<<<<<< HEAD
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "user_projects", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
     @Column(name = "project")
     Set<ProjectId> projects = new HashSet<>();
 
-=======
-//    @ElementCollection(fetch = FetchType.LAZY)
-//    @CollectionTable(name = "user_projects", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
-//    @Column(name = "project")
-//    Set<ProjectId> projects = new HashSet<>();
-//
-//    @ElementCollection(fetch = FetchType.LAZY)
-//    @CollectionTable(name = "user_global_settings", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
-//    @Column(name = "global_setting")
-//    Set<GlobalSettingId> globalSettings = new HashSet<>();
-//
-//    @ElementCollection(fetch = FetchType.LAZY)
-//    @CollectionTable(name = "user_project_settings", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
-//    @Column(name = "project_setting")
-//    Set<ProjectSettingId> projectSettings = new HashSet<>();
-//
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 //    @ElementCollection(fetch = FetchType.LAZY)
 //    @CollectionTable(name = "user_deployments", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
 //    @Column(name = "deployment")
@@ -177,7 +154,6 @@ public class User extends TenantEntity implements UserDetails {
         this.roles = roles;
     }
 
-<<<<<<< HEAD
     public Set<ProjectId> getProjects() {
         return projects;
     }
@@ -186,32 +162,6 @@ public class User extends TenantEntity implements UserDetails {
         this.projects = projects;
     }
 
-=======
-//    public Set<ProjectId> getProjects() {
-//        return projects;
-//    }
-//
-//    public void setProjects(Set<ProjectId> projects) {
-//        this.projects = projects;
-//    }
-//
-//    public Set<GlobalSettingId> getGlobalSettings() {
-//        return globalSettings;
-//    }
-//
-//    public void setGlobalSettings(Set<GlobalSettingId> globalSettings) {
-//        this.globalSettings = globalSettings;
-//    }
-//
-//    public Set<ProjectSettingId> getProjectSettings() {
-//        return projectSettings;
-//    }
-//
-//    public void setProjectSettings(Set<ProjectSettingId> projectSettings) {
-//        this.projectSettings = projectSettings;
-//    }
-//
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 //    public Set<DeploymentId> getDeployments() {
 //        return deployments;
 //    }

@@ -1,31 +1,19 @@
 package org.zigmoi.ketchup.project.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
-<<<<<<< HEAD
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.method.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-=======
-import org.springframework.security.access.method.P;
-import org.springframework.web.bind.annotation.*;
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 import org.zigmoi.ketchup.iam.authz.dtos.ProjectAclDto;
 import org.zigmoi.ketchup.iam.authz.services.ProjectAclService;
 import org.zigmoi.ketchup.iam.common.AuthUtils;
 import org.zigmoi.ketchup.project.entities.Project;
 import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.project.repositories.ProjectRepository;
-<<<<<<< HEAD
 import org.zigmoi.ketchup.project.services.ProjectService;
 
 import java.security.Principal;
 import java.util.Set;
-=======
-
-import java.security.Principal;
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
-import java.util.UUID;
 
 @RestController
 public class ProjectController {
@@ -36,7 +24,7 @@ public class ProjectController {
     @Autowired
     private ProjectAclService projectAclService;
 
-<<<<<<< HEAD
+
     @Autowired
     private ProjectService projectService;
 
@@ -50,23 +38,10 @@ public class ProjectController {
         if (canCreateProject == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
-
-=======
-    @PostMapping("/v1/project")
-    public void createProject() {
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
-        Project p = new Project();
-        ProjectId id = new ProjectId();
-        id.setTenantId(AuthUtils.getCurrentTenantId());
-        id.setResourceId(UUID.randomUUID().toString());
-        p.setId(id);
-        p.setDescription("Test project.");
-        projectRepository.save(p);
     }
 
     @GetMapping("/v1/project/{resourceId}")
     public Project getProject(@PathVariable("resourceId") String resourceId) {
-<<<<<<< HEAD
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(resourceId);
@@ -77,12 +52,6 @@ public class ProjectController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
         return projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
-=======
-        ProjectId id = new ProjectId();
-        id.setTenantId(AuthUtils.getCurrentTenantId());
-        id.setResourceId(resourceId);
-        return projectRepository.findById(id).get();
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
     }
 
     @PutMapping("/v1/project/assign/permissions")
@@ -113,7 +82,6 @@ public class ProjectController {
                                             @PathVariable("permissionId") String permissionId) {
         return false;
     }
-<<<<<<< HEAD
 
     @PutMapping("/v1/project/{resourceId}/member/{action}/{userName}")
     public void manageProjectMembers(@PathVariable("resourceId") String resourceId,
@@ -140,7 +108,4 @@ public class ProjectController {
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         return projectService.listMembers(projectId);
     }
-
-=======
->>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 }
