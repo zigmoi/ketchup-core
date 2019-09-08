@@ -5,6 +5,7 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
+import javax.persistence.Column;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.MappedSuperclass;
@@ -22,5 +23,7 @@ public class TenantEntity {
     //This is NOT Entity attribute name, this is name generated in query or table column name.
     public static final String TENANT_ID_PROPERTY_NAME = "tenant_id";
     public static final String TENANT_FILTER_ARGUMENT_NAME = "tenantId";
+
+    @Column(length = 100)
     String tenantId;
 }

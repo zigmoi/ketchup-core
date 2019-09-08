@@ -16,6 +16,10 @@ public class AuthUtils {
         return StringUtils.substringBeforeLast(currentUser, "@");
     }
 
+    public static String getCurrentQualifiedUsername() {
+        return SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+    }
+
     public static String getCurrentTenantId() {
         String currentUser = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         return StringUtils.substringAfterLast(currentUser, "@");

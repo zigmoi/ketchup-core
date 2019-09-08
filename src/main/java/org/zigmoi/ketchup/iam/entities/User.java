@@ -3,6 +3,7 @@ package org.zigmoi.ketchup.iam.entities;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.zigmoi.ketchup.project.entities.ProjectId;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
@@ -35,6 +36,16 @@ public class User extends TenantEntity implements UserDetails {
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
     @Column(name = "role")
     Set<String> roles = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "user_projects", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
+    @Column(name = "project")
+    Set<ProjectId> projects = new HashSet<>();
+
+//    @ElementCollection(fetch = FetchType.LAZY)
+//    @CollectionTable(name = "user_deployments", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
+//    @Column(name = "deployment")
+//    Set<DeploymentId> deployments = new HashSet<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -140,5 +151,21 @@ public class User extends TenantEntity implements UserDetails {
     public void setRoles(Set<String> roles) {
         this.roles = roles;
     }
+
+    public Set<ProjectId> getProjects() {
+        return projects;
+    }
+
+    public void setProjects(Set<ProjectId> projects) {
+        this.projects = projects;
+    }
+
+//    public Set<DeploymentId> getDeployments() {
+//        return deployments;
+//    }
+//
+//    public void setDeployments(Set<DeploymentId> deployments) {
+//        this.deployments = deployments;
+//    }
 
 }

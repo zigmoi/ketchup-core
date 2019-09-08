@@ -11,12 +11,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.iam.annotations.TenantFilter;
+import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.iam.common.AuthUtils;
 import org.zigmoi.ketchup.iam.entities.Tenant;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.exceptions.TenantInActiveException;
 import org.zigmoi.ketchup.iam.exceptions.TenantNotFoundException;
-import org.zigmoi.ketchup.iam.exceptions.UserConfigurationException;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
 
 import javax.transaction.Transactional;
@@ -24,6 +24,7 @@ import javax.validation.Valid;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 
 @Service("userDetailsService")
@@ -37,6 +38,7 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+
 
     @Override
     public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
@@ -117,7 +119,38 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
 
     @Override
     @TenantFilter
+    @Transactional
     public List<User> listAllUsers() {
         return userRepository.findAll();
+    }
+
+//    @Override
+//    @Transactional
+//    public boolean verifyProjectExists(String userName, ProjectId projectId) {
+//        return userRepository.existsByUserNameAndProjectsExists(userName, projectId);
+//    }
+
+    @Override
+    @Transactional
+    public void addProject(String userName, ProjectId projectId) {
+        User user = userRepository.findById(userName).get();
+        Set<ProjectId> userProjects = user.getProjects();
+        if (userProjects.contains(projectId) == false) {
+            userProjects.add(projectId);
+            user.setProjects(userProjects);
+            userRepository.save(user);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void removeProject(String userName, ProjectId projectId) {
+        User user = userRepository.findById(userName).get();
+        Set<ProjectId> userProjects = user.getProjects();
+        if (userProjects.contains(projectId)) {
+            userProjects.remove(projectId);
+            user.setProjects(userProjects);
+            userRepository.save(user);
+        }
     }
 }

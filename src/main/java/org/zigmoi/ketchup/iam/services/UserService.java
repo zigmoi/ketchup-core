@@ -1,7 +1,6 @@
 package org.zigmoi.ketchup.iam.services;
 
-import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.iam.entities.User;
 
 import java.util.List;
@@ -27,4 +26,10 @@ public interface UserService {
 
     // @PreAuthorize("T(org.zigmoi.ketchup.iam.commons.AuthUtils).isTenantValid(authentication.name) and hasRole('ROLE_TENANT_ADMIN')")
     List<User> listAllUsers();
+
+//    boolean verifyProjectExists(String userName, ProjectId projectId);
+//
+    void addProject(String userName, ProjectId projectId);
+
+    void removeProject(String userName, ProjectId projectId);
 }

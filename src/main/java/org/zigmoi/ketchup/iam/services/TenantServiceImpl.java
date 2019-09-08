@@ -21,14 +21,18 @@ import java.util.Optional;
 @Service
 public class TenantServiceImpl implements TenantService {
 
-    @Autowired
-    private TenantRepository tenantRepository;
+    private final TenantRepository tenantRepository;
+
+    private final UserRepository userRepository;
+
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    public TenantServiceImpl(TenantRepository tenantRepository, UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+        this.tenantRepository = tenantRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     @Transactional
