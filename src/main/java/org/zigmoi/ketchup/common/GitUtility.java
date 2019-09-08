@@ -13,11 +13,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class GitUtils {
+public class GitUtility {
 
     private String GIT_USERNAME;
     private String GIT_PASSWORD;
-    private static GitUtils gitUtils;
+    private static GitUtility gitUtility;
 
     private String[] ignoreCommitMessageWords = new String[]{
             "--", "-", "#", "_", "__", "+", "++", ">", "-->", "*", "|"
@@ -27,14 +27,14 @@ public class GitUtils {
             , "bug:", "bug"
     };
 
-    public static GitUtils instance(String userName, String password) {
-        if (gitUtils == null) {
-            gitUtils = new GitUtils(userName, password);
+    public static GitUtility instance(String userName, String password) {
+        if (gitUtility == null) {
+            gitUtility = new GitUtility(userName, password);
         }
-        return gitUtils;
+        return gitUtility;
     }
 
-    private GitUtils(String userName, String password) {
+    private GitUtility(String userName, String password) {
         this.GIT_USERNAME = userName;
         this.GIT_PASSWORD = password;
     }

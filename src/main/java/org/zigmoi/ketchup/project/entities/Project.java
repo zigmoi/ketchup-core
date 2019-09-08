@@ -15,6 +15,7 @@ public class Project {
 
     private String description;
 
+<<<<<<< HEAD
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "project_members",
             joinColumns = {
@@ -23,5 +24,15 @@ public class Project {
             })
     @Column(name = "member")
     Set<String> members = new HashSet<>();
+=======
+//    @ElementCollection(fetch = FetchType.LAZY)
+//    @CollectionTable(name = "project_members",
+//            joinColumns = {
+//                    @JoinColumn(name = "tenantId", referencedColumnName = "tenantId"),
+//                    @JoinColumn(name = "resourceId", referencedColumnName = "resourceId")
+//            })
+//    @Column(name = "member")
+//    Set<String> members = new HashSet<>();
+>>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 }
 

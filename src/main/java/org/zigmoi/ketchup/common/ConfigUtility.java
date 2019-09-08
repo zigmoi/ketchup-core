@@ -88,12 +88,24 @@ public class ConfigUtility {
     }
 
     public String getProperty(String key) {
+        if (!props.containsKey(key)) {
+            throw new KConfigurationException("Key : " + " not found");
+        }
+        return props.get(key);
+    }
+
+    public String getPropertyOrDefault(String key, String defaultValue) {
+        if (!props.containsKey(key)) {
+            return defaultValue;
+        }
         return props.get(key);
     }
 
     public String getTmpDir() {
         return getProperty("ketchup.dir.tmp");
-    }    public static Map<String, String> formatConfigValues(Map<String, String> map) {
+    }
+
+    public static Map<String, String> formatConfigValues(Map<String, String> map) {
 
         Map<String, String> res = new HashMap<>();
         for (String key : map.keySet()) {

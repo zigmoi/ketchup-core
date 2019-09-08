@@ -130,6 +130,7 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
 //        return userRepository.existsByUserNameAndProjectsExists(userName, projectId);
 //    }
 
+<<<<<<< HEAD
     @Override
     @Transactional
     public void addProject(String userName, ProjectId projectId) {
@@ -153,4 +154,21 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
             userRepository.save(user);
         }
     }
+=======
+//    @Override
+//    @Transactional
+//    public void addProject(String userName, ProjectId projectId) {
+//        User user = userRepository.findById(userName).get();
+//        Set<ProjectId> userProjects = user.getProjects();
+//        userProjects.add(projectId);
+//        user.setProjects(userProjects);
+//        userRepository.save(user);
+//    }
+//
+//    @Override
+//    @Transactional
+//    public void removeProject(String userName, ProjectId projectId) {
+//
+//    }
+>>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 }

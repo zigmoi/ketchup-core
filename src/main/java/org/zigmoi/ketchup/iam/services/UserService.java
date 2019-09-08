@@ -29,7 +29,13 @@ public interface UserService {
 
 //    boolean verifyProjectExists(String userName, ProjectId projectId);
 //
+<<<<<<< HEAD
     void addProject(String userName, ProjectId projectId);
 
     void removeProject(String userName, ProjectId projectId);
+=======
+//    void addProject(String userName, ProjectId projectId);
+//
+//    void removeProject(String userName, ProjectId projectId);
+>>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
 }

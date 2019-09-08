@@ -9,8 +9,11 @@ import java.util.List;
 import java.util.Set;
 
 public interface ProjectAclRepository extends JpaRepository<ProjectAcl, String> {
+<<<<<<< HEAD
     long deleteAllByIdentityAndPermissionId(String identity, String permissionId);
 
+=======
+>>>>>>> 7516c026e3957f51b7fb5836e18f8423d1ea584a
     long deleteAllByIdentityAndPermissionIdAndEffect(String identity, String permissionId, String effect);
 
     long deleteAllByIdentityAndPermissionIdAndProjectIdAndEffect(String identity, String permissionId, ProjectId projectId, String effect);
