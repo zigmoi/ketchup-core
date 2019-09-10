@@ -1,3 +1,5 @@
+DELETE from project_acl;
+
 INSERT INTO `project_acl` (`acl_rule_id`, `identity`, `permission_id`, `tenant_id`, `resource_id`, `effect`) VALUES
 ('1', 'admin@t1.com', 'read-project', 't1.com', '*', 'ALLOW');
 INSERT INTO `project_acl` (`acl_rule_id`, `identity`, `permission_id`, `tenant_id`, `resource_id`, `effect`) VALUES

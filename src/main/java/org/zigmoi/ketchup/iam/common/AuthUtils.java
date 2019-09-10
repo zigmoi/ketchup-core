@@ -3,6 +3,7 @@ package org.zigmoi.ketchup.iam.common;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
 public class AuthUtils {
 
@@ -12,17 +13,36 @@ public class AuthUtils {
     }
 
     public static String getCurrentUsername() {
-        String currentUser = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-        return StringUtils.substringBeforeLast(currentUser, "@");
+        String qualifiedUserName = "";
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            qualifiedUserName = ((UserDetails) principal).getUsername();
+        } else {
+            qualifiedUserName = principal.toString();
+        }
+        return StringUtils.substringBeforeLast(qualifiedUserName, "@");
     }
 
     public static String getCurrentQualifiedUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        String username = "";
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            username = ((UserDetails) principal).getUsername();
+        } else {
+            username = principal.toString();
+        }
+        return username;
     }
 
     public static String getCurrentTenantId() {
-        String currentUser = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-        return StringUtils.substringAfterLast(currentUser, "@");
+        String qualifiedUserName = "";
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            qualifiedUserName = ((UserDetails) principal).getUsername();
+        } else {
+            qualifiedUserName = principal.toString();
+        }
+        return StringUtils.substringAfterLast(qualifiedUserName, "@");
     }
 
     public static boolean validateTenant(String tenantId) {

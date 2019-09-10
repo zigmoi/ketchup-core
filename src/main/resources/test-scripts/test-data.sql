@@ -1,3 +1,8 @@
+DELETE from tenants;
+DELETE from user_roles;
+DELETE from users;
+DELETE from projects;
+
 INSERT INTO tenants(id, display_name, enabled, creation_date)
 VALUES ('t1.com', 'T1', true, '2019-07-28 02:42:39');
 
@@ -36,3 +41,6 @@ VALUES ('u1@t2.com', 't2.com', '$2a$04$dvoJcMTDPkaQvB0slTdMBOLdinrh26jFpLZk1t04/
 
 INSERT INTO user_roles(user_name, role)
 values ('u1@t2.com', 'ROLE_USER');
+
+
+INSERT INTO `projects` (`resource_id`, `tenant_id`, `description`) VALUES ('p1', 't1.com', 'desc');

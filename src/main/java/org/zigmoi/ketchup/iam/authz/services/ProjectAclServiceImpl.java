@@ -48,6 +48,7 @@ public class ProjectAclServiceImpl implements ProjectAclService {
         //validate each permission is valid project permission.
 
         String currentUser = AuthUtils.getCurrentQualifiedUsername();
+        System.out.println("currentUser:" + currentUser) ;
         String resourceId = projectAclDto.getResourceId();
         String identity = projectAclDto.getIdentity();
 
@@ -60,7 +61,7 @@ public class ProjectAclServiceImpl implements ProjectAclService {
         projectIdAll.setResourceId("*");
 
         //  validateIdentity(identity);
-        validateProject(projectId);
+       // validateProject(projectId);
         validateUserHasAllRequiredPermissionsOnProject(currentUser, projectId, projectAclDto.getPermissions());
 
         Set<ProjectAcl> aclsToAdd = new HashSet<>();
