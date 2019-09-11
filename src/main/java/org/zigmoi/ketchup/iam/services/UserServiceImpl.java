@@ -11,13 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.iam.annotations.TenantFilter;
-import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.iam.common.AuthUtils;
 import org.zigmoi.ketchup.iam.entities.Tenant;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.exceptions.TenantInActiveException;
 import org.zigmoi.ketchup.iam.exceptions.TenantNotFoundException;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
+import org.zigmoi.ketchup.project.entities.ProjectId;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
@@ -49,7 +49,7 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
 
         //Check tenant active for this user.
         Tenant tenant = tenantService.getTenant(user.getTenantId()).orElseThrow(() -> new TenantNotFoundException(String.format("Tenant not found for user %s", user.getUsername())));
-        if (tenant.isEnabled() == false) {
+        if (!tenant.isEnabled()) {
             throw new TenantInActiveException(String.format("Tenant not active for user %s", user.getUsername()));
         }
 
@@ -64,14 +64,14 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
                     String.format("User with user name %s already exists!", user.getUsername()));
         }
 
-        if (AuthUtils.matchesPolicy(user.getPassword()) == false) {
+        if (!AuthUtils.matchesPolicy(user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("User Password %s is invalid!", user.getPassword()));
         }
 
         String currentTenantId = AuthUtils.getCurrentTenantId();
         String tenantIdInQualifiedUserName = StringUtils.substringAfterLast(user.getUsername(), "@");
-        if (tenantIdInQualifiedUserName.equals(currentTenantId) == false) {
+        if (!tenantIdInQualifiedUserName.equals(currentTenantId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Invalid Organization Id in fully qualified user name, expecting %s.", currentTenantId));
         }
@@ -91,7 +91,8 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
     @Override
     @Transactional
     public void updateUserStatus(String userName, boolean status) {
-        User user = userRepository.findById(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found.", userName)));
+        User user = userRepository.findById(userName).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found.", userName)));
         if (user.isEnabled() == status) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s has same status as requested.", userName));
         }
@@ -102,7 +103,8 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
     @Override
     @Transactional
     public void updateUserDisplayName(String userName, String displayName) {
-        User user = userRepository.findById(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found.", userName)));
+        User user = userRepository.findById(userName).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found.", userName)));
         user.setDisplayName(displayName);
         userRepository.save(user);
     }
@@ -133,9 +135,10 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
     @Override
     @Transactional
     public void addProject(String userName, ProjectId projectId) {
-        User user = userRepository.findById(userName).get();
+        User user = userRepository.findById(userName).orElseThrow(() ->
+            new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
         Set<ProjectId> userProjects = user.getProjects();
-        if (userProjects.contains(projectId) == false) {
+        if (userProjects.contains(projectId)) {
             userProjects.add(projectId);
             user.setProjects(userProjects);
             userRepository.save(user);
@@ -145,7 +148,8 @@ public class UserServiceImpl extends TenantProviderService implements UserDetail
     @Override
     @Transactional
     public void removeProject(String userName, ProjectId projectId) {
-        User user = userRepository.findById(userName).get();
+        User user = userRepository.findById(userName).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
         Set<ProjectId> userProjects = user.getProjects();
         if (userProjects.contains(projectId)) {
             userProjects.remove(projectId);
