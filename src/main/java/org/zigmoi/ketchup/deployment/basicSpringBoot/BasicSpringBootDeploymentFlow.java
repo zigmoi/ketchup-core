@@ -4,7 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.zigmoi.ketchup.common.FileUtility;
 import org.zigmoi.ketchup.deployment.basicSpringBoot.model.*;
-import org.zigmoi.ketchup.exception.KConfigurationException;
+import org.zigmoi.ketchup.exception.ConfigurationException;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +46,7 @@ public class BasicSpringBootDeploymentFlow {
 //                return new MCommandStatus();
             }
             default:
-                throw new KConfigurationException("Unknown command : " + command);
+                throw new ConfigurationException("Unknown command : " + command);
         }
     }
 
@@ -144,7 +144,7 @@ public class BasicSpringBootDeploymentFlow {
 
     private void validateArgPullFromRemote(JSONArray args) { // todo
         if (args == null || args.length() != 1) {
-            throw new KConfigurationException("Invalid args");
+            throw new ConfigurationException("Invalid args");
         }
     }
 

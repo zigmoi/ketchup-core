@@ -5,7 +5,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.zigmoi.ketchup.common.*;
 import org.zigmoi.ketchup.deployment.basicSpringBoot.model.*;
-import org.zigmoi.ketchup.exception.KUnexpectedException;
+import org.zigmoi.ketchup.exception.UnexpectedException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -112,7 +112,7 @@ public class BasicSpringBootDeploymentCommandsFlow implements IBasicSpringBootDe
                     GitUtility.instance(arg.getGitVendorArg().getUsername(), arg.getGitVendorArg().getPassword())
                             .clone(arg.getGitVendorArg().getUrl(), arg.getRepoPath().getAbsolutePath());
                 } else {
-                    throw new KUnexpectedException("Failed to create directory : " + arg.getRepoPath());
+                    throw new UnexpectedException("Failed to create directory : " + arg.getRepoPath());
                 }
             }
             commandStatus.setSuccessful(true);

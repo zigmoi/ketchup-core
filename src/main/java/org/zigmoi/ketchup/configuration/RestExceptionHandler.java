@@ -22,9 +22,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.zigmoi.ketchup.exception.RecordNotFoundException;
 import org.zigmoi.ketchup.iam.exceptions.CrossTenantOperationException;
 
-import javax.persistence.RollbackException;
 import java.util.NoSuchElementException;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)

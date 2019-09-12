@@ -3,9 +3,7 @@ package org.zigmoi.ketchup.iam.entities;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
 import org.zigmoi.ketchup.project.entities.ProjectId;
-
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
@@ -13,7 +11,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "users")
@@ -51,11 +48,12 @@ public class User extends TenantEntity implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        Set<GrantedAuthority> authorities = roles.stream().map(role -> {
+        Set<SimpleGrantedAuthority> set = new HashSet<>();
+        for (String role : roles) {
             SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority(role);
-            return simpleGrantedAuthority;
-        }).collect(Collectors.toSet());
-        return authorities;
+            set.add(simpleGrantedAuthority);
+        }
+        return set;
     }
 
     @Override

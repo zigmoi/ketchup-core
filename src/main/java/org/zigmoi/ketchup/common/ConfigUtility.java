@@ -6,7 +6,7 @@ import org.springframework.core.env.AbstractEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.MutablePropertySources;
-import org.zigmoi.ketchup.exception.KConfigurationException;
+import org.zigmoi.ketchup.exception.ConfigurationException;
 
 import java.io.InputStream;
 import java.util.*;
@@ -47,7 +47,7 @@ public class ConfigUtility {
                 try (InputStream input = ConfigUtility.class.getClassLoader().getResourceAsStream("application.properties")) {
                     Properties p = new Properties();
                     if (input == null) {
-                        throw new KConfigurationException("File application.properties not found");
+                        throw new ConfigurationException("File application.properties not found");
                     }
                     p.load(input);
                     String profile = p.getProperty("spring.profiles.active");
@@ -62,7 +62,7 @@ public class ConfigUtility {
                         props = convertToMapStringString(p2);
                     }
                 } catch (Exception ex) {
-                    throw new KConfigurationException("Failed loading application.properties", ex);
+                    throw new ConfigurationException("Failed loading application.properties", ex);
                 }
             }
         }
@@ -89,7 +89,7 @@ public class ConfigUtility {
 
     public String getProperty(String key) {
         if (!props.containsKey(key)) {
-            throw new KConfigurationException("Key : " + " not found");
+            throw new ConfigurationException("Key : " + " not found");
         }
         return props.get(key);
     }

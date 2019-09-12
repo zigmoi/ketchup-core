@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-    public class MRepoParams {
+public class MRepoParams {
     private String status;
     private String repoName;
     private String remoteUrl;
@@ -51,24 +51,24 @@ import java.util.Map;
         return repoType;
     }
 
+    public void setRepoType(String repoType) {
+        this.repoType = repoType;
+    }
+
     public boolean isExistsLocally() {
         return existsLocally;
+    }
+
+    public void setExistsLocally(boolean existsLocally) {
+        this.existsLocally = existsLocally;
     }
 
     public String isRepoType() {
         return repoType;
     }
 
-    public void setRepoType(String repoType) {
-        this.repoType = repoType;
-    }
-
     public boolean doesExistLocally() {
         return existsLocally;
-    }
-
-    public void setExistsLocally(boolean existsLocally) {
-        this.existsLocally = existsLocally;
     }
 
     public String getStatus() {

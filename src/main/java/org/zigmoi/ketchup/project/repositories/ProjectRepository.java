@@ -2,11 +2,9 @@ package org.zigmoi.ketchup.project.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.zigmoi.ketchup.iam.authz.entities.ProjectAcl;
 import org.zigmoi.ketchup.project.entities.Project;
 import org.zigmoi.ketchup.project.entities.ProjectId;
 
-import java.util.List;
 import java.util.Set;
 
 public interface ProjectRepository extends JpaRepository<Project, ProjectId> {

@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import org.zigmoi.ketchup.iam.common.AuthUtils;
+import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.dtos.TenantDto;
 import org.zigmoi.ketchup.iam.entities.Tenant;
 import org.zigmoi.ketchup.iam.entities.User;
@@ -51,7 +51,7 @@ public class TenantServiceImpl implements TenantService {
     }
 
     public void createDefaultUser(String tenantId, String userEmail, String userPassword) {
-        if (AuthUtils.matchesPolicy(userPassword) == false) {
+        if (!AuthUtils.matchesPolicy(userPassword)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("User Password %s is invalid!", userPassword));
         }

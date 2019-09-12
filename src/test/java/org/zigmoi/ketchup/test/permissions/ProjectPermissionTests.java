@@ -1,21 +1,18 @@
 package org.zigmoi.ketchup.test.permissions;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.zigmoi.ketchup.iam.authz.dtos.ProjectAclDto;
-import org.zigmoi.ketchup.iam.authz.entities.ProjectAcl;
-import org.zigmoi.ketchup.iam.authz.repositories.ProjectAclRepository;
-import org.zigmoi.ketchup.iam.authz.services.ProjectAclService;
+import org.zigmoi.ketchup.project.dtos.ProjectAclDto;
+import org.zigmoi.ketchup.project.entities.ProjectAcl;
+import org.zigmoi.ketchup.project.repositories.ProjectAclRepository;
+import org.zigmoi.ketchup.project.services.ProjectAclService;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
 import org.zigmoi.ketchup.project.entities.ProjectId;

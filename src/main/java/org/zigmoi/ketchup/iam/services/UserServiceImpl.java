@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.iam.annotations.TenantFilter;
-import org.zigmoi.ketchup.iam.common.AuthUtils;
+import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.entities.Tenant;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.exceptions.TenantInActiveException;

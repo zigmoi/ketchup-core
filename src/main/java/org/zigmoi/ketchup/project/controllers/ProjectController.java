@@ -4,9 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.zigmoi.ketchup.iam.authz.dtos.ProjectAclDto;
-import org.zigmoi.ketchup.iam.authz.services.ProjectAclService;
-import org.zigmoi.ketchup.iam.common.AuthUtils;
+import org.zigmoi.ketchup.project.dtos.ProjectAclDto;
+import org.zigmoi.ketchup.project.services.ProjectAclService;
+import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.project.entities.Project;
 import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.project.repositories.ProjectRepository;
@@ -35,7 +35,7 @@ public class ProjectController {
         projectIdAll.setTenantId(AuthUtils.getCurrentTenantId());
         projectIdAll.setResourceId("*");
         boolean canCreateProject = projectAclService.hasProjectPermission(identity, "create-project", projectIdAll);
-        if (canCreateProject == false) {
+        if (!canCreateProject) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
     }
@@ -48,7 +48,7 @@ public class ProjectController {
 
         String identity = AuthUtils.getCurrentQualifiedUsername();
         boolean canReadProject = projectAclService.hasProjectPermission(identity, "read-project", projectId);
-        if (canReadProject == false) {
+        if (!canReadProject) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
         return projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
