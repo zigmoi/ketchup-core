@@ -9,20 +9,20 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.zigmoi.ketchup.project.dtos.ProjectAclDto;
-import org.zigmoi.ketchup.project.entities.ProjectAcl;
-import org.zigmoi.ketchup.project.repositories.ProjectAclRepository;
-import org.zigmoi.ketchup.project.services.ProjectAclService;
+import org.springframework.util.Assert;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
+import org.zigmoi.ketchup.project.dtos.ProjectAclDto;
+import org.zigmoi.ketchup.project.entities.ProjectAcl;
 import org.zigmoi.ketchup.project.entities.ProjectId;
+import org.zigmoi.ketchup.project.repositories.ProjectAclRepository;
+import org.zigmoi.ketchup.project.services.ProjectAclService;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
-//@TestPropertySource(locations = "classpath:application-test.properties")
 @ActiveProfiles("test")
 @Sql(scripts = {
         "classpath:test-scripts/test-data.sql",
@@ -75,7 +75,24 @@ public class ProjectPermissionTests {
         projectAclDto.setResourceId("p1");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.assignPermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId),
+                "User does not have assigned read-project permission.");
+        //check other permissions and users are unaffected.
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
+                "User u1@t1.com has extra update-project permission on project p1.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "update-project", projectId) == false,
+                "User u2@t1.com has extra update-project permission on project p1.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
+                "User u2@t1.com has extra read-project permission on project p1.");
+        projectId.setResourceId("p2");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false,
+                "User has extra read-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
+                "User has extra update-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "update-project", projectId) == false,
+                "User u2@t1.com has extra update-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
+                "User u2@t1.com has extra read-project permission on project p2.");
     }
 
     @Test
@@ -94,8 +111,27 @@ public class ProjectPermissionTests {
         projectAclDto.setResourceId("*");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.assignPermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll),
+                "User u1@t1.com does not have read-project permission on all projects.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId),
+                "User u1@t1.com does not have read-project permission on project p1..");
+
+        //Check for extra permissions
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
+                "User u1@t1.com has extra update-project permission on project p1.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "update-project", projectId) == false,
+                "User u2@t1.com has extra update-project permission on project p1.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
+                "User u2@t1.com has extra read-project permission on project p1.");
+        projectId.setResourceId("p2");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId),
+                "User u1@t1.com should have read-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
+                "User u1@t1.com has extra update-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "update-project", projectId) == false,
+                "User u2@t1.com has extra update-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
+                "User u2@t1.com has extra read-project permission on project p2.");
     }
 
     @Test
@@ -115,6 +151,21 @@ public class ProjectPermissionTests {
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.revokePermission(projectAclDto);
         assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
+                "User u1@t1.com has extra update-project permission on project p1.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "update-project", projectId) == false,
+                "User u2@t1.com has extra update-project permission on project p1.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
+                "User u2@t1.com has extra read-project permission on project p1.");
+        projectId.setResourceId("p2");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false,
+                "User u1@t1.com has extra read-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
+                "User u1@t1.com has extra update-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "update-project", projectId) == false,
+                "User u2@t1.com has extra update-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
+                "User u2@t1.com has extra read-project permission on project p2.");
     }
 
     @Test

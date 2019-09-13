@@ -49,7 +49,7 @@ public class ProjectAclServiceImpl implements ProjectAclService {
         //validate each permission is valid project permission.
 
         String currentUser = AuthUtils.getCurrentQualifiedUsername();
-        System.out.println("currentUser:" + currentUser) ;
+        System.out.println("currentUser:" + currentUser);
         String resourceId = projectAclDto.getResourceId();
         String identity = projectAclDto.getIdentity();
 
@@ -61,8 +61,8 @@ public class ProjectAclServiceImpl implements ProjectAclService {
         projectIdAll.setTenantId(AuthUtils.getCurrentTenantId());
         projectIdAll.setResourceId("*");
 
-        //  validateIdentity(identity);
-       // validateProject(projectId);
+        validateIdentity(identity);
+        validateProject(projectId);
         validateUserHasAllRequiredPermissionsOnProject(currentUser, projectId, projectAclDto.getPermissions());
 
         Set<ProjectAcl> aclsToAdd = new HashSet<>();
@@ -115,7 +115,7 @@ public class ProjectAclServiceImpl implements ProjectAclService {
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(resourceId);
 
-        // validateIdentity(identity);
+        validateIdentity(identity);
         validateProject(projectId);
         validateUserHasAllRequiredPermissionsOnProject(currentUser, projectId, projectAclDto.getPermissions());
 
@@ -230,14 +230,14 @@ public class ProjectAclServiceImpl implements ProjectAclService {
         }
     }
 
-//    public void validateIdentity(String identity) {
-//        //validate identity is valid user and not *.
-//        String currentTenantId = AuthUtils.getCurrentTenantId();
-//        if (identity.endsWith(currentTenantId) == false) {
-//            throw new CrossTenantOperationException("Permissions can only be assigned to users of current tenant.");
-//        }
-//        userService.getUser(identity).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Identity should be a valid user."));
-//    }
+    public void validateIdentity(String identity) {
+        //validate identity is valid user and not *.
+        String currentTenantId = AuthUtils.getCurrentTenantId();
+        if (identity.endsWith(currentTenantId) == false) {
+            throw new CrossTenantOperationException("Permissions can only be assigned to users of current tenant.");
+        }
+        userService.getUser(identity).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Identity should be a valid user."));
+    }
 
     public void validateProject(ProjectId projectId) {
         if (projectId.getTenantId().equalsIgnoreCase(AuthUtils.getCurrentTenantId()) == false) {
