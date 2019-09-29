@@ -1,21 +1,26 @@
 package org.zigmoi.ketchup.project.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
+import org.zigmoi.ketchup.iam.services.TenantProviderService;
 import org.zigmoi.ketchup.iam.services.UserService;
+import org.zigmoi.ketchup.project.dtos.ProjectDto;
 import org.zigmoi.ketchup.project.entities.Project;
 import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.project.repositories.ProjectRepository;
 
-import javax.transaction.Transactional;
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Service
-public class ProjectServiceImpl implements ProjectService {
+public class ProjectServiceImpl extends TenantProviderService implements ProjectService {
 
     private final ProjectRepository projectRepository;
 
@@ -39,9 +44,53 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    public void addMember(ProjectId projectId, String member) {
+    public void createProject(ProjectDto projectDto) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        canAddMember(identity, projectId);
+        String projectId = "*";
+        boolean canCreateProject = projectAclService.hasProjectPermission(identity, "create-project", projectId);
+        if (!canCreateProject) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
+        }
+
+        ProjectId projectId1 = new ProjectId();
+        projectId1.setResourceId(projectDto.getProjectResourceId());
+        projectId1.setTenantId(AuthUtils.getCurrentTenantId());
+
+        if (projectRepository.existsById(projectId1)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s already exists.", projectDto.getProjectResourceId()));
+        }
+
+        Project project = new Project();
+        project.setId(projectId1);
+        project.setCreationDate(new Date());
+        project.setDescription(projectDto.getDescription());
+        project.setMembers(projectDto.getMembers());
+        projectRepository.save(project);
+    }
+
+    @Override
+    @Transactional
+    public void deleteProject(String projectResourceId) {
+        ProjectId projectId = new ProjectId();
+        projectId.setResourceId(projectResourceId);
+        projectId.setTenantId(AuthUtils.getCurrentTenantId());
+
+        if (projectRepository.existsById(projectId) == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.", projectResourceId));
+        }
+        projectRepository.deleteById(projectId);
+    }
+
+    @Override
+    @Transactional
+    public void addMember(String projectResourceId, String member) {
+        String identity = AuthUtils.getCurrentQualifiedUsername();
+        validateUserCanAddMember(identity, projectResourceId);
+
+        ProjectId projectId = new ProjectId();
+        projectId.setResourceId(projectResourceId);
+        projectId.setTenantId(AuthUtils.getCurrentTenantId());
+
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
         Set<String> members = project.getMembers();
         if (members.contains(member) == false) {
@@ -49,14 +98,19 @@ public class ProjectServiceImpl implements ProjectService {
             project.setMembers(members);
             projectRepository.save(project);
         }
-        userService.addProject(member, projectId);
+        userService.addProject(member, projectResourceId);
     }
 
     @Override
     @Transactional
-    public void removeMember(ProjectId projectId, String member) {
+    public void removeMember(String projectResourceId, String member) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        canRemoveMember(identity, projectId);
+        validateUserCanRemoveMember(identity, projectResourceId);
+
+        ProjectId projectId = new ProjectId();
+        projectId.setResourceId(projectResourceId);
+        projectId.setTenantId(AuthUtils.getCurrentTenantId());
+
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
         Set<String> members = project.getMembers();
         if (members.contains(member)) {
@@ -64,25 +118,46 @@ public class ProjectServiceImpl implements ProjectService {
             project.setMembers(members);
             projectRepository.save(project);
         }
-        userService.removeProject(member, projectId);
+        userService.removeProject(member, projectResourceId);
     }
 
     @Override
     @Transactional
-    public Set<String> listMembers(ProjectId projectId) {
+    public Set<String> listMembers(String projectResourceId) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        canListMembers(identity, projectId);
+        validateUserCanListMembers(identity, projectResourceId);
+
+        ProjectId projectId = new ProjectId();
+        projectId.setResourceId(projectResourceId);
+        projectId.setTenantId(AuthUtils.getCurrentTenantId());
+
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
         return project.getMembers();
     }
 
+    //@TenantFilter
     @Override
     public Set<ProjectId> findAllProjectIds() {
         return projectRepository.findAllProjectIds();
     }
 
+
     @Override
-    public Optional<Project> findById(ProjectId projectId) {
+    public List<Project> listAllProjects() {
+        Sort sort = new Sort(Sort.Direction.ASC, "id.resourceId");
+        return projectRepository.findAll(sort);
+    }
+
+    @Override
+    public Optional<Project> findById(String projectResourceId) {
+        ProjectId projectId = new ProjectId();
+        projectId.setTenantId(AuthUtils.getCurrentTenantId());
+        projectId.setResourceId(projectResourceId);
+        String identity = AuthUtils.getCurrentQualifiedUsername();
+        boolean canReadProject = projectAclService.hasProjectPermission(identity, "read-project", projectResourceId);
+        if (!canReadProject) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
+        }
         return projectRepository.findById(projectId);
     }
 
@@ -94,24 +169,24 @@ public class ProjectServiceImpl implements ProjectService {
         return projectRepository.existsById(projectId);
     }
 
-    private void canAddMember(String identity, ProjectId projectId) {
-        boolean canCreateProject = projectAclService.hasProjectPermission(identity, "create-project", projectId);
-        boolean canUpdateProject = projectAclService.hasProjectPermission(identity, "update-project", projectId);
+    private void validateUserCanAddMember(String identity, String projectResourceId) {
+        boolean canCreateProject = projectAclService.hasProjectPermission(identity, "create-project", projectResourceId);
+        boolean canUpdateProject = projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
         if (canCreateProject == false && canUpdateProject == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
     }
 
-    private void canRemoveMember(String identity, ProjectId projectId) {
-        boolean canDeleteProject = projectAclService.hasProjectPermission(identity, "delete-project", projectId);
-        boolean canUpdateProject = projectAclService.hasProjectPermission(identity, "update-project", projectId);
+    private void validateUserCanRemoveMember(String identity, String projectResourceId) {
+        boolean canDeleteProject = projectAclService.hasProjectPermission(identity, "delete-project", projectResourceId);
+        boolean canUpdateProject = projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
         if (canDeleteProject == false && canUpdateProject == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
     }
 
-    private void canListMembers(String identity, ProjectId projectId) {
-        boolean canListProjectMembers = projectAclService.hasProjectPermission(identity, "list-project-members", projectId);
+    private void validateUserCanListMembers(String identity, String projectResourceId) {
+        boolean canListProjectMembers = projectAclService.hasProjectPermission(identity, "list-project-members", projectResourceId);
         if (canListProjectMembers == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }

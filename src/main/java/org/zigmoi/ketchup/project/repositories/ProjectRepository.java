@@ -10,6 +10,6 @@ import java.util.Set;
 public interface ProjectRepository extends JpaRepository<Project, ProjectId> {
 //    boolean existsByIdAndMembersExists(ProjectId projectId, String member);
 
-    @Query("select distinct p.id from Project p")
+    @Query("select distinct p.id from Project p order by p.id.resourceId")
     Set<ProjectId> findAllProjectIds();
 }

@@ -1,4 +1,4 @@
-package org.zigmoi.ketchup.iam.authz.entities;
+package org.zigmoi.ketchup.iam.entities;
 
 import lombok.Data;
 

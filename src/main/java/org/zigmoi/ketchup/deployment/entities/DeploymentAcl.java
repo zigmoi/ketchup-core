@@ -1,4 +1,4 @@
-package org.zigmoi.ketchup.iam.authz.entities;
+package org.zigmoi.ketchup.deployment.entities;
 
 
 import lombok.Data;
@@ -9,7 +9,7 @@ import javax.persistence.Id;
 
 @Data
 @Entity
-public class DeploymentAclStore {
+public class DeploymentAcl {
     @Id
     private String aclRuleId;
     private String permissionId;

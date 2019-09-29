@@ -2,8 +2,14 @@ package org.zigmoi.ketchup.iam.commons;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.server.ResponseStatusException;
+import org.zigmoi.ketchup.iam.exceptions.TenantIdInvalidException;
+
+import java.util.Collection;
 
 public class AuthUtils {
 
@@ -42,7 +48,11 @@ public class AuthUtils {
         } else {
             qualifiedUserName = principal.toString();
         }
-        return StringUtils.substringAfterLast(qualifiedUserName, "@");
+        String currentTenantId = StringUtils.substringAfterLast(qualifiedUserName, "@");
+        if (StringUtils.isEmpty(currentTenantId)) {
+            throw new TenantIdInvalidException("Current tenant id is empty.");
+        }
+        return currentTenantId;
     }
 
     public static boolean validateTenant(String tenantId) {
@@ -50,7 +60,13 @@ public class AuthUtils {
     }
 
     public static boolean isTenantValid(String userName) {
-        return userName.endsWith("@zigmoi.com");
+        String currentTenantId = AuthUtils.getCurrentTenantId();
+        String tenantIdInQualifiedUserName = StringUtils.substringAfterLast(userName, "@");
+        if (tenantIdInQualifiedUserName.equals(currentTenantId)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }

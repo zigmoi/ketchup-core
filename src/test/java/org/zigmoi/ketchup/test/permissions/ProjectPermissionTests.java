@@ -1,20 +1,20 @@
 package org.zigmoi.ketchup.test.permissions;
 
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlGroup;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.Assert;
+import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
 import org.zigmoi.ketchup.project.dtos.ProjectAclDto;
 import org.zigmoi.ketchup.project.entities.ProjectAcl;
-import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.project.repositories.ProjectAclRepository;
 import org.zigmoi.ketchup.project.services.ProjectAclService;
 
@@ -24,9 +24,12 @@ import java.util.stream.Stream;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @ActiveProfiles("test")
-@Sql(scripts = {
-        "classpath:test-scripts/test-data.sql",
-        "classpath:test-scripts/test-permission-data.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@SqlGroup({
+        @Sql(scripts = {
+                "classpath:test-scripts/test-data.sql",
+                "classpath:test-scripts/test-permission-data.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD),
+        @Sql(scripts = {"classpath:test-scripts/clear-data.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+})
 public class ProjectPermissionTests {
 
     @Autowired
@@ -38,10 +41,18 @@ public class ProjectPermissionTests {
     @Autowired
     private ProjectAclRepository projectAclRepository;
 
-    @BeforeEach
-    void initUseCase() {
-    }
 
+    @Test
+    @WithMockUser(username = "admin@t2.com")
+    public void verifyOtherTenantsPermissions() {
+        System.out.println(AuthUtils.getCurrentTenantId());
+        String projectId = "p1";
+        String projectIdAll = "*";
+        Assert.isTrue(projectAclService.hasProjectPermission("admin@t1.com", "read-project", projectId) == false,
+                "User u1@t2.com has extra read-project permission on project p1.");
+        Assert.isTrue(projectAclService.hasProjectPermission("admin@t1.com", "read-project", projectIdAll) == false,
+                "User u1@t2.com has extra read-project permission on all projects.");
+    }
 
     @Test
     @WithMockUser(username = "admin@t1.com")
@@ -55,24 +66,12 @@ public class ProjectPermissionTests {
             System.out.println(acl.toString());
         }
 
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
-
-
-        //   System.out.println(projectAclService.hasProjectPermission("u1@t1.com", "assign-read-project", projectId));
-//        System.out.println(projectAclService.hasProjectPermission("admin@t1.com", "assign-read-project", projectId));
-//        System.out.println(projectAclService.hasProjectPermission("u1@t1.com", "assign-read-project", projectIdAll));
-//        System.out.println(projectAclService.hasProjectPermission("admin@t1.com", "assign-read-project", projectIdAll));
-//        //  assert (projectAclService.hasProjectPermission("admin@t1.com", "update-project", projectId));
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("p1");
+        projectAclDto.setProjectResourceId("p1");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.assignPermission(projectAclDto);
         Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId),
@@ -84,7 +83,8 @@ public class ProjectPermissionTests {
                 "User u2@t1.com has extra update-project permission on project p1.");
         Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
                 "User u2@t1.com has extra read-project permission on project p1.");
-        projectId.setResourceId("p2");
+
+        projectId = "p2";
         Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false,
                 "User has extra read-project permission on project p2.");
         Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
@@ -98,17 +98,12 @@ public class ProjectPermissionTests {
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyAssignPermissionOnAllProjects() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("*");
+        projectAclDto.setProjectResourceId("*");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.assignPermission(projectAclDto);
         Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll),
@@ -123,7 +118,8 @@ public class ProjectPermissionTests {
                 "User u2@t1.com has extra update-project permission on project p1.");
         Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
                 "User u2@t1.com has extra read-project permission on project p1.");
-        projectId.setResourceId("p2");
+
+        projectId = "p2";
         Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId),
                 "User u1@t1.com should have read-project permission on project p2.");
         Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
@@ -137,27 +133,24 @@ public class ProjectPermissionTests {
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyRevokePermissionOnSpecificProject() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("p1");
+        projectAclDto.setProjectResourceId("p1");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.revokePermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false,
+                "User u1@t1.com has extra read-project permission on project p1.");
         Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
                 "User u1@t1.com has extra update-project permission on project p1.");
         Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "update-project", projectId) == false,
                 "User u2@t1.com has extra update-project permission on project p1.");
         Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
                 "User u2@t1.com has extra read-project permission on project p1.");
-        projectId.setResourceId("p2");
+
+        projectId = "p2";
         Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false,
                 "User u1@t1.com has extra read-project permission on project p2.");
         Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
@@ -171,216 +164,195 @@ public class ProjectPermissionTests {
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyRevokePermissionOnAllProjects() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("*");
+        projectAclDto.setProjectResourceId("*");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.revokePermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false,
+                "User u1@t1.com has extra read-project permission on all projects.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false,
+                "User u1@t1.com has extra read-project permission on project p1.");
+
+        //Check other permissions, other project permissions, other users permissions and other tenant permissions are unchanged.
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
+                "User u1@t1.com has extra update-project permission on project p1.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "update-project", projectId) == false,
+                "User u2@t1.com has extra update-project permission on project p1.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
+                "User u2@t1.com has extra read-project permission on project p1.");
+
+        projectId = "p2";
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false,
+                "User u1@t1.com has extra read-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "update-project", projectId) == false,
+                "User u1@t1.com has extra update-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "update-project", projectId) == false,
+                "User u2@t1.com has extra update-project permission on project p2.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u2@t1.com", "read-project", projectId) == false,
+                "User u2@t1.com has extra read-project permission on project p2.");
     }
 
 
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyPermissions_When_AssignSpecific_RevokeSpecific() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
-
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("p1");
+        projectAclDto.setProjectResourceId("p1");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.assignPermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId),
+                "User u1@t1.com does not have read-project permission on project p1.");
         projectAclService.revokePermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false,
+                "User u1@t1.com has extra read-project permission on project p1.");
     }
 
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyPermissions_When_AssignSpecific_RevokeAll() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("p1");
+        projectAclDto.setProjectResourceId("p1");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.assignPermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false,
+                "User u1@t1.com has extra read-project permission on all projects.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId),
+                "User u1@t1.com does not have read-project permission on project p1.");
 
-        projectAclDto.setResourceId("*");
+        projectAclDto.setProjectResourceId("*");
         projectAclService.revokePermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false,
+                "User u1@t1.com has extra read-project permission on all projects.");
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false,
+                "User u1@t1.com has extra read-project permission on project p1.");
     }
 
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyPermissions_When_AssignAll_RevokeSpecific() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("*");
+        projectAclDto.setProjectResourceId("*");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.assignPermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
 
-        projectAclDto.setResourceId("p1");
+        projectAclDto.setProjectResourceId("p1");
         projectAclService.revokePermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
     }
 
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyPermissions_When_AssignAll_RevokeAll() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("*");
+        projectAclDto.setProjectResourceId("*");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.assignPermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
 
         projectAclService.revokePermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
     }
 
 
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyPermissions_When_RevokeSpecific_AssignSpecific() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
-
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("p1");
+        projectAclDto.setProjectResourceId("p1");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.revokePermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
         projectAclService.assignPermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
 
     }
 
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyPermissions_When_RevokeAll_AssignSpecific() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("*");
+        projectAclDto.setProjectResourceId("*");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.revokePermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
 
-        projectAclDto.setResourceId("p1");
+        projectAclDto.setProjectResourceId("p1");
         projectAclService.assignPermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
     }
 
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyPermissions_When_RevokeAll_AssignAll() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("*");
+        projectAclDto.setProjectResourceId("*");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.revokePermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
 
         projectAclService.assignPermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
     }
 
     @Test
     @WithMockUser(username = "admin@t1.com")
     public void verifyPermissions_When_RevokeSpecific_AssignAll() {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId("t1.com");
-        projectId.setResourceId("p1");
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId("t1.com");
-        projectIdAll.setResourceId("*");
+        String projectId = "p1";
+        String projectIdAll = "*";
 
         ProjectAclDto projectAclDto = new ProjectAclDto();
         projectAclDto.setIdentity("u1@t1.com");
-        projectAclDto.setResourceId("p1");
+        projectAclDto.setProjectResourceId("p1");
         projectAclDto.setPermissions(Stream.of("read-project").collect(Collectors.toSet()));
         projectAclService.revokePermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll) == false);
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId) == false);
 
-        projectAclDto.setResourceId("*");
+        projectAclDto.setProjectResourceId("*");
         projectAclService.assignPermission(projectAclDto);
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
-        assert (projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectIdAll));
+        Assert.isTrue(projectAclService.hasProjectPermission("u1@t1.com", "read-project", projectId));
     }
 
 

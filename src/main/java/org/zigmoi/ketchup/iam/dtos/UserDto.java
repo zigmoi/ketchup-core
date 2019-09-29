@@ -11,7 +11,6 @@ import java.util.Set;
 @Setter
 public class UserDto {
     private String userName; //fully qualified username user@tenant example: test@zigmoi.com
-    private String tenantId;
     private String displayName;
     private boolean enabled;
     private String email;

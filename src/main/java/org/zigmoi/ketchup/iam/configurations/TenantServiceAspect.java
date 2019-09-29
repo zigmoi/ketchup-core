@@ -15,7 +15,6 @@ import static org.zigmoi.ketchup.iam.entities.TenantEntity.TENANT_FILTER_ARGUMEN
 @Configuration
 public class TenantServiceAspect {
     @Before("execution(* org.zigmoi.ketchup.iam.services.TenantProviderService+.*(..)) " +
-            "&& @annotation(org.zigmoi.ketchup.iam.annotations.TenantFilter) " +
             "&& target(tenantProviderService)")
     public void before(JoinPoint joinPoint, TenantProviderService tenantProviderService) {
         tenantProviderService.entityManager

@@ -11,6 +11,7 @@ import java.util.Date;
 public class Tenant {
 
     @Id
+    @Column(length = 50)
     private String id;
     private String displayName;
     private boolean enabled;

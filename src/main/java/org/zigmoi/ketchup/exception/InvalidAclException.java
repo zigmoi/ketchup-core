@@ -1,4 +1,4 @@
-package org.zigmoi.ketchup.iam.authz.exceptions;
+package org.zigmoi.ketchup.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

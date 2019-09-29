@@ -5,12 +5,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import org.zigmoi.ketchup.iam.authz.exceptions.InvalidAclException;
+import org.zigmoi.ketchup.exception.InvalidAclException;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.exceptions.CrossTenantOperationException;
+import org.zigmoi.ketchup.iam.services.TenantProviderService;
 import org.zigmoi.ketchup.iam.services.UserService;
 import org.zigmoi.ketchup.project.dtos.ProjectAclDto;
 import org.zigmoi.ketchup.project.entities.ProjectAcl;
+import org.zigmoi.ketchup.project.entities.ProjectAclId;
 import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.project.repositories.ProjectAclRepository;
 import org.zigmoi.ketchup.project.repositories.ProjectRepository;
@@ -21,27 +23,21 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
-public class ProjectAclServiceImpl implements ProjectAclService {
+public class ProjectAclServiceImpl extends TenantProviderService implements ProjectAclService {
 
     private final ProjectAclRepository projectAclRepository;
 
-    //private final UserService userService;
-
     private final ProjectRepository projectRepository;
-
-    @Autowired
-    public ProjectAclServiceImpl(ProjectAclRepository projectAclRepository, ProjectRepository projectRepository) {
-        this.projectAclRepository = projectAclRepository;
-        //   this.userService = userService;
-        this.projectRepository = projectRepository;
-    }
-
 
     @Autowired
     private UserService userService;
 
     @Autowired
-    private ProjectService projectService;
+    public ProjectAclServiceImpl(ProjectAclRepository projectAclRepository, ProjectRepository projectRepository) {
+        this.projectAclRepository = projectAclRepository;
+        this.projectRepository = projectRepository;
+    }
+
 
     @Override
     @Transactional
@@ -50,26 +46,20 @@ public class ProjectAclServiceImpl implements ProjectAclService {
 
         String currentUser = AuthUtils.getCurrentQualifiedUsername();
         System.out.println("currentUser:" + currentUser);
-        String resourceId = projectAclDto.getResourceId();
+
         String identity = projectAclDto.getIdentity();
-
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId(AuthUtils.getCurrentTenantId());
-        projectId.setResourceId(resourceId);
-
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId(AuthUtils.getCurrentTenantId());
-        projectIdAll.setResourceId("*");
+        String projectResourceId = projectAclDto.getProjectResourceId();
+        String allProjectsResourceId = "*";
 
         validateIdentity(identity);
-        validateProject(projectId);
-        validateUserHasAllRequiredPermissionsOnProject(currentUser, projectId, projectAclDto.getPermissions());
+        validateProject(projectResourceId);
+        validateUserHasAllRequiredPermissionsOnProject(currentUser, projectResourceId, projectAclDto.getPermissions());
 
         Set<ProjectAcl> aclsToAdd = new HashSet<>();
 
         for (String permission : projectAclDto.getPermissions()) {
-            if (hasProjectPermission(identity, permission, projectId)) {
-                if (resourceId.equals("*")) {
+            if (hasProjectPermission(identity, permission, projectResourceId)) {
+                if (projectResourceId.equals("*")) {
                     //In case of checking permission on * hasPermission will be true if entry for * is present.
                     //Even if some entries for deny are present hasPermission will be true.
                     //So when assigning permission on * remove any deny entries for that identity and permission.
@@ -77,22 +67,23 @@ public class ProjectAclServiceImpl implements ProjectAclService {
                     System.out.println("deletedAclsCount: " + deletedAclsCount);
                 }
             } else {
-                if (resourceId.equals("*")) {
+                if (projectResourceId.equals("*")) {
                     //delete all entries for that identity and permission.
                     //add one allow entry for identity and permission on *.
                     long deletedAclsCount = projectAclRepository.deleteAllByIdentityAndPermissionId(identity, permission);
                     System.out.println("deletedAclsCount: " + deletedAclsCount);
 
-                    ProjectAcl projectAclAllow = buildProjectAcl(identity, permission, projectId, "ALLOW");
+                    ProjectAcl projectAclAllow = buildProjectAcl(identity, permission, projectResourceId, "ALLOW");
                     aclsToAdd.add(projectAclAllow);
                 } else {
                     //delete all deny entries for that identity, permission and specific projectId.
                     //add one allow entry for that identity, permission and specific projectId.
                     //if permission on * present just remove deny entry , no need to add allow entry on that specific project.
-                    long deletedAclsCount = projectAclRepository.deleteAllByIdentityAndPermissionIdAndProjectIdAndEffect(identity, permission, projectId, "DENY");
+                    System.out.println("deleting entries...");
+                    long deletedAclsCount = projectAclRepository.deleteAllByIdentityAndPermissionIdAndProjectResourceIdAndEffect(identity, permission, projectResourceId, "DENY");
                     System.out.println("deletedAclsCount: " + deletedAclsCount);
-                    if (hasProjectPermission(identity, permission, projectIdAll) == false) {
-                        ProjectAcl projectAclAllow = buildProjectAcl(identity, permission, projectId, "ALLOW");
+                    if (hasProjectPermission(identity, permission, allProjectsResourceId) == false) {
+                        ProjectAcl projectAclAllow = buildProjectAcl(identity, permission, projectAclDto.getProjectResourceId(), "ALLOW");
                         aclsToAdd.add(projectAclAllow);
                     }
                 }
@@ -108,34 +99,30 @@ public class ProjectAclServiceImpl implements ProjectAclService {
     public void revokePermission(ProjectAclDto projectAclDto) {
         //validate each permission is valid project permission.
         String currentUser = AuthUtils.getCurrentQualifiedUsername();
-        String resourceId = projectAclDto.getResourceId();
         String identity = projectAclDto.getIdentity();
-
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId(AuthUtils.getCurrentTenantId());
-        projectId.setResourceId(resourceId);
+        String projectResourceId = projectAclDto.getProjectResourceId();
 
         validateIdentity(identity);
-        validateProject(projectId);
-        validateUserHasAllRequiredPermissionsOnProject(currentUser, projectId, projectAclDto.getPermissions());
+        validateProject(projectResourceId);
+        validateUserHasAllRequiredPermissionsOnProject(currentUser, projectResourceId, projectAclDto.getPermissions());
 
         for (String permission : projectAclDto.getPermissions()) {
-            if (resourceId.equals("*")) {
+            if (projectResourceId.equals("*")) {
                 //deleting all allow entries to remove permission from each and every resource.
                 //removing extra deny entries as well.
                 long deletedAclsCount = projectAclRepository.deleteAllByIdentityAndPermissionId(identity, permission);
                 System.out.println("deletedAclsCount: " + deletedAclsCount);
             } else {
-                if (hasProjectPermission(identity, permission, projectId)) {
+                if (hasProjectPermission(identity, permission, projectResourceId)) {
                     //if permission is present than either * entry is present without specific deny entry on projectId.
                     //or permission is present than either * entry is present without specific deny entry on projectId.
 
                     // add deny entry for that specific projectId for that identity and permission.
-                    ProjectAcl projectAclDenyAccess = buildProjectAcl(identity, permission, projectId, "DENY");
+                    ProjectAcl projectAclDenyAccess = buildProjectAcl(identity, permission, projectResourceId, "DENY");
                     projectAclRepository.save(projectAclDenyAccess);
 
                     //delete all extra allow entries except on *.
-                    long deletedAclsCount = projectAclRepository.deleteAllByIdentityAndPermissionIdAndProjectIdAndEffect(identity, permission, projectId, "ALLOW");
+                    long deletedAclsCount = projectAclRepository.deleteAllByIdentityAndPermissionIdAndProjectResourceIdAndEffect(identity, permission, projectResourceId, "ALLOW");
                     System.out.println("deletedAclsCount: " + deletedAclsCount);
 
                 }
@@ -147,63 +134,52 @@ public class ProjectAclServiceImpl implements ProjectAclService {
     //to check if user has permission on a specific project (single not *).
     @Override
     @Transactional
-    public boolean hasProjectPermission(String identity, String permission, ProjectId projectId) {
+    public boolean hasProjectPermission(String identity, String permission, String projectResourceId) {
         //validate project id should be single instance only for create-project, assign-create-project it can be star.
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId(projectId.getTenantId());
-        projectIdAll.setResourceId("*");
+        String allProjectsResourceId = "*";
 
         if (permission.equals("create-project") || permission.equals("assign-create-project")) {
             //deny entry wont be present for create-project or assign-create-project.
             //if you want to deny create-project or assign-create-project, remove the * entry for that user for that permission.
             //so effectively if user has entry for permission=create-project with effect=ALLOW on projectId=*, user has create-project permission.
             //and if user has entry for permission=assign-create-project with effect=ALLOW on projectId=*, user has assign-create-project permission.
-            boolean isPermissionAllowedOnAllProjects = projectAclRepository.existsByIdentityAndPermissionIdAndEffectAndProjectId(identity, permission, "ALLOW", projectIdAll);
+            boolean isPermissionAllowedOnAllProjects = projectAclRepository.existsByIdentityAndPermissionIdAndEffectAndProjectResourceId(identity, permission, "ALLOW", allProjectsResourceId);
             return isPermissionAllowedOnAllProjects;
         } else {
-            boolean isPermissionDeniedOnProject = projectAclRepository.existsByIdentityAndPermissionIdAndEffectAndProjectId(identity, permission, "DENY", projectId);
+            boolean isPermissionDeniedOnProject = projectAclRepository.existsByIdentityAndPermissionIdAndEffectAndProjectResourceId(identity, permission, "DENY", projectResourceId);
             if (isPermissionDeniedOnProject) {
                 return false;
             }
-            boolean isPermissionAllowedOnProject = projectAclRepository.existsByIdentityAndPermissionIdAndEffectAndProjectId(identity, permission, "ALLOW", projectId);
-            boolean isPermissionAllowedOnAllProjects = projectAclRepository.existsByIdentityAndPermissionIdAndEffectAndProjectId(identity, permission, "ALLOW", projectIdAll);
+            boolean isPermissionAllowedOnProject = projectAclRepository.existsByIdentityAndPermissionIdAndEffectAndProjectResourceId(identity, permission, "ALLOW", projectResourceId);
+            boolean isPermissionAllowedOnAllProjects = projectAclRepository.existsByIdentityAndPermissionIdAndEffectAndProjectResourceId(identity, permission, "ALLOW", allProjectsResourceId);
             return isPermissionAllowedOnProject || isPermissionAllowedOnAllProjects;
         }
     }
 
     public boolean hasCreateProjectPermission(String identity, String tenantId) {
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId(tenantId);
-        projectIdAll.setResourceId("*");
-        return hasProjectPermission(identity, "create-project", projectIdAll);
+        String allProjectsResourceId = "*";
+        return hasProjectPermission(identity, "create-project", allProjectsResourceId);
     }
 
     public boolean hasAssignCreateProjectPermission(String identity, String tenantId) {
-        ProjectId projectIdAll = new ProjectId();
-        projectIdAll.setTenantId(tenantId);
-        projectIdAll.setResourceId("*");
-        return hasProjectPermission(identity, "assign-create-project", projectIdAll);
+        String allProjectsResourceId = "*";
+        return hasProjectPermission(identity, "assign-create-project", allProjectsResourceId);
     }
 
 
-    private ProjectAcl buildProjectAcl(String identity, String permission, ProjectId
-            projectId, String effect) {
+    private ProjectAcl buildProjectAcl(String identity, String permission, String
+            projectResourceId, String effect) {
         String aclId = UUID.randomUUID().toString();
         ProjectAcl projectAcl = new ProjectAcl();
-        projectAcl.setAclRuleId(aclId);
+        ProjectAclId projectAclId = new ProjectAclId();
+        projectAclId.setTenantId(AuthUtils.getCurrentTenantId());
+        projectAclId.setAclRuleId(aclId);
+        projectAcl.setProjectAclId(projectAclId);
         projectAcl.setIdentity(identity);
         projectAcl.setPermissionId(permission);
-        projectAcl.setProjectId(projectId);
+        projectAcl.setProjectResourceId(projectResourceId);
         projectAcl.setEffect(effect);
         return projectAcl;
-    }
-
-    private ProjectAcl buildProjectAclUsingCurrentTenant(String identity, String permission, String
-            resourceId, String effect) {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId(AuthUtils.getCurrentTenantId());
-        projectId.setResourceId(resourceId);
-        return buildProjectAcl(identity, permission, projectId, effect);
     }
 
     public String getRequiredPermission(String permission) {
@@ -215,16 +191,16 @@ public class ProjectAclServiceImpl implements ProjectAclService {
         }
     }
 
-    public void validateUserHasAllRequiredPermissionsOnProject(String identity, ProjectId
-            projectId, Set<String> permissions) {
+    public void validateUserHasAllRequiredPermissionsOnProject(String identity, String
+            projectResourceId, Set<String> permissions) {
         for (String permission : permissions) {
             //check if this permission exist in core permission table and is a project permission
-            if (("create-project".equals(permission) || "assign-create-project".equals(permission)) && "*".equals(projectId.getResourceId()) == false) {
+            if (("create-project".equals(permission) || "assign-create-project".equals(permission)) && "*".equals(projectResourceId) == false) {
                 //throw exception "create-project" and "assign-create-project" can only be assigned/revoked to *.
                 throw new InvalidAclException(String.format("%s can only be assigned to * and not individual projects.", permission));
             }
 
-            if (hasProjectPermission(identity, getRequiredPermission(permission), projectId) == false) {
+            if (hasProjectPermission(identity, getRequiredPermission(permission), projectResourceId) == false) {
                 throw new AccessDeniedException("User does not have required permissions for this operation.");
             }
         }
@@ -239,10 +215,11 @@ public class ProjectAclServiceImpl implements ProjectAclService {
         userService.getUser(identity).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Identity should be a valid user."));
     }
 
-    public void validateProject(ProjectId projectId) {
-        if (projectId.getTenantId().equalsIgnoreCase(AuthUtils.getCurrentTenantId()) == false) {
-            throw new CrossTenantOperationException("");
-        }
+    public void validateProject(String projectResourceId) {
+        ProjectId projectId = new ProjectId();
+        projectId.setTenantId(AuthUtils.getCurrentTenantId());
+        projectId.setResourceId(projectResourceId);
+
         if ("*".equalsIgnoreCase(projectId.getResourceId()) == false) {
             if (projectRepository.existsById(projectId) == false) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid project.");

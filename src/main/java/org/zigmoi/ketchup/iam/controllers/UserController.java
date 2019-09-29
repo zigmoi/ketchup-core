@@ -1,27 +1,25 @@
 package org.zigmoi.ketchup.iam.controllers;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.common.ConfigUtility;
-import org.zigmoi.ketchup.iam.services.UserService;
-
-import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.iam.dtos.UserDto;
 import org.zigmoi.ketchup.iam.dtos.UserRequestDto;
 import org.zigmoi.ketchup.iam.entities.User;
+import org.zigmoi.ketchup.iam.services.UserService;
 
 import javax.validation.Valid;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 public class UserController {
-
-    private static final Log logger = LogFactory.getLog(UserController.class);
 
     @Autowired
     private UserService userService;
@@ -46,6 +44,12 @@ public class UserController {
         return prepareUserDto(user);
     }
 
+    @GetMapping("/v1/user/my/profile")
+    public UserDto getMyProfile() {
+        User user = userService.getLoggedInUserDetails();
+        return prepareUserDto(user);
+    }
+
     @DeleteMapping("/v1/user/{username}")
     public void deleteUser(@PathVariable("username") String userName) {
         userService.deleteUser(userName);
@@ -61,15 +65,23 @@ public class UserController {
         userService.updateUserDisplayName(userName, displayName);
     }
 
+    @PutMapping("/v1/user/my/displayName/{displayName}")
+    public void updateMyDisplayName(@PathVariable("displayName") String displayName) {
+        userService.updateMyDisplayName(displayName);
+    }
+
     @GetMapping("/v1/users")
-    public Set<UserDto> listUsers() {
-        return userService.listAllUsers().stream().map(user -> {
-            return prepareUserDto(user);
-        }).collect(Collectors.toSet());
+    public List<UserDto> listUsers() {
+        return userService.listAllUsers().stream()
+                .map(user -> {
+                    return prepareUserDto(user);
+                })
+                .sorted(Comparator.comparing(UserDto::getUserName))
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/v1/user/{username}/projects")
-    public Set<ProjectId> listUserProjects(@PathVariable("username") String userName) {
+    public Set<String> listUserProjects(@PathVariable("username") String userName) {
         User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
         return user.getProjects();
     }
@@ -96,7 +108,6 @@ public class UserController {
     public UserDto prepareUserDto(User user) {
         UserDto userDto = new UserDto();
         userDto.setUserName(user.getUsername());
-        userDto.setTenantId(user.getTenantId());
         userDto.setDisplayName(user.getDisplayName());
         userDto.setEnabled(user.isEnabled());
         userDto.setEmail(user.getEmail());

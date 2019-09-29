@@ -13,6 +13,8 @@ public abstract class TenantProviderService {
     public EntityManager entityManager;
 
     public String getCurrentTenantId() {
-        return AuthUtils.getCurrentTenantId();
+        String tenantId = AuthUtils.getCurrentTenantId();
+        System.out.println("Tenant Provider fetching current tenant: " + tenantId);
+        return tenantId;
     }
 }

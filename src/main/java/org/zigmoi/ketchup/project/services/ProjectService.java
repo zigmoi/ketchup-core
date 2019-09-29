@@ -1,23 +1,30 @@
 package org.zigmoi.ketchup.project.services;
 
+import org.zigmoi.ketchup.project.dtos.ProjectDto;
 import org.zigmoi.ketchup.project.entities.Project;
 import org.zigmoi.ketchup.project.entities.ProjectId;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 public interface ProjectService {
 
+    void createProject(ProjectDto projectDto);
 
-    void addMember(ProjectId projectId, String member);
+    void deleteProject(String projectResourceId);
 
-    void removeMember(ProjectId projectId, String member);
+    void addMember(String projectResourceId, String member);
 
-    Set<String> listMembers(ProjectId projectId);
+    void removeMember(String projectResourceId, String member);
+
+    Set<String> listMembers(String projectResourceId);
 
     Set<ProjectId> findAllProjectIds();
 
-    Optional<Project> findById(ProjectId projectId);
+    List<Project> listAllProjects();
+
+    Optional<Project> findById(String projectResourceId);
 
     boolean validateProject(ProjectId projectId);
 

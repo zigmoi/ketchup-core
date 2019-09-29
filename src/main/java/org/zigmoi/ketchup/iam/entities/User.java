@@ -1,5 +1,7 @@
 package org.zigmoi.ketchup.iam.entities;
 
+import org.apache.commons.lang3.StringUtils;
+import org.hibernate.annotations.Filter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,12 +16,11 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users")
-public class User extends TenantEntity implements UserDetails {
+public class User implements UserDetails {
 
     @Id
     @NotBlank(message = "Please provide fully qualified user name with Organization Id, example: user@organization-id.")
     private String userName; //fully qualified username user@tenant example: test@zigmoi.com
-    // private String tenantId;
     private String password;
     private String displayName;
     private boolean enabled;
@@ -38,8 +39,8 @@ public class User extends TenantEntity implements UserDetails {
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "user_projects", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
-    @Column(name = "project")
-    Set<ProjectId> projects = new HashSet<>();
+    @Column(name = "project_resource_id")
+    Set<String> projects = new HashSet<>();
 
 //    @ElementCollection(fetch = FetchType.LAZY)
 //    @CollectionTable(name = "user_deployments", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
@@ -81,11 +82,7 @@ public class User extends TenantEntity implements UserDetails {
     }
 
     public String getTenantId() {
-        return tenantId;
-    }
-
-    public void setTenantId(String tenantId) {
-        this.tenantId = tenantId;
+        return StringUtils.substringAfterLast(this.userName, "@");
     }
 
     public String getPassword() {
@@ -152,11 +149,11 @@ public class User extends TenantEntity implements UserDetails {
         this.roles = roles;
     }
 
-    public Set<ProjectId> getProjects() {
+    public Set<String> getProjects() {
         return projects;
     }
 
-    public void setProjects(Set<ProjectId> projects) {
+    public void setProjects(Set<String> projects) {
         this.projects = projects;
     }
 
