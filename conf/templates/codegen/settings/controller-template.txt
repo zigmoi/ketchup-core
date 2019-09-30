@@ -1,0 +1,24 @@
+    /* ${setting-name-lower-case} apis */
+
+    @PostMapping("v1/settings/${setting-name-lower-case}")
+    public void create${setting-name-camel-case-first-upper}(HttpServletRequest servletRequest,
+                                @RequestBody @Valid ${setting-name-camel-case-first-upper}SettingsDto dto) {
+        service.create${setting-name-camel-case-first-upper}(dto);
+    }
+
+    @GetMapping("v1/settings/list-all-${setting-name-lower-case}/{projectId}")
+    public List<${setting-name-camel-case-first-upper}SettingsDto> listAll${setting-name-camel-case-first-upper}(HttpServletRequest servletRequest, @PathVariable("projectId")  String projectId) {
+        return service.listAll${setting-name-camel-case-first-upper}(projectId);
+    }
+
+    @GetMapping("v1/settings/${setting-name-lower-case}/{projectId}/{id}")
+    public Optional<${setting-name-camel-case-first-upper}SettingsDto> get${setting-name-camel-case-first-upper}(HttpServletRequest servletRequest, @PathVariable("id") String id,
+                                                       @PathVariable String projectId) {
+        return service.get${setting-name-camel-case-first-upper}(projectId, id);
+    }
+
+    @DeleteMapping("v1/settings/${setting-name-lower-case}/{projectId}/{id}")
+    public void delete${setting-name-camel-case-first-upper}(HttpServletRequest servletRequest, @PathVariable("id") String id,
+                                @PathVariable String projectId) {
+        service.delete${setting-name-camel-case-first-upper}(projectId, id);
+    }

@@ -1,8 +1,6 @@
 package org.zigmoi.ketchup.deployment.entities;
 
-
 import lombok.Data;
-import org.zigmoi.ketchup.deployment.entities.DeploymentId;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -15,4 +13,5 @@ public class DeploymentAcl {
     private String permissionId;
     private String identity;
     private DeploymentId deploymentId;
+    private String effect;
 }
