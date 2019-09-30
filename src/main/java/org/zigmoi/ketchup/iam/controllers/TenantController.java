@@ -35,7 +35,7 @@ public class TenantController {
     }
 
     @PutMapping("/v1/tenant/my/displayName/{displayName}")
-    public void updateTenantDisplayName(@PathVariable("displayName") String displayName) {
+    public void updateMyTenantDisplayName(@PathVariable("displayName") String displayName) {
         tenantService.updateMyTenantDisplayName(displayName);
     }
 
