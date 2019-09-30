@@ -7,11 +7,15 @@ import java.util.Date;
 @Data
 public class GitProviderSettingsDto {
     private String projectId;
-    private String provider;
-    private String repoListUrl, displayName;
-    private String username, password;
+    private String settingId;
+    private String displayName;
     private Date createdOn;
     private String createdBy;
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
+
+    private String provider;
+    private String repoListUrl;
+    private String username;
+    private String password;
 }

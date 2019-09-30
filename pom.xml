@@ -13,9 +13,7 @@
     <artifactId>ketchup-core</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>ketchup-core</name>
-    <description>Java based backend for k8s deployment utility.</description>
-
-    <properties>
+    <description>Java based backend for k8s deployment utility.</description><properties>
         <java.version>1.8</java.version>
     </properties>
 
@@ -99,6 +97,12 @@
             <groupId>io.kubernetes</groupId>
             <artifactId>client-java</artifactId>
             <version>4.0.0</version>
+            <exclusions>
+                <exclusion>  <!-- declare the exclusion here -->
+                    <groupId>io.sundr</groupId>
+                    <artifactId>builder-annotations</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.json/json -->
         <dependency>
@@ -134,6 +138,12 @@
             <groupId>net.openhft</groupId>
             <artifactId>zero-allocation-hashing</artifactId>
             <version>0.6</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.velocity/velocity -->
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity</artifactId>
+            <version>1.7</version>
         </dependency>
     </dependencies>
 

@@ -15,8 +15,9 @@ public class CodeGenSettings {
         String[] settings = FileUtility
                 .readDataFromFile(ConfigUtility.instance().getProperty("test.auto-gen.settings.list.path"))
                 .split("\n");
-        String data = new CodeGenSettings().generateFromTemplate(settings, "test.auto-gen.settings.template.service-interface");
 //        String data = new CodeGenSettings().generateFromTemplate(settings, "test.auto-gen.settings.template.controller");
+//        String data = new CodeGenSettings().generateFromTemplate(settings, "test.auto-gen.settings.template.service-interface");
+        String data = new CodeGenSettings().generateFromTemplate(settings, "test.auto-gen.settings.template.service-impl");
         System.out.println(data);
     }
 
@@ -37,6 +38,8 @@ public class CodeGenSettings {
         templateVars.put("setting-name", settingName);
         templateVars.put("setting-name-camel-case-first-upper", getSettingNameCamelCaseFirstUpper(settingName));
         templateVars.put("setting-name-lower-case", settingName.toLowerCase());
+        templateVars.put("setting-name-underscore-uppercase",
+                settingName.replaceAll("-", "_").toUpperCase());
         return templateVars;
     }
 

@@ -1,0 +1,18 @@
+package ${base_package}.services;
+
+import ${base_package}.dtos.settings.*;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface ProjectSettingsService {
+
+#foreach($setting in $setting_defs)
+    /* ${setting.setting_name_lower_case} services starts */
+    List<${setting.setting_name_camel_case_first_upper}SettingsDto> listAll${setting.setting_name_camel_case_first_upper}(String projectId);
+    void create${setting.setting_name_camel_case_first_upper}(${setting.setting_name_camel_case_first_upper}SettingsDto dto);
+    Optional<${setting.setting_name_camel_case_first_upper}SettingsDto> get${setting.setting_name_camel_case_first_upper}(String projectId, String id);
+    void delete${setting.setting_name_camel_case_first_upper}(String projectId, String id);
+    /* ${setting.setting_name_lower_case} services ends */
+#end
+}

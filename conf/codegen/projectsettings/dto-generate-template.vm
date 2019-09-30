@@ -1,11 +1,11 @@
-package org.zigmoi.ketchup.project.dtos.settings;
+package ${base_package}.dtos.settings;
 
 import lombok.Data;
 
 import java.util.Date;
 
 @Data
-public class ContainerRegistrySettingsDto {
+public class ${setting_name_camel_case_first_upper}SettingsDto {
 
     private String projectId;
     private String settingId;
@@ -15,8 +15,7 @@ public class ContainerRegistrySettingsDto {
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
 
-    private String provider;
-    private String cloudCredentialId;
-    private String registryId;
-    private String registryUrl;
+#foreach($field in $setting_field_defs)
+    private ${field.data_type} ${field.name};
+#end
 }

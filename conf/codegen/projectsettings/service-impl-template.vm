@@ -1,0 +1,131 @@
+package ${base_package}.services;
+
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.zigmoi.ketchup.common.TransformUtility;
+import org.zigmoi.ketchup.iam.commons.AuthUtils;
+import org.zigmoi.ketchup.iam.services.TenantProviderService;
+import ${base_package}.dtos.settings.*;
+import ${base_package}.entities.ProjectId;
+import ${base_package}.entities.ProjectSettingsEntity;
+import ${base_package}.entities.ProjectSettingsId;
+import ${base_package}.repositories.ProjectSettingsRepository;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class ProjectSettingsServiceImpl extends TenantProviderService implements ProjectSettingsService {
+
+    private final ProjectService projectService;
+    private final ProjectAclService projectAclService;
+    private final ProjectSettingsRepository projectSettingsRepository;
+
+    @Autowired
+    public ProjectSettingsServiceImpl(ProjectService projectService,
+                                      ProjectAclService projectAclService,
+                                      ProjectSettingsRepository projectSettingsRepository) {
+        this.projectService = projectService;
+        this.projectAclService = projectAclService;
+        this.projectSettingsRepository = projectSettingsRepository;
+    }
+
+#foreach($setting in $setting_defs)
+    // ${setting.setting_name_lower_case} api impl starts
+    @Override
+    public List<${setting.setting_name_camel_case_first_upper}SettingsDto> listAll${setting.setting_name_camel_case_first_upper}(String projectId) {
+        List<${setting.setting_name_camel_case_first_upper}SettingsDto> settings = new ArrayList<>();
+        for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
+                ProjectSettingsType.${setting.setting_name_underscore_uppercase}.toString())){
+            ${setting.setting_name_camel_case_first_upper}SettingsDto settingsDto = new ${setting.setting_name_camel_case_first_upper}SettingsDto();
+            settingsDto.setProjectId(settingsEntity.getId().getProjectId());
+            settingsDto.setSettingId(settingsEntity.getId().getSettingId());
+            settingsDto.setDisplayName(settingsEntity.getDisplayName());
+            convertToDto(settingsEntity, settingsDto);
+        }
+        return settings;
+    }
+
+    @Override
+    public void create${setting.setting_name_camel_case_first_upper}(${setting.setting_name_camel_case_first_upper}SettingsDto dto) {
+        ProjectId projectId = new ProjectId();
+        projectId.setTenantId(AuthUtils.getCurrentTenantId());
+        projectId.setResourceId(dto.getProjectId());
+        if (projectService.validateProject(projectId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
+                    projectId.getResourceId()));
+        }
+        ProjectSettingsEntity settingsEntity = new ProjectSettingsEntity();
+        ProjectSettingsId settingsId = new ProjectSettingsId();
+        settingsId.setTenantId(AuthUtils.getCurrentTenantId());
+        settingsId.setProjectId(dto.getProjectId());
+        settingsId.setSettingId(dto.getSettingId());
+        settingsEntity.setId(settingsId);
+        settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
+        settingsEntity.setCreatedOn(new Date());
+        settingsEntity.setDisplayName(dto.getDisplayName());
+        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
+        settingsEntity.setLastUpdatedOn(new Date());
+        settingsEntity.setType(ProjectSettingsType.${setting.setting_name_underscore_uppercase}.toString());
+        convertToEntity(dto, settingsEntity);
+        projectSettingsRepository.save(settingsEntity);
+    }
+
+    @Override
+    public Optional<${setting.setting_name_camel_case_first_upper}SettingsDto> get${setting.setting_name_camel_case_first_upper}(String projectId, String settingId) {
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        if (!settingsEntityOpt.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Setting id : %s not found for Project : %s not found.",
+                            settingId, projectId));
+        }
+        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
+        ${setting.setting_name_camel_case_first_upper}SettingsDto settingsDto = new ${setting.setting_name_camel_case_first_upper}SettingsDto();
+        settingsDto.setProjectId(settingsEntity.getId().getProjectId());
+        settingsDto.setSettingId(settingsEntity.getId().getSettingId());
+        settingsDto.setDisplayName(settingsEntity.getDisplayName());
+        convertToDto(settingsEntity, settingsDto);
+        return Optional.of(settingsDto);
+    }
+
+    @Override
+    public void delete${setting.setting_name_camel_case_first_upper}(String projectId, String settingId) {
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        if (!settingsEntityOpt.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Setting id : %s not found for Project : %s not found.",
+                            settingId, projectId));
+        }
+        projectSettingsRepository.delete(settingsEntityOpt.get());
+    }
+
+    private void convertToDto(ProjectSettingsEntity settingsEntity, ${setting.setting_name_camel_case_first_upper}SettingsDto settingsDto) {
+        JSONObject jo = new JSONObject(settingsEntity.getData());
+        #foreach($field in $setting.getFieldDefs())
+            #if(${field.data_type} == "map-string-string")
+                settingsDto.set${field.field_name_camel_case_first_upper}(TransformUtility.convertToMapStringString(jo.getJSONObject("${field.field_name_camel_case_first_lower}").toMap()));
+            #else
+                settingsDto.set${field.field_name_camel_case_first_upper}(jo.getString("${field.name}"));
+            #end
+        #end
+    }
+
+    private void convertToEntity(${setting.setting_name_camel_case_first_upper}SettingsDto settingsDto, ProjectSettingsEntity settingsEntity) {
+        JSONObject jo = new JSONObject();
+        #foreach($field in $setting.getFieldDefs())
+            #if(${field.data_type} == "map-string-string")
+                jo.put("${field.field_name_camel_case_first_lower}", new JSONObject(settingsDto.get${setting.setting_name_camel_case_first_upper}()).toString());
+            #else
+                jo.put("${field.name}", settingsDto.get${field.field_name_camel_case_first_upper}());
+            #end
+        #end
+        settingsEntity.setData(jo.toString());
+    }
+    // ${setting.setting_name_lower_case} api impl ends
+#end
+}

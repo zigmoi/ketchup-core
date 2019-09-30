@@ -1,9 +1,0 @@
-    /* ${setting-name-lower-case} services */
-
-    List<${setting-name-camel-case-first-upper}SettingsDto> listAll${setting-name-camel-case-first-upper}(String projectId);
-
-    void create${setting-name-camel-case-first-upper}(${setting-name-camel-case-first-upper}SettingsDto dto);
-
-    Optional<${setting-name-camel-case-first-upper}SettingsDto> get${setting-name-camel-case-first-upper}(String projectId, String id);
-
-    void delete${setting-name-camel-case-first-upper}(String projectId, String id);

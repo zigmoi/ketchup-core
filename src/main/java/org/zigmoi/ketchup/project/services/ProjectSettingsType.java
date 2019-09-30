@@ -16,10 +16,6 @@ public enum ProjectSettingsType {
         this.type = type;
     }
 
-    public String getType() {
-        return type;
-    }
-
     public String[] getAll() {
         return new String[]{
                 "build-tool",
@@ -29,5 +25,10 @@ public enum ProjectSettingsType {
                 "hostname-ip-mapping",
                 "kubernetes-cluster",
         };
+    }
+
+    @Override
+    public String toString() {
+        return type;
     }
 }

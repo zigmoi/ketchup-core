@@ -7,10 +7,14 @@ import java.util.Map;
 
 @Data
 public class HostnameIpMappingSettingsDto {
+
     private String projectId;
-    private Map<String, String> hostnameIPMapping;
+    private String settingId;
+    private String displayName;
     private Date createdOn;
     private String createdBy;
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
+
+    private Map<String, String> hostnameIpMapping;
 }

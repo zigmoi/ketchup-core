@@ -6,11 +6,15 @@ import java.util.Date;
 
 @Data
 public class KubernetesClusterSettingsDto {
+
     private String projectId;
-    private String provider;
-    private String fileName, fileData;
+    private String settingId;
+    private String displayName;
     private Date createdOn;
     private String createdBy;
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
+
+    private String provider;
+    private String fileName, fileData;
 }
