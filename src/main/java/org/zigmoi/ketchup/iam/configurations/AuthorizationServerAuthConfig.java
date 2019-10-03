@@ -45,7 +45,7 @@ public class AuthorizationServerAuthConfig extends WebSecurityConfigurerAdapter 
 	
 	@Override
 	public void configure(WebSecurity web) throws Exception {
-	    web.ignoring().antMatchers("/public/**", "/error**", "/actuator**", "/favicon.ico");
+	    web.ignoring().antMatchers("/public/**", "/error**", "/actuator**", "/favicon.ico", "/v2/api-docs", "/configuration/**", "/swagger-resources/**",  "/swagger-ui.html", "/webjars/**", "/api-docs/**");
 	}
 	
 

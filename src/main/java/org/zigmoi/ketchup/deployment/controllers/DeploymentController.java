@@ -29,7 +29,7 @@ public class DeploymentController {
     }
 
     @PreAuthorize("hasAnyRole('ROLE_PROJECT_MEMBER')")
-    @PutMapping("/v1/tenant/{id}/displayName/{displayName}")
+    @PutMapping("/v1/deployment/{id}/displayName/{displayName}")
     public void updateDeploymentDisplayName(@PathVariable("id") String deploymentId, @PathVariable("displayName") String displayName) {
         deploymentService.updateDeploymentDisplayName(deploymentId, displayName);
     }

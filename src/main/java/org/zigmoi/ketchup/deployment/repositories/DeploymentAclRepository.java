@@ -16,11 +16,11 @@ public interface DeploymentAclRepository extends JpaRepository<DeploymentAcl, St
 
     long deleteAllByIdentityAndPermissionIdAndDeploymentIdAndEffect(String identity, String permissionId, DeploymentId DeploymentId, String effect);
 
-    @Query("SELECT distinct p.identity from DeploymentAcl p where p.effect = :effect and p.DeploymentId in :DeploymentIds")
-    Set<String> findAllMembersByEffectAndDeploymentIdIn(String effect, List<DeploymentId> DeploymentIds);
-
-    @Query("SELECT distinct p.DeploymentId from DeploymentAcl p where p.identity =:identity and p.effect = :effect")
-    Set<DeploymentId> findAllDeploymentsByIdentityAndEffect(String identity, String effect);
+//    @Query("SELECT distinct p.identity from DeploymentAcl p where p.effect = :effect and p.DeploymentId in :DeploymentIds")
+//    Set<String> findAllMembersByEffectAndDeploymentIdIn(String effect, List<DeploymentId> DeploymentIds);
+//
+//    @Query("SELECT distinct p.DeploymentId from DeploymentAcl p where p.identity =:identity and p.effect = :effect")
+//    Set<DeploymentId> findAllDeploymentsByIdentityAndEffect(String identity, String effect);
 
 //    @Query("delete from DeploymentAcl p where p.DeploymentId.resourceId <> '*' and  p.identity =:identity and  p.permissionId =:permissionId and p.effect = 'ALLOW'")
 //    void deleteExtraAllowAcls(String identity, String permissionId);
