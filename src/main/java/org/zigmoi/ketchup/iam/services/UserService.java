@@ -28,4 +28,8 @@ public interface UserService {
     void addProject(String userName, String projectResourceId);
 
     void removeProject(String userName, String projectResourceId);
+
+    void addRole(String userName, String role);
+
+    void removeRole(String userName, String role);
 }

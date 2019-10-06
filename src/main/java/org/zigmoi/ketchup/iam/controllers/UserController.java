@@ -65,6 +65,16 @@ public class UserController {
         userService.updateUserDisplayName(userName, displayName);
     }
 
+    @PutMapping("/v1/user/{username}/role/{roleName}/add")
+    public void addRole(@PathVariable("username") String userName, @PathVariable("roleName") String roleName) {
+        userService.addRole(userName, roleName);
+    }
+
+    @PutMapping("/v1/user/{username}/role/{roleName}/remove")
+    public void removeRole(@PathVariable("username") String userName, @PathVariable("roleName") String roleName) {
+        userService.removeRole(userName, roleName);
+    }
+
     @PutMapping("/v1/user/my/displayName/{displayName}")
     public void updateMyDisplayName(@PathVariable("displayName") String displayName) {
         userService.updateMyDisplayName(displayName);
@@ -84,6 +94,12 @@ public class UserController {
     public Set<String> listUserProjects(@PathVariable("username") String userName) {
         User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
         return user.getProjects();
+    }
+
+    @GetMapping("/v1/user/{username}/roles")
+    public Set<String> listUserRoles(@PathVariable("username") String userName) {
+        User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
+        return user.getRoles();
     }
 
 //    @GetMapping("/v1/user/{username}/globalSettings")

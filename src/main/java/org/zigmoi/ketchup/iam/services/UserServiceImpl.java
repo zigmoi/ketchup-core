@@ -170,7 +170,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         User user = userRepository.findById(userName).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
         Set<String> userProjects = user.getProjects();
-        if (userProjects.contains(projectResourceId)) {
+        if (userProjects.contains(projectResourceId) == false) {
             userProjects.add(projectResourceId);
             user.setProjects(userProjects);
             userRepository.save(user);
@@ -187,6 +187,36 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         if (userProjects.contains(projectResourceId)) {
             userProjects.remove(projectResourceId);
             user.setProjects(userProjects);
+            userRepository.save(user);
+        }
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
+    public void addRole(String userName, String role) {
+        validateTenantId(userName);
+        User user = userRepository.findById(userName).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
+        Set<String> userRoles = user.getRoles();
+        if (userRoles.contains(role) == false) {
+            userRoles.add(role);
+            user.setRoles(userRoles);
+            userRepository.save(user);
+        }
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
+    public void removeRole(String userName, String role) {
+        validateTenantId(userName);
+        User user = userRepository.findById(userName).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
+        Set<String> userRoles = user.getRoles();
+        if (userRoles.contains(role)) {
+            userRoles.remove(role);
+            user.setRoles(userRoles);
             userRepository.save(user);
         }
     }
