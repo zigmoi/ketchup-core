@@ -3,9 +3,10 @@ package org.zigmoi.ketchup.project.dtos.settings;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.Map;
 
 @Data
-public class KubernetesClusterSettingsDto {
+public class HostnameIpMappingSettingsResponseDto {
 
     private String projectId;
     private String settingId;
@@ -15,6 +16,5 @@ public class KubernetesClusterSettingsDto {
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
 
-    private String provider;
-    private String fileName, fileData;
+    private Map<String, String> hostnameIpMapping;
 }

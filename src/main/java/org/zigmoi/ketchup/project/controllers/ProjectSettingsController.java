@@ -9,7 +9,6 @@ import org.zigmoi.ketchup.project.services.ProjectSettingsService;
 
 import javax.validation.Valid;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 public class ProjectSettingsController {
@@ -21,17 +20,17 @@ public class ProjectSettingsController {
 
     /* container-registry api starts */
     @PostMapping("v1/settings/container-registry")
-    public void createContainerRegistry(@RequestBody @Valid ContainerRegistrySettingsDto dto) {
+    public void createContainerRegistry(@RequestBody @Valid ContainerRegistrySettingsRequestDto dto) {
         service.createContainerRegistry(dto);
     }
 
     @GetMapping("v1/settings/list-all-container-registry/{projectId}")
-    public List<ContainerRegistrySettingsDto> listAllContainerRegistry(@PathVariable("projectId")  String projectId) {
+    public List<ContainerRegistrySettingsResponseDto> listAllContainerRegistry(@PathVariable("projectId")  String projectId) {
         return service.listAllContainerRegistry(projectId);
     }
 
     @GetMapping("v1/settings/container-registry/{projectId}/{settingId}")
-    public Optional<ContainerRegistrySettingsDto> getContainerRegistry(@PathVariable String settingId, @PathVariable String projectId) {
+    public ContainerRegistrySettingsResponseDto getContainerRegistry(@PathVariable String settingId, @PathVariable String projectId) {
         return service.getContainerRegistry(projectId, settingId);
     }
 
@@ -42,17 +41,17 @@ public class ProjectSettingsController {
     /* container-registry api ends */
     /* kubernetes-cluster api starts */
     @PostMapping("v1/settings/kubernetes-cluster")
-    public void createKubernetesCluster(@RequestBody @Valid KubernetesClusterSettingsDto dto) {
+    public void createKubernetesCluster(@RequestBody @Valid KubernetesClusterSettingsRequestDto dto) {
         service.createKubernetesCluster(dto);
     }
 
     @GetMapping("v1/settings/list-all-kubernetes-cluster/{projectId}")
-    public List<KubernetesClusterSettingsDto> listAllKubernetesCluster(@PathVariable("projectId")  String projectId) {
+    public List<KubernetesClusterSettingsResponseDto> listAllKubernetesCluster(@PathVariable("projectId")  String projectId) {
         return service.listAllKubernetesCluster(projectId);
     }
 
     @GetMapping("v1/settings/kubernetes-cluster/{projectId}/{settingId}")
-    public Optional<KubernetesClusterSettingsDto> getKubernetesCluster(@PathVariable String settingId, @PathVariable String projectId) {
+    public KubernetesClusterSettingsResponseDto getKubernetesCluster(@PathVariable String settingId, @PathVariable String projectId) {
         return service.getKubernetesCluster(projectId, settingId);
     }
 
@@ -63,17 +62,17 @@ public class ProjectSettingsController {
     /* kubernetes-cluster api ends */
     /* build-tool api starts */
     @PostMapping("v1/settings/build-tool")
-    public void createBuildTool(@RequestBody @Valid BuildToolSettingsDto dto) {
+    public void createBuildTool(@RequestBody @Valid BuildToolSettingsRequestDto dto) {
         service.createBuildTool(dto);
     }
 
     @GetMapping("v1/settings/list-all-build-tool/{projectId}")
-    public List<BuildToolSettingsDto> listAllBuildTool(@PathVariable("projectId")  String projectId) {
+    public List<BuildToolSettingsResponseDto> listAllBuildTool(@PathVariable("projectId")  String projectId) {
         return service.listAllBuildTool(projectId);
     }
 
     @GetMapping("v1/settings/build-tool/{projectId}/{settingId}")
-    public Optional<BuildToolSettingsDto> getBuildTool(@PathVariable String settingId, @PathVariable String projectId) {
+    public BuildToolSettingsResponseDto getBuildTool(@PathVariable String settingId, @PathVariable String projectId) {
         return service.getBuildTool(projectId, settingId);
     }
 
@@ -84,17 +83,17 @@ public class ProjectSettingsController {
     /* build-tool api ends */
     /* git-provider api starts */
     @PostMapping("v1/settings/git-provider")
-    public void createGitProvider(@RequestBody @Valid GitProviderSettingsDto dto) {
+    public void createGitProvider(@RequestBody @Valid GitProviderSettingsRequestDto dto) {
         service.createGitProvider(dto);
     }
 
     @GetMapping("v1/settings/list-all-git-provider/{projectId}")
-    public List<GitProviderSettingsDto> listAllGitProvider(@PathVariable("projectId")  String projectId) {
+    public List<GitProviderSettingsResponseDto> listAllGitProvider(@PathVariable("projectId")  String projectId) {
         return service.listAllGitProvider(projectId);
     }
 
     @GetMapping("v1/settings/git-provider/{projectId}/{settingId}")
-    public Optional<GitProviderSettingsDto> getGitProvider(@PathVariable String settingId, @PathVariable String projectId) {
+    public GitProviderSettingsResponseDto getGitProvider(@PathVariable String settingId, @PathVariable String projectId) {
         return service.getGitProvider(projectId, settingId);
     }
 
@@ -105,17 +104,17 @@ public class ProjectSettingsController {
     /* git-provider api ends */
     /* hostname-ip-mapping api starts */
     @PostMapping("v1/settings/hostname-ip-mapping")
-    public void createHostnameIpMapping(@RequestBody @Valid HostnameIpMappingSettingsDto dto) {
+    public void createHostnameIpMapping(@RequestBody @Valid HostnameIpMappingSettingsRequestDto dto) {
         service.createHostnameIpMapping(dto);
     }
 
     @GetMapping("v1/settings/list-all-hostname-ip-mapping/{projectId}")
-    public List<HostnameIpMappingSettingsDto> listAllHostnameIpMapping(@PathVariable("projectId")  String projectId) {
+    public List<HostnameIpMappingSettingsResponseDto> listAllHostnameIpMapping(@PathVariable("projectId")  String projectId) {
         return service.listAllHostnameIpMapping(projectId);
     }
 
     @GetMapping("v1/settings/hostname-ip-mapping/{projectId}/{settingId}")
-    public Optional<HostnameIpMappingSettingsDto> getHostnameIpMapping(@PathVariable String settingId, @PathVariable String projectId) {
+    public HostnameIpMappingSettingsResponseDto getHostnameIpMapping(@PathVariable String settingId, @PathVariable String projectId) {
         return service.getHostnameIpMapping(projectId, settingId);
     }
 
@@ -126,17 +125,17 @@ public class ProjectSettingsController {
     /* hostname-ip-mapping api ends */
     /* cloud-provider api starts */
     @PostMapping("v1/settings/cloud-provider")
-    public void createCloudProvider(@RequestBody @Valid CloudProviderSettingsDto dto) {
+    public void createCloudProvider(@RequestBody @Valid CloudProviderSettingsRequestDto dto) {
         service.createCloudProvider(dto);
     }
 
     @GetMapping("v1/settings/list-all-cloud-provider/{projectId}")
-    public List<CloudProviderSettingsDto> listAllCloudProvider(@PathVariable("projectId")  String projectId) {
+    public List<CloudProviderSettingsResponseDto> listAllCloudProvider(@PathVariable("projectId")  String projectId) {
         return service.listAllCloudProvider(projectId);
     }
 
     @GetMapping("v1/settings/cloud-provider/{projectId}/{settingId}")
-    public Optional<CloudProviderSettingsDto> getCloudProvider(@PathVariable String settingId, @PathVariable String projectId) {
+    public CloudProviderSettingsResponseDto getCloudProvider(@PathVariable String settingId, @PathVariable String projectId) {
         return service.getCloudProvider(projectId, settingId);
     }
 

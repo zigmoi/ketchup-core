@@ -1,6 +1,0 @@
-build-tool
-cloud-provider
-container-registry
-git-provider
-hostname-ip-mapping
-kubernetes-cluster

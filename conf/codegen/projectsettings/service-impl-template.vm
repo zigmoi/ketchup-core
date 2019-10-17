@@ -14,10 +14,7 @@ import ${base_package}.entities.ProjectSettingsEntity;
 import ${base_package}.entities.ProjectSettingsId;
 import ${base_package}.repositories.ProjectSettingsRepository;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class ProjectSettingsServiceImpl extends TenantProviderService implements ProjectSettingsService {
@@ -38,25 +35,30 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 #foreach($setting in $setting_defs)
     // ${setting.setting_name_lower_case} api impl starts
     @Override
-    public List<${setting.setting_name_camel_case_first_upper}SettingsDto> listAll${setting.setting_name_camel_case_first_upper}(String projectId) {
-        List<${setting.setting_name_camel_case_first_upper}SettingsDto> settings = new ArrayList<>();
+    public List<${setting.setting_name_camel_case_first_upper}SettingsResponseDto> listAll${setting.setting_name_camel_case_first_upper}(String projectId) {
+        List<${setting.setting_name_camel_case_first_upper}SettingsResponseDto> settings = new ArrayList<>();
         for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
                 ProjectSettingsType.${setting.setting_name_underscore_uppercase}.toString())){
-            ${setting.setting_name_camel_case_first_upper}SettingsDto settingsDto = new ${setting.setting_name_camel_case_first_upper}SettingsDto();
+            ${setting.setting_name_camel_case_first_upper}SettingsResponseDto settingsDto = new ${setting.setting_name_camel_case_first_upper}SettingsResponseDto();
             settingsDto.setProjectId(settingsEntity.getId().getProjectId());
             settingsDto.setSettingId(settingsEntity.getId().getSettingId());
             settingsDto.setDisplayName(settingsEntity.getDisplayName());
+            settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+            settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+            settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+            settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
             convertToDto(settingsEntity, settingsDto);
-        }
+            settings.add(settingsDto);
+    }
         return settings;
     }
 
     @Override
-    public void create${setting.setting_name_camel_case_first_upper}(${setting.setting_name_camel_case_first_upper}SettingsDto dto) {
+    public void create${setting.setting_name_camel_case_first_upper}(${setting.setting_name_camel_case_first_upper}SettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(dto.getProjectId());
-        if (projectService.validateProject(projectId)) {
+        if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
         }
@@ -64,7 +66,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         ProjectSettingsId settingsId = new ProjectSettingsId();
         settingsId.setTenantId(AuthUtils.getCurrentTenantId());
         settingsId.setProjectId(dto.getProjectId());
-        settingsId.setSettingId(dto.getSettingId());
+        settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
         settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
         settingsEntity.setCreatedOn(new Date());
@@ -77,7 +79,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
-    public Optional<${setting.setting_name_camel_case_first_upper}SettingsDto> get${setting.setting_name_camel_case_first_upper}(String projectId, String settingId) {
+    public ${setting.setting_name_camel_case_first_upper}SettingsResponseDto get${setting.setting_name_camel_case_first_upper}(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -85,12 +87,16 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
                             settingId, projectId));
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        ${setting.setting_name_camel_case_first_upper}SettingsDto settingsDto = new ${setting.setting_name_camel_case_first_upper}SettingsDto();
+        ${setting.setting_name_camel_case_first_upper}SettingsResponseDto settingsDto = new ${setting.setting_name_camel_case_first_upper}SettingsResponseDto();
         settingsDto.setProjectId(settingsEntity.getId().getProjectId());
         settingsDto.setSettingId(settingsEntity.getId().getSettingId());
         settingsDto.setDisplayName(settingsEntity.getDisplayName());
+        settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+        settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+        settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+        settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
-        return Optional.of(settingsDto);
+        return settingsDto;
     }
 
     @Override
@@ -104,7 +110,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         projectSettingsRepository.delete(settingsEntityOpt.get());
     }
 
-    private void convertToDto(ProjectSettingsEntity settingsEntity, ${setting.setting_name_camel_case_first_upper}SettingsDto settingsDto) {
+    private void convertToDto(ProjectSettingsEntity settingsEntity, ${setting.setting_name_camel_case_first_upper}SettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
         #foreach($field in $setting.getFieldDefs())
             #if(${field.data_type} == "map-string-string")
@@ -115,7 +121,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         #end
     }
 
-    private void convertToEntity(${setting.setting_name_camel_case_first_upper}SettingsDto settingsDto, ProjectSettingsEntity settingsEntity) {
+    private void convertToEntity(${setting.setting_name_camel_case_first_upper}SettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
         #foreach($field in $setting.getFieldDefs())
             #if(${field.data_type} == "map-string-string")
@@ -128,4 +134,8 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
     // ${setting.setting_name_lower_case} api impl ends
 #end
+
+    private static String getNewSettingId() {
+        return UUID.randomUUID().toString();
+    }
 }

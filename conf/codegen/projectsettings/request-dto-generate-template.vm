@@ -1,0 +1,16 @@
+package ${base_package}.dtos.settings;
+
+import lombok.Data;
+
+import java.util.Date;
+
+@Data
+public class ${setting_name_camel_case_first_upper}SettingsRequestDto {
+
+    private String projectId;
+    private String displayName;
+
+#foreach($field in $setting_field_defs)
+    private ${field.data_type_java} ${field.name};
+#end
+}

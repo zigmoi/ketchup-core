@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-public class ContainerRegistrySettingsDto {
+public class ContainerRegistrySettingsResponseDto {
 
     private String projectId;
     private String settingId;

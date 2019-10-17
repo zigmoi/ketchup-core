@@ -3,44 +3,43 @@ package org.zigmoi.ketchup.project.services;
 import org.zigmoi.ketchup.project.dtos.settings.*;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface ProjectSettingsService {
 
     /* container-registry services starts */
-    List<ContainerRegistrySettingsDto> listAllContainerRegistry(String projectId);
-    void createContainerRegistry(ContainerRegistrySettingsDto dto);
-    Optional<ContainerRegistrySettingsDto> getContainerRegistry(String projectId, String id);
-    void deleteContainerRegistry(String projectId, String id);
+    List<ContainerRegistrySettingsResponseDto> listAllContainerRegistry(String projectId);
+    void createContainerRegistry(ContainerRegistrySettingsRequestDto dto);
+    ContainerRegistrySettingsResponseDto getContainerRegistry(String projectId, String settingId);
+    void deleteContainerRegistry(String projectId, String settingId);
     /* container-registry services ends */
     /* kubernetes-cluster services starts */
-    List<KubernetesClusterSettingsDto> listAllKubernetesCluster(String projectId);
-    void createKubernetesCluster(KubernetesClusterSettingsDto dto);
-    Optional<KubernetesClusterSettingsDto> getKubernetesCluster(String projectId, String id);
-    void deleteKubernetesCluster(String projectId, String id);
+    List<KubernetesClusterSettingsResponseDto> listAllKubernetesCluster(String projectId);
+    void createKubernetesCluster(KubernetesClusterSettingsRequestDto dto);
+    KubernetesClusterSettingsResponseDto getKubernetesCluster(String projectId, String settingId);
+    void deleteKubernetesCluster(String projectId, String settingId);
     /* kubernetes-cluster services ends */
     /* build-tool services starts */
-    List<BuildToolSettingsDto> listAllBuildTool(String projectId);
-    void createBuildTool(BuildToolSettingsDto dto);
-    Optional<BuildToolSettingsDto> getBuildTool(String projectId, String id);
-    void deleteBuildTool(String projectId, String id);
+    List<BuildToolSettingsResponseDto> listAllBuildTool(String projectId);
+    void createBuildTool(BuildToolSettingsRequestDto dto);
+    BuildToolSettingsResponseDto getBuildTool(String projectId, String settingId);
+    void deleteBuildTool(String projectId, String settingId);
     /* build-tool services ends */
     /* git-provider services starts */
-    List<GitProviderSettingsDto> listAllGitProvider(String projectId);
-    void createGitProvider(GitProviderSettingsDto dto);
-    Optional<GitProviderSettingsDto> getGitProvider(String projectId, String id);
-    void deleteGitProvider(String projectId, String id);
+    List<GitProviderSettingsResponseDto> listAllGitProvider(String projectId);
+    void createGitProvider(GitProviderSettingsRequestDto dto);
+    GitProviderSettingsResponseDto getGitProvider(String projectId, String settingId);
+    void deleteGitProvider(String projectId, String settingId);
     /* git-provider services ends */
     /* hostname-ip-mapping services starts */
-    List<HostnameIpMappingSettingsDto> listAllHostnameIpMapping(String projectId);
-    void createHostnameIpMapping(HostnameIpMappingSettingsDto dto);
-    Optional<HostnameIpMappingSettingsDto> getHostnameIpMapping(String projectId, String id);
-    void deleteHostnameIpMapping(String projectId, String id);
+    List<HostnameIpMappingSettingsResponseDto> listAllHostnameIpMapping(String projectId);
+    void createHostnameIpMapping(HostnameIpMappingSettingsRequestDto dto);
+    HostnameIpMappingSettingsResponseDto getHostnameIpMapping(String projectId, String settingId);
+    void deleteHostnameIpMapping(String projectId, String settingId);
     /* hostname-ip-mapping services ends */
     /* cloud-provider services starts */
-    List<CloudProviderSettingsDto> listAllCloudProvider(String projectId);
-    void createCloudProvider(CloudProviderSettingsDto dto);
-    Optional<CloudProviderSettingsDto> getCloudProvider(String projectId, String id);
-    void deleteCloudProvider(String projectId, String id);
+    List<CloudProviderSettingsResponseDto> listAllCloudProvider(String projectId);
+    void createCloudProvider(CloudProviderSettingsRequestDto dto);
+    CloudProviderSettingsResponseDto getCloudProvider(String projectId, String settingId);
+    void deleteCloudProvider(String projectId, String settingId);
     /* cloud-provider services ends */
 }

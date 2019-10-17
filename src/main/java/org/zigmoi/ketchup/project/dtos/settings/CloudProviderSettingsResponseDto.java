@@ -1,11 +1,11 @@
-package ${base_package}.dtos.settings;
+package org.zigmoi.ketchup.project.dtos.settings;
 
 import lombok.Data;
 
 import java.util.Date;
 
 @Data
-public class ${setting_name_camel_case_first_upper}SettingsDto {
+public class CloudProviderSettingsResponseDto {
 
     private String projectId;
     private String settingId;
@@ -15,7 +15,7 @@ public class ${setting_name_camel_case_first_upper}SettingsDto {
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
 
-#foreach($field in $setting_field_defs)
-    private ${field.data_type} ${field.name};
-#end
+    private String provider;
+    private String accessId;
+    private String secretKey;
 }

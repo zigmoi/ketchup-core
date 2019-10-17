@@ -14,10 +14,7 @@ import org.zigmoi.ketchup.project.entities.ProjectSettingsEntity;
 import org.zigmoi.ketchup.project.entities.ProjectSettingsId;
 import org.zigmoi.ketchup.project.repositories.ProjectSettingsRepository;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class ProjectSettingsServiceImpl extends TenantProviderService implements ProjectSettingsService {
@@ -37,25 +34,30 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     // container-registry api impl starts
     @Override
-    public List<ContainerRegistrySettingsDto> listAllContainerRegistry(String projectId) {
-        List<ContainerRegistrySettingsDto> settings = new ArrayList<>();
+    public List<ContainerRegistrySettingsResponseDto> listAllContainerRegistry(String projectId) {
+        List<ContainerRegistrySettingsResponseDto> settings = new ArrayList<>();
         for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
                 ProjectSettingsType.CONTAINER_REGISTRY.toString())){
-            ContainerRegistrySettingsDto settingsDto = new ContainerRegistrySettingsDto();
+            ContainerRegistrySettingsResponseDto settingsDto = new ContainerRegistrySettingsResponseDto();
             settingsDto.setProjectId(settingsEntity.getId().getProjectId());
             settingsDto.setSettingId(settingsEntity.getId().getSettingId());
             settingsDto.setDisplayName(settingsEntity.getDisplayName());
+            settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+            settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+            settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+            settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
             convertToDto(settingsEntity, settingsDto);
+            settings.add(settingsDto);
         }
         return settings;
     }
 
     @Override
-    public void createContainerRegistry(ContainerRegistrySettingsDto dto) {
+    public void createContainerRegistry(ContainerRegistrySettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(dto.getProjectId());
-        if (projectService.validateProject(projectId)) {
+        if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
         }
@@ -63,7 +65,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         ProjectSettingsId settingsId = new ProjectSettingsId();
         settingsId.setTenantId(AuthUtils.getCurrentTenantId());
         settingsId.setProjectId(dto.getProjectId());
-        settingsId.setSettingId(dto.getSettingId());
+        settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
         settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
         settingsEntity.setCreatedOn(new Date());
@@ -76,7 +78,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
-    public Optional<ContainerRegistrySettingsDto> getContainerRegistry(String projectId, String settingId) {
+    public ContainerRegistrySettingsResponseDto getContainerRegistry(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -84,12 +86,16 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
                             settingId, projectId));
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        ContainerRegistrySettingsDto settingsDto = new ContainerRegistrySettingsDto();
+        ContainerRegistrySettingsResponseDto settingsDto = new ContainerRegistrySettingsResponseDto();
         settingsDto.setProjectId(settingsEntity.getId().getProjectId());
         settingsDto.setSettingId(settingsEntity.getId().getSettingId());
         settingsDto.setDisplayName(settingsEntity.getDisplayName());
+        settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+        settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+        settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+        settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
-        return Optional.of(settingsDto);
+        return settingsDto;
     }
 
     @Override
@@ -103,7 +109,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         projectSettingsRepository.delete(settingsEntityOpt.get());
     }
 
-    private void convertToDto(ProjectSettingsEntity settingsEntity, ContainerRegistrySettingsDto settingsDto) {
+    private void convertToDto(ProjectSettingsEntity settingsEntity, ContainerRegistrySettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
         settingsDto.setProvider(jo.getString("provider"));
         settingsDto.setCloudCredentialId(jo.getString("cloudCredentialId"));
@@ -111,7 +117,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsDto.setRegistryUrl(jo.getString("registryUrl"));
     }
 
-    private void convertToEntity(ContainerRegistrySettingsDto settingsDto, ProjectSettingsEntity settingsEntity) {
+    private void convertToEntity(ContainerRegistrySettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
         jo.put("provider", settingsDto.getProvider());
         jo.put("cloudCredentialId", settingsDto.getCloudCredentialId());
@@ -122,25 +128,30 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     // container-registry api impl ends
     // kubernetes-cluster api impl starts
     @Override
-    public List<KubernetesClusterSettingsDto> listAllKubernetesCluster(String projectId) {
-        List<KubernetesClusterSettingsDto> settings = new ArrayList<>();
+    public List<KubernetesClusterSettingsResponseDto> listAllKubernetesCluster(String projectId) {
+        List<KubernetesClusterSettingsResponseDto> settings = new ArrayList<>();
         for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
                 ProjectSettingsType.KUBERNETES_CLUSTER.toString())){
-            KubernetesClusterSettingsDto settingsDto = new KubernetesClusterSettingsDto();
+            KubernetesClusterSettingsResponseDto settingsDto = new KubernetesClusterSettingsResponseDto();
             settingsDto.setProjectId(settingsEntity.getId().getProjectId());
             settingsDto.setSettingId(settingsEntity.getId().getSettingId());
             settingsDto.setDisplayName(settingsEntity.getDisplayName());
+            settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+            settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+            settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+            settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
             convertToDto(settingsEntity, settingsDto);
+            settings.add(settingsDto);
         }
         return settings;
     }
 
     @Override
-    public void createKubernetesCluster(KubernetesClusterSettingsDto dto) {
+    public void createKubernetesCluster(KubernetesClusterSettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(dto.getProjectId());
-        if (projectService.validateProject(projectId)) {
+        if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
         }
@@ -148,7 +159,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         ProjectSettingsId settingsId = new ProjectSettingsId();
         settingsId.setTenantId(AuthUtils.getCurrentTenantId());
         settingsId.setProjectId(dto.getProjectId());
-        settingsId.setSettingId(dto.getSettingId());
+        settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
         settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
         settingsEntity.setCreatedOn(new Date());
@@ -161,7 +172,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
-    public Optional<KubernetesClusterSettingsDto> getKubernetesCluster(String projectId, String settingId) {
+    public KubernetesClusterSettingsResponseDto getKubernetesCluster(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -169,12 +180,16 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
                             settingId, projectId));
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        KubernetesClusterSettingsDto settingsDto = new KubernetesClusterSettingsDto();
+        KubernetesClusterSettingsResponseDto settingsDto = new KubernetesClusterSettingsResponseDto();
         settingsDto.setProjectId(settingsEntity.getId().getProjectId());
         settingsDto.setSettingId(settingsEntity.getId().getSettingId());
         settingsDto.setDisplayName(settingsEntity.getDisplayName());
+        settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+        settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+        settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+        settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
-        return Optional.of(settingsDto);
+        return settingsDto;
     }
 
     @Override
@@ -188,14 +203,14 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         projectSettingsRepository.delete(settingsEntityOpt.get());
     }
 
-    private void convertToDto(ProjectSettingsEntity settingsEntity, KubernetesClusterSettingsDto settingsDto) {
+    private void convertToDto(ProjectSettingsEntity settingsEntity, KubernetesClusterSettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
         settingsDto.setProvider(jo.getString("provider"));
         settingsDto.setFileName(jo.getString("fileName"));
         settingsDto.setFileData(jo.getString("fileData"));
     }
 
-    private void convertToEntity(KubernetesClusterSettingsDto settingsDto, ProjectSettingsEntity settingsEntity) {
+    private void convertToEntity(KubernetesClusterSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
         jo.put("provider", settingsDto.getProvider());
         jo.put("fileName", settingsDto.getFileName());
@@ -205,25 +220,30 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     // kubernetes-cluster api impl ends
     // build-tool api impl starts
     @Override
-    public List<BuildToolSettingsDto> listAllBuildTool(String projectId) {
-        List<BuildToolSettingsDto> settings = new ArrayList<>();
+    public List<BuildToolSettingsResponseDto> listAllBuildTool(String projectId) {
+        List<BuildToolSettingsResponseDto> settings = new ArrayList<>();
         for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
                 ProjectSettingsType.BUILD_TOOL.toString())){
-            BuildToolSettingsDto settingsDto = new BuildToolSettingsDto();
+            BuildToolSettingsResponseDto settingsDto = new BuildToolSettingsResponseDto();
             settingsDto.setProjectId(settingsEntity.getId().getProjectId());
             settingsDto.setSettingId(settingsEntity.getId().getSettingId());
             settingsDto.setDisplayName(settingsEntity.getDisplayName());
+            settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+            settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+            settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+            settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
             convertToDto(settingsEntity, settingsDto);
+            settings.add(settingsDto);
         }
         return settings;
     }
 
     @Override
-    public void createBuildTool(BuildToolSettingsDto dto) {
+    public void createBuildTool(BuildToolSettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(dto.getProjectId());
-        if (projectService.validateProject(projectId)) {
+        if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
         }
@@ -231,7 +251,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         ProjectSettingsId settingsId = new ProjectSettingsId();
         settingsId.setTenantId(AuthUtils.getCurrentTenantId());
         settingsId.setProjectId(dto.getProjectId());
-        settingsId.setSettingId(dto.getSettingId());
+        settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
         settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
         settingsEntity.setCreatedOn(new Date());
@@ -244,7 +264,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
-    public Optional<BuildToolSettingsDto> getBuildTool(String projectId, String settingId) {
+    public BuildToolSettingsResponseDto getBuildTool(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -252,12 +272,16 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
                             settingId, projectId));
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        BuildToolSettingsDto settingsDto = new BuildToolSettingsDto();
+        BuildToolSettingsResponseDto settingsDto = new BuildToolSettingsResponseDto();
         settingsDto.setProjectId(settingsEntity.getId().getProjectId());
         settingsDto.setSettingId(settingsEntity.getId().getSettingId());
         settingsDto.setDisplayName(settingsEntity.getDisplayName());
+        settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+        settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+        settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+        settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
-        return Optional.of(settingsDto);
+        return settingsDto;
     }
 
     @Override
@@ -271,14 +295,14 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         projectSettingsRepository.delete(settingsEntityOpt.get());
     }
 
-    private void convertToDto(ProjectSettingsEntity settingsEntity, BuildToolSettingsDto settingsDto) {
+    private void convertToDto(ProjectSettingsEntity settingsEntity, BuildToolSettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
         settingsDto.setProvider(jo.getString("provider"));
         settingsDto.setFileName(jo.getString("fileName"));
         settingsDto.setFileData(jo.getString("fileData"));
     }
 
-    private void convertToEntity(BuildToolSettingsDto settingsDto, ProjectSettingsEntity settingsEntity) {
+    private void convertToEntity(BuildToolSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
         jo.put("provider", settingsDto.getProvider());
         jo.put("fileName", settingsDto.getFileName());
@@ -288,25 +312,30 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     // build-tool api impl ends
     // git-provider api impl starts
     @Override
-    public List<GitProviderSettingsDto> listAllGitProvider(String projectId) {
-        List<GitProviderSettingsDto> settings = new ArrayList<>();
+    public List<GitProviderSettingsResponseDto> listAllGitProvider(String projectId) {
+        List<GitProviderSettingsResponseDto> settings = new ArrayList<>();
         for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
                 ProjectSettingsType.GIT_PROVIDER.toString())){
-            GitProviderSettingsDto settingsDto = new GitProviderSettingsDto();
+            GitProviderSettingsResponseDto settingsDto = new GitProviderSettingsResponseDto();
             settingsDto.setProjectId(settingsEntity.getId().getProjectId());
             settingsDto.setSettingId(settingsEntity.getId().getSettingId());
             settingsDto.setDisplayName(settingsEntity.getDisplayName());
+            settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+            settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+            settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+            settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
             convertToDto(settingsEntity, settingsDto);
+            settings.add(settingsDto);
         }
         return settings;
     }
 
     @Override
-    public void createGitProvider(GitProviderSettingsDto dto) {
+    public void createGitProvider(GitProviderSettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(dto.getProjectId());
-        if (projectService.validateProject(projectId)) {
+        if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
         }
@@ -314,7 +343,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         ProjectSettingsId settingsId = new ProjectSettingsId();
         settingsId.setTenantId(AuthUtils.getCurrentTenantId());
         settingsId.setProjectId(dto.getProjectId());
-        settingsId.setSettingId(dto.getSettingId());
+        settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
         settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
         settingsEntity.setCreatedOn(new Date());
@@ -327,7 +356,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
-    public Optional<GitProviderSettingsDto> getGitProvider(String projectId, String settingId) {
+    public GitProviderSettingsResponseDto getGitProvider(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -335,12 +364,16 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
                             settingId, projectId));
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        GitProviderSettingsDto settingsDto = new GitProviderSettingsDto();
+        GitProviderSettingsResponseDto settingsDto = new GitProviderSettingsResponseDto();
         settingsDto.setProjectId(settingsEntity.getId().getProjectId());
         settingsDto.setSettingId(settingsEntity.getId().getSettingId());
         settingsDto.setDisplayName(settingsEntity.getDisplayName());
+        settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+        settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+        settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+        settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
-        return Optional.of(settingsDto);
+        return settingsDto;
     }
 
     @Override
@@ -354,7 +387,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         projectSettingsRepository.delete(settingsEntityOpt.get());
     }
 
-    private void convertToDto(ProjectSettingsEntity settingsEntity, GitProviderSettingsDto settingsDto) {
+    private void convertToDto(ProjectSettingsEntity settingsEntity, GitProviderSettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
         settingsDto.setProvider(jo.getString("provider"));
         settingsDto.setRepoListUrl(jo.getString("repoListUrl"));
@@ -362,7 +395,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsDto.setPassword(jo.getString("password"));
     }
 
-    private void convertToEntity(GitProviderSettingsDto settingsDto, ProjectSettingsEntity settingsEntity) {
+    private void convertToEntity(GitProviderSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
         jo.put("provider", settingsDto.getProvider());
         jo.put("repoListUrl", settingsDto.getRepoListUrl());
@@ -373,25 +406,30 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     // git-provider api impl ends
     // hostname-ip-mapping api impl starts
     @Override
-    public List<HostnameIpMappingSettingsDto> listAllHostnameIpMapping(String projectId) {
-        List<HostnameIpMappingSettingsDto> settings = new ArrayList<>();
+    public List<HostnameIpMappingSettingsResponseDto> listAllHostnameIpMapping(String projectId) {
+        List<HostnameIpMappingSettingsResponseDto> settings = new ArrayList<>();
         for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
                 ProjectSettingsType.HOSTNAME_IP_MAPPING.toString())){
-            HostnameIpMappingSettingsDto settingsDto = new HostnameIpMappingSettingsDto();
+            HostnameIpMappingSettingsResponseDto settingsDto = new HostnameIpMappingSettingsResponseDto();
             settingsDto.setProjectId(settingsEntity.getId().getProjectId());
             settingsDto.setSettingId(settingsEntity.getId().getSettingId());
             settingsDto.setDisplayName(settingsEntity.getDisplayName());
+            settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+            settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+            settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+            settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
             convertToDto(settingsEntity, settingsDto);
+            settings.add(settingsDto);
         }
         return settings;
     }
 
     @Override
-    public void createHostnameIpMapping(HostnameIpMappingSettingsDto dto) {
+    public void createHostnameIpMapping(HostnameIpMappingSettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(dto.getProjectId());
-        if (projectService.validateProject(projectId)) {
+        if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
         }
@@ -399,7 +437,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         ProjectSettingsId settingsId = new ProjectSettingsId();
         settingsId.setTenantId(AuthUtils.getCurrentTenantId());
         settingsId.setProjectId(dto.getProjectId());
-        settingsId.setSettingId(dto.getSettingId());
+        settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
         settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
         settingsEntity.setCreatedOn(new Date());
@@ -412,7 +450,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
-    public Optional<HostnameIpMappingSettingsDto> getHostnameIpMapping(String projectId, String settingId) {
+    public HostnameIpMappingSettingsResponseDto getHostnameIpMapping(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -420,12 +458,16 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
                             settingId, projectId));
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        HostnameIpMappingSettingsDto settingsDto = new HostnameIpMappingSettingsDto();
+        HostnameIpMappingSettingsResponseDto settingsDto = new HostnameIpMappingSettingsResponseDto();
         settingsDto.setProjectId(settingsEntity.getId().getProjectId());
         settingsDto.setSettingId(settingsEntity.getId().getSettingId());
         settingsDto.setDisplayName(settingsEntity.getDisplayName());
+        settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+        settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+        settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+        settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
-        return Optional.of(settingsDto);
+        return settingsDto;
     }
 
     @Override
@@ -439,12 +481,12 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         projectSettingsRepository.delete(settingsEntityOpt.get());
     }
 
-    private void convertToDto(ProjectSettingsEntity settingsEntity, HostnameIpMappingSettingsDto settingsDto) {
+    private void convertToDto(ProjectSettingsEntity settingsEntity, HostnameIpMappingSettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
         settingsDto.setHostnameIpMapping(TransformUtility.convertToMapStringString(jo.getJSONObject("hostnameIpMapping").toMap()));
     }
 
-    private void convertToEntity(HostnameIpMappingSettingsDto settingsDto, ProjectSettingsEntity settingsEntity) {
+    private void convertToEntity(HostnameIpMappingSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
         jo.put("hostnameIpMapping", new JSONObject(settingsDto.getHostnameIpMapping()).toString());
         settingsEntity.setData(jo.toString());
@@ -452,25 +494,30 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     // hostname-ip-mapping api impl ends
     // cloud-provider api impl starts
     @Override
-    public List<CloudProviderSettingsDto> listAllCloudProvider(String projectId) {
-        List<CloudProviderSettingsDto> settings = new ArrayList<>();
+    public List<CloudProviderSettingsResponseDto> listAllCloudProvider(String projectId) {
+        List<CloudProviderSettingsResponseDto> settings = new ArrayList<>();
         for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
                 ProjectSettingsType.CLOUD_PROVIDER.toString())){
-            CloudProviderSettingsDto settingsDto = new CloudProviderSettingsDto();
+            CloudProviderSettingsResponseDto settingsDto = new CloudProviderSettingsResponseDto();
             settingsDto.setProjectId(settingsEntity.getId().getProjectId());
             settingsDto.setSettingId(settingsEntity.getId().getSettingId());
             settingsDto.setDisplayName(settingsEntity.getDisplayName());
+            settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+            settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+            settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+            settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
             convertToDto(settingsEntity, settingsDto);
+            settings.add(settingsDto);
         }
         return settings;
     }
 
     @Override
-    public void createCloudProvider(CloudProviderSettingsDto dto) {
+    public void createCloudProvider(CloudProviderSettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(dto.getProjectId());
-        if (projectService.validateProject(projectId)) {
+        if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
         }
@@ -478,7 +525,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         ProjectSettingsId settingsId = new ProjectSettingsId();
         settingsId.setTenantId(AuthUtils.getCurrentTenantId());
         settingsId.setProjectId(dto.getProjectId());
-        settingsId.setSettingId(dto.getSettingId());
+        settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
         settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
         settingsEntity.setCreatedOn(new Date());
@@ -491,7 +538,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
-    public Optional<CloudProviderSettingsDto> getCloudProvider(String projectId, String settingId) {
+    public CloudProviderSettingsResponseDto getCloudProvider(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -499,12 +546,16 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
                             settingId, projectId));
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        CloudProviderSettingsDto settingsDto = new CloudProviderSettingsDto();
+        CloudProviderSettingsResponseDto settingsDto = new CloudProviderSettingsResponseDto();
         settingsDto.setProjectId(settingsEntity.getId().getProjectId());
         settingsDto.setSettingId(settingsEntity.getId().getSettingId());
         settingsDto.setDisplayName(settingsEntity.getDisplayName());
+        settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
+        settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
+        settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
+        settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
-        return Optional.of(settingsDto);
+        return settingsDto;
     }
 
     @Override
@@ -518,14 +569,14 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         projectSettingsRepository.delete(settingsEntityOpt.get());
     }
 
-    private void convertToDto(ProjectSettingsEntity settingsEntity, CloudProviderSettingsDto settingsDto) {
+    private void convertToDto(ProjectSettingsEntity settingsEntity, CloudProviderSettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
         settingsDto.setProvider(jo.getString("provider"));
         settingsDto.setAccessId(jo.getString("accessId"));
         settingsDto.setSecretKey(jo.getString("secretKey"));
     }
 
-    private void convertToEntity(CloudProviderSettingsDto settingsDto, ProjectSettingsEntity settingsEntity) {
+    private void convertToEntity(CloudProviderSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
         jo.put("provider", settingsDto.getProvider());
         jo.put("accessId", settingsDto.getAccessId());
@@ -533,4 +584,8 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsEntity.setData(jo.toString());
     }
     // cloud-provider api impl ends
+
+    private static String getNewSettingId() {
+        return UUID.randomUUID().toString();
+    }
 }

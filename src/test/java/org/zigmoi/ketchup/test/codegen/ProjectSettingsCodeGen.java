@@ -25,7 +25,8 @@ import java.util.Map;
 public class ProjectSettingsCodeGen {
 
     private JSONObject schema;
-    private String dtoTemplate;
+    private String requestDtoTemplate;
+    private String responseDtoTemplate;
     private String controllerTemplate;
     private String serviceInterfaceTemplate;
     private String serviceImplTemplate;
@@ -40,10 +41,15 @@ public class ProjectSettingsCodeGen {
                 FileUtility
                         .readDataFromFile(ConfigUtility.instance().getProperty("code-gen.project-settings.schema"))
         ));
-        codeGen.setDtoTemplate(
+        codeGen.setRequestDtoTemplate(
                 FileUtility
                         .readDataFromFile(ConfigUtility.instance()
-                                .getProperty("code-gen.project-settings.template.dto"))
+                                .getProperty("code-gen.project-settings.template.request-dto"))
+        );
+        codeGen.setResponseDtoTemplate(
+                FileUtility
+                        .readDataFromFile(ConfigUtility.instance()
+                                .getProperty("code-gen.project-settings.template.response-dto"))
         );
         codeGen.setControllerTemplate(
                 FileUtility
@@ -60,14 +66,27 @@ public class ProjectSettingsCodeGen {
                         .readDataFromFile(ConfigUtility.instance()
                                 .getProperty("code-gen.project-settings.template.service-impl"))
         );
-        String data = null;
-        for (MSettingDef def : codeGen.getSettingsDef()) {
-            data = codeGen.renderDto(def);
-        }
-        System.out.println(data);
-//        System.out.println(codeGen.renderController());
+//        codeGen.renderAllRequestDto().forEach(System.out::println);
+//        codeGen.renderAllResponseDto().forEach(System.out::println);
 //        System.out.println(codeGen.renderServiceInterface());
-//        System.out.println(codeGen.renderServiceImpl());
+        System.out.println(codeGen.renderServiceImpl());
+//        System.out.println(codeGen.renderController());
+    }
+
+    private List<String> renderAllResponseDto() throws ParseException {
+        List<String> items = new ArrayList<>();
+        for (MSettingDef def : this.getSettingsDef()) {
+            items.add(this.renderResponseDto(def));
+        }
+        return items;
+    }
+
+    private List<String> renderAllRequestDto() throws ParseException {
+        List<String> items = new ArrayList<>();
+        for (MSettingDef def : this.getSettingsDef()) {
+            items.add(this.renderRequestDto(def));
+        }
+        return items;
     }
 
     private String renderController() throws ParseException {
@@ -82,8 +101,12 @@ public class ProjectSettingsCodeGen {
         return renderTemplate(getSettingsDef(), "service-impl", getServiceImplTemplate());
     }
 
-    private String renderDto(MSettingDef def) throws ParseException {
-        return renderTemplate(def, "dto", getDtoTemplate());
+    private String renderRequestDto(MSettingDef def) throws ParseException {
+        return renderTemplate(def, "request-dto", getRequestDtoTemplate());
+    }
+
+    private String renderResponseDto(MSettingDef def) throws ParseException {
+        return renderTemplate(def, "response-dto", getResponseDtoTemplate());
     }
 
     private String renderTemplate(List<MSettingDef> def, String name, String templateData) throws ParseException {
@@ -135,6 +158,7 @@ public class ProjectSettingsCodeGen {
                 MSettingDef.MSettingFieldDef settingFieldDef = new MSettingDef.MSettingFieldDef();
                 settingFieldDef.setName(fieldName);
                 settingFieldDef.setData_type(dataType);
+                settingFieldDef.setData_type_java(getJavaDataType(dataType));
                 settingFieldDef.setField_name_camel_case_first_upper(getCamelCaseFirstUpper(fieldName));
                 settingFieldDef.setField_name_camel_case_first_lower(getCamelCaseFirstLower(fieldName));
                 settingDef.add(settingFieldDef);
@@ -142,6 +166,15 @@ public class ProjectSettingsCodeGen {
             defs.add(settingDef);
         }
         return defs;
+    }
+
+    private String getJavaDataType(String s) {
+        if ("string".equals(s)) {
+            return "String";
+        } else if ("map-string-string".equals(s)) {
+            return "Map<String, String>";
+        }
+        return s;
     }
 
     private String generateFromTemplate(String[] settings, String templateName) throws IOException {

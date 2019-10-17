@@ -23,5 +23,6 @@ public class MSettingDef {
         private String name;
         private String field_name_camel_case_first_upper;
         private String field_name_camel_case_first_lower;
+        private String data_type_java;
     }
 }

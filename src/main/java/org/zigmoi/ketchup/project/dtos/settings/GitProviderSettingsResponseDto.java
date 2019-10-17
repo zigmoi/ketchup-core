@@ -5,7 +5,8 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-public class GitProviderSettingsDto {
+public class GitProviderSettingsResponseDto {
+
     private String projectId;
     private String settingId;
     private String displayName;
