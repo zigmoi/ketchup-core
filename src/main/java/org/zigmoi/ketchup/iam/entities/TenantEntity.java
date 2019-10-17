@@ -23,5 +23,5 @@ public class TenantEntity {
     public static final String TENANT_FILTER_ARGUMENT_NAME = "tenantId";
 
     @Column(length = 50)
-    String tenantId;
+    protected String tenantId;
 }

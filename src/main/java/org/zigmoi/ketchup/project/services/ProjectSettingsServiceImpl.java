@@ -79,7 +79,8 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public ContainerRegistrySettingsResponseDto getContainerRegistry(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Setting id : %s not found for Project : %s not found.",
@@ -100,10 +101,11 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public void deleteContainerRegistry(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s not found.",
+                    String.format("Setting id : %s not found for Project : %s",
                             settingId, projectId));
         }
         projectSettingsRepository.delete(settingsEntityOpt.get());
@@ -173,7 +175,8 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public KubernetesClusterSettingsResponseDto getKubernetesCluster(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Setting id : %s not found for Project : %s not found.",
@@ -194,10 +197,11 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public void deleteKubernetesCluster(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s not found.",
+                    String.format("Setting id : %s not found for Project : %s",
                             settingId, projectId));
         }
         projectSettingsRepository.delete(settingsEntityOpt.get());
@@ -265,7 +269,8 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public BuildToolSettingsResponseDto getBuildTool(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Setting id : %s not found for Project : %s not found.",
@@ -286,10 +291,11 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public void deleteBuildTool(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s not found.",
+                    String.format("Setting id : %s not found for Project : %s",
                             settingId, projectId));
         }
         projectSettingsRepository.delete(settingsEntityOpt.get());
@@ -357,7 +363,8 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public GitProviderSettingsResponseDto getGitProvider(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Setting id : %s not found for Project : %s not found.",
@@ -378,10 +385,11 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public void deleteGitProvider(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s not found.",
+                    String.format("Setting id : %s not found for Project : %s",
                             settingId, projectId));
         }
         projectSettingsRepository.delete(settingsEntityOpt.get());
@@ -451,7 +459,8 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public HostnameIpMappingSettingsResponseDto getHostnameIpMapping(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Setting id : %s not found for Project : %s not found.",
@@ -472,10 +481,11 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public void deleteHostnameIpMapping(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s not found.",
+                    String.format("Setting id : %s not found for Project : %s",
                             settingId, projectId));
         }
         projectSettingsRepository.delete(settingsEntityOpt.get());
@@ -539,7 +549,8 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public CloudProviderSettingsResponseDto getCloudProvider(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Setting id : %s not found for Project : %s not found.",
@@ -560,10 +571,11 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public void deleteCloudProvider(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s not found.",
+                    String.format("Setting id : %s not found for Project : %s",
                             settingId, projectId));
         }
         projectSettingsRepository.delete(settingsEntityOpt.get());

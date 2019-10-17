@@ -80,8 +80,9 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public ${setting.setting_name_camel_case_first_upper}SettingsResponseDto get${setting.setting_name_camel_case_first_upper}(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
-        if (!settingsEntityOpt.isPresent()) {
+    Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                            .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
+    if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Setting id : %s not found for Project : %s not found.",
                             settingId, projectId));
@@ -101,10 +102,11 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     @Override
     public void delete${setting.setting_name_camel_case_first_upper}(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository.findById(new ProjectSettingsId(projectId, settingId));
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                        .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s not found.",
+                    String.format("Setting id : %s not found for Project : %s",
                             settingId, projectId));
         }
         projectSettingsRepository.delete(settingsEntityOpt.get());

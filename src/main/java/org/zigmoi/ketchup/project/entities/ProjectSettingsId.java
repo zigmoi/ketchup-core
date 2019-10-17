@@ -18,4 +18,10 @@ public class ProjectSettingsId extends TenantEntity implements Serializable {
     private String projectId;
     @Column(length = 36)
     private String settingId;
+
+    public ProjectSettingsId(String tenantId, String projectId, String settingId) {
+        super.tenantId = tenantId;
+        this.projectId = projectId;
+        this.settingId = settingId;
+    }
 }
