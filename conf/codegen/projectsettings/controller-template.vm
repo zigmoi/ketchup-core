@@ -37,6 +37,11 @@ public class ProjectSettingsController {
         return service.get${setting.setting_name_camel_case_first_upper}(projectId, settingId);
     }
 
+    @PutMapping("v1/settings/${setting.setting_name_lower_case}/{projectId}/{settingId}")
+    public void update${setting.setting_name_camel_case_first_upper}(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid ${setting.setting_name_camel_case_first_upper}SettingsRequestDto dto) {
+        service.update${setting.setting_name_camel_case_first_upper}(projectId, settingId, dto);
+    }
+
     @DeleteMapping("v1/settings/${setting.setting_name_lower_case}/{projectId}/{settingId}")
     public void delete${setting.setting_name_camel_case_first_upper}(@PathVariable String settingId, @PathVariable String projectId) {
         service.delete${setting.setting_name_camel_case_first_upper}(projectId, settingId);

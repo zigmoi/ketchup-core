@@ -69,8 +69,8 @@ public class ProjectSettingsCodeGen {
 //        codeGen.renderAllRequestDto().forEach(System.out::println);
 //        codeGen.renderAllResponseDto().forEach(System.out::println);
 //        System.out.println(codeGen.renderServiceInterface());
-        System.out.println(codeGen.renderServiceImpl());
 //        System.out.println(codeGen.renderController());
+        System.out.println(codeGen.renderServiceImpl());
     }
 
     private List<String> renderAllResponseDto() throws ParseException {

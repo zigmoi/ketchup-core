@@ -100,6 +100,23 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
+    public void updateContainerRegistry(String projectId, String settingId, ContainerRegistrySettingsRequestDto dto) {
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
+        if (!settingsEntityOpt.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Setting id : %s not found for Project : %s",
+                            settingId, projectId));
+        }
+        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
+        settingsEntity.setDisplayName(dto.getDisplayName());
+        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
+        settingsEntity.setLastUpdatedOn(new Date());
+        convertToEntity(dto, settingsEntity);
+        projectSettingsRepository.save(settingsEntity);
+    }
+
+    @Override
     public void deleteContainerRegistry(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
                 .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
@@ -193,6 +210,23 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
         return settingsDto;
+    }
+
+    @Override
+    public void updateKubernetesCluster(String projectId, String settingId, KubernetesClusterSettingsRequestDto dto) {
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
+        if (!settingsEntityOpt.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Setting id : %s not found for Project : %s",
+                            settingId, projectId));
+        }
+        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
+        settingsEntity.setDisplayName(dto.getDisplayName());
+        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
+        settingsEntity.setLastUpdatedOn(new Date());
+        convertToEntity(dto, settingsEntity);
+        projectSettingsRepository.save(settingsEntity);
     }
 
     @Override
@@ -290,6 +324,23 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
+    public void updateBuildTool(String projectId, String settingId, BuildToolSettingsRequestDto dto) {
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
+        if (!settingsEntityOpt.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Setting id : %s not found for Project : %s",
+                            settingId, projectId));
+        }
+        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
+        settingsEntity.setDisplayName(dto.getDisplayName());
+        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
+        settingsEntity.setLastUpdatedOn(new Date());
+        convertToEntity(dto, settingsEntity);
+        projectSettingsRepository.save(settingsEntity);
+    }
+
+    @Override
     public void deleteBuildTool(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
                 .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
@@ -381,6 +432,23 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
         return settingsDto;
+    }
+
+    @Override
+    public void updateGitProvider(String projectId, String settingId, GitProviderSettingsRequestDto dto) {
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
+        if (!settingsEntityOpt.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Setting id : %s not found for Project : %s",
+                            settingId, projectId));
+        }
+        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
+        settingsEntity.setDisplayName(dto.getDisplayName());
+        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
+        settingsEntity.setLastUpdatedOn(new Date());
+        convertToEntity(dto, settingsEntity);
+        projectSettingsRepository.save(settingsEntity);
     }
 
     @Override
@@ -480,6 +548,23 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
+    public void updateHostnameIpMapping(String projectId, String settingId, HostnameIpMappingSettingsRequestDto dto) {
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
+        if (!settingsEntityOpt.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Setting id : %s not found for Project : %s",
+                            settingId, projectId));
+        }
+        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
+        settingsEntity.setDisplayName(dto.getDisplayName());
+        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
+        settingsEntity.setLastUpdatedOn(new Date());
+        convertToEntity(dto, settingsEntity);
+        projectSettingsRepository.save(settingsEntity);
+    }
+
+    @Override
     public void deleteHostnameIpMapping(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
                 .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
@@ -567,6 +652,23 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
         return settingsDto;
+    }
+
+    @Override
+    public void updateCloudProvider(String projectId, String settingId, CloudProviderSettingsRequestDto dto) {
+        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
+                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
+        if (!settingsEntityOpt.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Setting id : %s not found for Project : %s",
+                            settingId, projectId));
+        }
+        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
+        settingsEntity.setDisplayName(dto.getDisplayName());
+        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
+        settingsEntity.setLastUpdatedOn(new Date());
+        convertToEntity(dto, settingsEntity);
+        projectSettingsRepository.save(settingsEntity);
     }
 
     @Override

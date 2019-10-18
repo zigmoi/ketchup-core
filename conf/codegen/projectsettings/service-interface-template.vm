@@ -11,6 +11,7 @@ public interface ProjectSettingsService {
     List<${setting.setting_name_camel_case_first_upper}SettingsResponseDto> listAll${setting.setting_name_camel_case_first_upper}(String projectId);
     void create${setting.setting_name_camel_case_first_upper}(${setting.setting_name_camel_case_first_upper}SettingsRequestDto dto);
     ${setting.setting_name_camel_case_first_upper}SettingsResponseDto get${setting.setting_name_camel_case_first_upper}(String projectId, String settingId);
+    void update${setting.setting_name_camel_case_first_upper}(String projectId, String settingId, ${setting.setting_name_camel_case_first_upper}SettingsRequestDto dto);
     void delete${setting.setting_name_camel_case_first_upper}(String projectId, String settingId);
     /* ${setting.setting_name_lower_case} services ends */
 #end

@@ -34,6 +34,11 @@ public class ProjectSettingsController {
         return service.getContainerRegistry(projectId, settingId);
     }
 
+    @PutMapping("v1/settings/container-registry/{projectId}/{settingId}")
+    public void updateContainerRegistry(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid ContainerRegistrySettingsRequestDto dto) {
+        service.updateContainerRegistry(projectId, settingId, dto);
+    }
+
     @DeleteMapping("v1/settings/container-registry/{projectId}/{settingId}")
     public void deleteContainerRegistry(@PathVariable String settingId, @PathVariable String projectId) {
         service.deleteContainerRegistry(projectId, settingId);
@@ -53,6 +58,11 @@ public class ProjectSettingsController {
     @GetMapping("v1/settings/kubernetes-cluster/{projectId}/{settingId}")
     public KubernetesClusterSettingsResponseDto getKubernetesCluster(@PathVariable String settingId, @PathVariable String projectId) {
         return service.getKubernetesCluster(projectId, settingId);
+    }
+
+    @PutMapping("v1/settings/kubernetes-cluster/{projectId}/{settingId}")
+    public void updateKubernetesCluster(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid KubernetesClusterSettingsRequestDto dto) {
+        service.updateKubernetesCluster(projectId, settingId, dto);
     }
 
     @DeleteMapping("v1/settings/kubernetes-cluster/{projectId}/{settingId}")
@@ -76,6 +86,11 @@ public class ProjectSettingsController {
         return service.getBuildTool(projectId, settingId);
     }
 
+    @PutMapping("v1/settings/build-tool/{projectId}/{settingId}")
+    public void updateBuildTool(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid BuildToolSettingsRequestDto dto) {
+        service.updateBuildTool(projectId, settingId, dto);
+    }
+
     @DeleteMapping("v1/settings/build-tool/{projectId}/{settingId}")
     public void deleteBuildTool(@PathVariable String settingId, @PathVariable String projectId) {
         service.deleteBuildTool(projectId, settingId);
@@ -95,6 +110,11 @@ public class ProjectSettingsController {
     @GetMapping("v1/settings/git-provider/{projectId}/{settingId}")
     public GitProviderSettingsResponseDto getGitProvider(@PathVariable String settingId, @PathVariable String projectId) {
         return service.getGitProvider(projectId, settingId);
+    }
+
+    @PutMapping("v1/settings/git-provider/{projectId}/{settingId}")
+    public void updateGitProvider(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid GitProviderSettingsRequestDto dto) {
+        service.updateGitProvider(projectId, settingId, dto);
     }
 
     @DeleteMapping("v1/settings/git-provider/{projectId}/{settingId}")
@@ -118,6 +138,11 @@ public class ProjectSettingsController {
         return service.getHostnameIpMapping(projectId, settingId);
     }
 
+    @PutMapping("v1/settings/hostname-ip-mapping/{projectId}/{settingId}")
+    public void updateHostnameIpMapping(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid HostnameIpMappingSettingsRequestDto dto) {
+        service.updateHostnameIpMapping(projectId, settingId, dto);
+    }
+
     @DeleteMapping("v1/settings/hostname-ip-mapping/{projectId}/{settingId}")
     public void deleteHostnameIpMapping(@PathVariable String settingId, @PathVariable String projectId) {
         service.deleteHostnameIpMapping(projectId, settingId);
@@ -137,6 +162,11 @@ public class ProjectSettingsController {
     @GetMapping("v1/settings/cloud-provider/{projectId}/{settingId}")
     public CloudProviderSettingsResponseDto getCloudProvider(@PathVariable String settingId, @PathVariable String projectId) {
         return service.getCloudProvider(projectId, settingId);
+    }
+
+    @PutMapping("v1/settings/cloud-provider/{projectId}/{settingId}")
+    public void updateCloudProvider(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid CloudProviderSettingsRequestDto dto) {
+        service.updateCloudProvider(projectId, settingId, dto);
     }
 
     @DeleteMapping("v1/settings/cloud-provider/{projectId}/{settingId}")
