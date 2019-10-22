@@ -8,12 +8,20 @@ import org.zigmoi.ketchup.exception.ConfigurationException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
 
 public class BasicSpringBootDeploymentFlow {
 
-    public void execute(String config) {
-        JSONObject jo = new JSONObject(config);
-        JSONArray stages = jo.getJSONArray("stages");
+    private JSONObject config;
+    private String id;
+
+    public BasicSpringBootDeploymentFlow(JSONObject config) {
+        this.config = config;
+        this.id = UUID.randomUUID().toString();
+    }
+
+    public void execute() {
+        JSONArray stages = config.getJSONArray("stages");
         for (int i = 0; i < stages.length(); i++) {
             JSONObject stageO = stages.getJSONObject(i);
             String command = stageO.getString("command");
@@ -25,22 +33,22 @@ public class BasicSpringBootDeploymentFlow {
 
     private MCommandStatus execCommand(String command, JSONArray args) {
         switch (command) {
-            case DeploymentFlowConstants.C_PULL_FROM_REMOTE: {
+            case BasicSpringBootDeploymentFlowConstants.C_PULL_FROM_REMOTE: {
                 IBasicSpringBootDeploymentCommands commands = new BasicSpringBootDeploymentCommandsFlow();
                 return commands.pullFromRemote(getArgPullFromRemote(args));
 //                return new MCommandStatus();
             }
-            case DeploymentFlowConstants.C_MAVEN_CLEAN_INSTALL: {
+            case BasicSpringBootDeploymentFlowConstants.C_MAVEN_CLEAN_INSTALL: {
                 IBasicSpringBootDeploymentCommands commands = new BasicSpringBootDeploymentCommandsFlow();
                 return commands.mvnInstall(getArgMvnInstallV1(args));
 //                return new MCommandStatus();
             }
-            case DeploymentFlowConstants.C_BUILD_SPRING_BOOT_DOCKER_IMAGE: {
+            case BasicSpringBootDeploymentFlowConstants.C_BUILD_SPRING_BOOT_DOCKER_IMAGE: {
                 IBasicSpringBootDeploymentCommands commands = new BasicSpringBootDeploymentCommandsFlow();
-                return commands.buildSprintBootDockerImage(getArgBuildSpringBootDockerImageV1(args));
-//                return new MCommandStatus();
+//                return commands.buildSprintBootDockerImage(getArgBuildSpringBootDockerImageV1(args));
+                return new MCommandStatus();
             }
-            case DeploymentFlowConstants.C_DEPLOY_IN_KUBERNETES: {
+            case BasicSpringBootDeploymentFlowConstants.C_DEPLOY_IN_KUBERNETES: {
                 IBasicSpringBootDeploymentCommands commands = new BasicSpringBootDeploymentCommandsFlow();
                 return commands.deployInKubernetes(getArgBuildSpringBootKubernetesDeployV1(args));
 //                return new MCommandStatus();
@@ -71,7 +79,7 @@ public class BasicSpringBootDeploymentFlow {
                 )
                 .dockerBuildImageName(argJ.getString("docker-build-image-name"))
                 .dockerBuildImageTag(argJ.getString("docker-build-image-tag"))
-                .port(argJ.getInt("port"));
+                .port(Integer.parseInt(argJ.getString("port")));
 
         if (ipHostnameMap != null) {
             for (String ip : ipHostnameMap.keySet()) {
@@ -118,8 +126,12 @@ public class BasicSpringBootDeploymentFlow {
         argMvnInstallV1.setBuildPath(argJ.getString("build-path"));
         argMvnInstallV1.setMvnCommandPath(argJ.getString("maven-command-path"));
         argMvnInstallV1.setPrivateRepoSettingsPath(argJ.getString("maven-private-repo-settings-path"));
-        argMvnInstallV1.setBranchName(argJ.getString("branch-name"));
-        argMvnInstallV1.setCommitId(argJ.getString("commit-id"));
+        if (argJ.has("branch-name")) {
+            argMvnInstallV1.setBranchName(argJ.getString("branch-name"));
+        }
+        if (argJ.has("commit-id")) {
+            argMvnInstallV1.setCommitId(argJ.getString("commit-id"));
+        }
         return argMvnInstallV1;
     }
 
@@ -151,6 +163,10 @@ public class BasicSpringBootDeploymentFlow {
     public static void main(String[] args) throws IOException {
         String flowConfigFile = "/home/tapo/IdeaProjects/zigmoi/ketchup/ketchup-core/conf/private/deployment_flow_config_sample.json";
         String deploymentFlowConfigJSON = FileUtility.readDataFromFile(new File(flowConfigFile));
-        new BasicSpringBootDeploymentFlow().execute(deploymentFlowConfigJSON);
+        new BasicSpringBootDeploymentFlow(new JSONObject(deploymentFlowConfigJSON)).execute();
+    }
+
+    public String getId() {
+        return this.id;
     }
 }

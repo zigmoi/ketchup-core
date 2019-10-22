@@ -1,9 +1,9 @@
 package org.zigmoi.ketchup.deployment.dtos;
 
-public class BasicSpringBootDeploymentDto {
+public class BasicSpringBootDeploymentResponseDto {
 
     private String id;
-    private String uniqueServiceName;
+    private String serviceName;
 
     private String gitProviderSettingId;
     private String buildToolSettingId;
@@ -16,12 +16,11 @@ public class BasicSpringBootDeploymentDto {
     private String gitRepoName;
     private String gitRepoCommitId;
     private String gitRepoBranchName;
+    private String gitRepoToBuildDirectory;
 
-    private String buildDirectory;
     private String dockerImageName;
 
     private int appServerPort;
-    private int appGeneratedJarName;
     private int appTimezone;
     private int appBasePath;
 }

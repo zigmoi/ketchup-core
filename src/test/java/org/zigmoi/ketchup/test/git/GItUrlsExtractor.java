@@ -43,7 +43,7 @@
 //
 //    public static void main(String[] args) throws IOException, ParseException, GitAPIException, MavenInvocationException, JSONException {
 //        GItUrlsExtractor gitUrlsExtractor = new GItUrlsExtractor();
-//        gitUtils = GitUtils.instance("urishav", "k10bitbucket");
+//        gitUtils = GitUtils.instance("urishav", "password");
 //        String reposGitInfoPath = ConfigUtility.instance().getPath("data", "out", "pomupdater", "repos_git_info.json");
 //        String reposSpreadsheetInfoPath = ConfigUtility.instance().getPath("data", "in", "pomupdater", "repos_spreadsheet_info.json");
 //

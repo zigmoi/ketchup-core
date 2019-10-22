@@ -5,7 +5,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentDto;
+import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentRequestDto;
+import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentResponseDto;
 import org.zigmoi.ketchup.deployment.services.DeploymentService;
 
 import java.util.List;
@@ -17,40 +18,40 @@ public class DeploymentController {
     private DeploymentService deploymentService;
 
     @PreAuthorize("hasRole('ROLE_PROJECT_MEMBER')")
-    @PostMapping("/v1/deployment/basic-spring-boot-app")
-    public void createBasicSpringBootDeployment(@RequestBody BasicSpringBootDeploymentDto basicSpringBootDeploymentDto) {
-        deploymentService.createBasicSpringBootDeployment(basicSpringBootDeploymentDto);
-    }
-
-    @PreAuthorize("hasRole('ROLE_PROJECT_MEMBER')")
-    @PutMapping("/v1/deployment/{id}/status/{status}")
-    public void updateDeploymentStatus(@PathVariable("id") String deploymentId, @PathVariable("status") String status) {
-        deploymentService.updateDeploymentStatus(deploymentId, status);
+    @PutMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}/status/{status}")
+    public void updateDeploymentStatus(@PathVariable("status") String status, @PathVariable String deploymentResourceId, @PathVariable String projectResourceId) {
+        deploymentService.updateDeploymentStatus(projectResourceId, deploymentResourceId, status);
     }
 
     @PreAuthorize("hasAnyRole('ROLE_PROJECT_MEMBER')")
-    @PutMapping("/v1/deployment/{id}/displayName/{displayName}")
-    public void updateDeploymentDisplayName(@PathVariable("id") String deploymentId, @PathVariable("displayName") String displayName) {
-        deploymentService.updateDeploymentDisplayName(deploymentId, displayName);
+    @PutMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}/displayName/{displayName}")
+    public void updateDeploymentDisplayName(@PathVariable("deploymentResourceId") String deploymentResourceId, @PathVariable("displayName") String displayName, @PathVariable String projectResourceId) {
+        deploymentService.updateDeploymentDisplayName(projectResourceId, deploymentResourceId, displayName);
+    }
+
+//    @PreAuthorize("hasRole('ROLE_PROJECT_MEMBER')")
+    @PostMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot")
+    public void createBasicSpringBootDeployment(@RequestBody BasicSpringBootDeploymentRequestDto basicSpringBootDeploymentRequestDto, @PathVariable String projectResourceId) {
+        deploymentService.createBasicSpringBootDeployment(projectResourceId, basicSpringBootDeploymentRequestDto);
     }
 
     @PreAuthorize("hasRole('ROLE_PROJECT_MEMBER')")
-    @GetMapping("/v1/basic-spring-boot-app/{id}")
-    public BasicSpringBootDeploymentDto getBasicSpringBootDeployment(@PathVariable("id") String deploymentId) {
-        return deploymentService.getBasicSpringBootDeployment(deploymentId)
+    @GetMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot/{deploymentResourceId}")
+    public BasicSpringBootDeploymentResponseDto getBasicSpringBootDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
+        return deploymentService.getBasicSpringBootDeployment(projectResourceId, deploymentResourceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                        String.format("Deployment with id %s not found.", deploymentId)));
+                        String.format("Deployment with id %s not found.", deploymentResourceId)));
     }
 
     @PreAuthorize("hasRole('ROLE_PROJECT_MEMBER')")
-    @DeleteMapping("/v1/deployment/{id}")
-    public void deleteDeployment(@PathVariable("id") String deploymentId) {
-        deploymentService.deleteDeployment(deploymentId);
+    @DeleteMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")
+    public void deleteDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
+        deploymentService.deleteDeployment(projectResourceId, deploymentResourceId);
     }
 
     @PreAuthorize("hasRole('ROLE_PROJECT_MEMBER')")
-    @GetMapping("/v1/deployments/basic-spring-boot-app")
-    public List<BasicSpringBootDeploymentDto> listAllBasicSpringBootDeployments() {
-        return deploymentService.listAllBasicSpringBootDeployments();
+    @GetMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot/list")
+    public List<BasicSpringBootDeploymentResponseDto> listAllBasicSpringBootDeployments(@PathVariable String projectResourceId) {
+        return deploymentService.listAllBasicSpringBootDeployments(projectResourceId);
     }
 }

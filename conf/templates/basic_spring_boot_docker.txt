@@ -1,4 +1,4 @@
-FROM openjdk:8-jre-slim
+FROM maven:3.6.2-ibmjava-8-alpine
 
 RUN mkdir -p ${app-home}
 COPY src ${app-home}/src
@@ -11,4 +11,4 @@ EXPOSE ${port}/tcp
 ENV TZ=${timezone}
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-ENTRYPOINT ["java", "-jar", "target/${generated-jar-name}"]
+ENTRYPOINT ["mvn", "spring-boot:run"]

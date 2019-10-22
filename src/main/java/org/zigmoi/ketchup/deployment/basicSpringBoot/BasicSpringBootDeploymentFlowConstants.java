@@ -1,6 +1,6 @@
 package org.zigmoi.ketchup.deployment.basicSpringBoot;
 
-public class DeploymentFlowConstants {
+public class BasicSpringBootDeploymentFlowConstants {
 
     // Commands
     public final static String C_PULL_FROM_REMOTE = "pull-from-remote";

@@ -91,7 +91,7 @@ public class BasicSpringBootDeploymentCommandsFlow implements IBasicSpringBootDe
     private String[] getCommandFromTemplateForMvnInstallV1(MCArgMvnInstallV1 arg) throws IOException { // todo script file cleanup
         String commandString = "cd " + arg.getBuildPath() + ";\n"
                 + FileUtility.readDataFromFile(
-                ConfigUtility.instance().getProperty(DeploymentFlowConstants.TP_MVN_CLEAN_INSTALL)
+                ConfigUtility.instance().getProperty(BasicSpringBootDeploymentFlowConstants.TP_MVN_CLEAN_INSTALL)
         ).replace("${maven-private-repo-settings-path}", arg.getPrivateRepoSettingsPath())
                 .replace("${maven-command-path}", arg.getMvnCommandPath());
         String scriptPath = ConfigUtility.instance().getTmpDir() + File.separator + "ketchup-dt-" + seq.incrementAndGet();
@@ -132,7 +132,7 @@ public class BasicSpringBootDeploymentCommandsFlow implements IBasicSpringBootDe
 
             Triple<String, String, String> dockerAccessDetails = null;
             String tag = null;
-            if (DeploymentFlowConstants.DV_AWS_ECR.equalsIgnoreCase(arg.getDockerRegistryVendor())) {
+            if (BasicSpringBootDeploymentFlowConstants.DV_AWS_ECR.equalsIgnoreCase(arg.getDockerRegistryVendor())) {
                 dockerAccessDetails = AWSECRUtility.getDockerAccessDetails(
                         arg.getDockerVendorArg().getRegistryId(),
                         arg.getDockerVendorArg().getAwsAccessKeyId(),
