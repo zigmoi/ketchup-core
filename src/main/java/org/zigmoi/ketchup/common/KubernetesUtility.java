@@ -6,22 +6,73 @@ import io.kubernetes.client.apis.AppsV1Api;
 import io.kubernetes.client.models.*;
 import io.kubernetes.client.util.Config;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class KubernetesUtility {
 
-    public static void deployInAws(File kubeConfig, String namespace, String appId, String awsEcrImageLink, int port,
-                                   Map<String, List<String>> hostnameAlias) throws IOException, ApiException {
+    private final static Logger logger = LoggerFactory.getLogger(KubernetesUtility.class);
+
+    public static void createDeploymentInAws(File kubeConfig, String namespace, String appId, String awsEcrImageLink, int port,
+                                             Map<String, List<String>> hostnameAlias, boolean updateIfAlreadyExists, String deploymentName) throws IOException, ApiException {
 
         // metadata
         V1ObjectMeta deploymentMetadata = new V1ObjectMeta()
-                .name(appId+"-deployment")
+                .name(deploymentName)
                 .namespace(namespace)
                 .putLabelsItem("app", appId);
+
+        V1DeploymentSpec v1DeploymentSpec = getDeploymentSpec(namespace, appId, awsEcrImageLink, port, hostnameAlias);
+
+        // L0
+        V1Deployment deployment = new V1DeploymentBuilder()
+                .withMetadata(deploymentMetadata)
+                .withSpec(v1DeploymentSpec)
+                .build();
+
+        logger.info(new JSONObject(deployment).toString(4));
+
+        // Call API
+        ApiClient client = Config.fromConfig(kubeConfig.getAbsolutePath());
+        AppsV1Api appsV1Api = new AppsV1Api(client);
+
+        if (deploymentAlreadyExists(appsV1Api, appId, namespace, deploymentName) && updateIfAlreadyExists) {
+            List<V1Deployment> deployments = new ArrayList<>();
+            appsV1Api.patchNamespacedDeployment(deploymentName, namespace, deployments, null, null);
+        } else {
+            appsV1Api.createNamespacedDeployment(namespace, deployment, null, null, null);
+        }
+    }
+
+    public static boolean deploymentAlreadyExists(File kubeConfig, String appId, String namespace, String deploymentName) throws ApiException, IOException {
+        ApiClient client = Config.fromConfig(kubeConfig.getAbsolutePath());
+        AppsV1Api appsV1Api = new AppsV1Api(client);
+        return deploymentAlreadyExists(appsV1Api, appId, namespace, deploymentName);
+    }
+
+    private static boolean deploymentAlreadyExists(AppsV1Api appsV1Api, String appId, String namespace, String deploymentName) throws ApiException {
+        String label = "app="+appId;
+        V1DeploymentList deploymentList = appsV1Api.listNamespacedDeployment(namespace, true, null, null,
+                null, label, null, null, -1, false);
+        if (deploymentList == null || deploymentList.getItems().isEmpty()) {
+            return false;
+        }
+        for (V1Deployment deployment : deploymentList.getItems()) {
+            if (deploymentName.equals(deployment.getMetadata().getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static V1DeploymentSpec getDeploymentSpec(String namespace, String appId, String awsEcrImageLink, int port,
+                                                      Map<String, List<String>> hostnameAlias) {
 
         // spec
         V1PodSpec v1PodSpec = new V1PodSpec()
@@ -42,7 +93,7 @@ public class KubernetesUtility {
             }
         }
 
-        V1DeploymentSpec v1DeploymentSpec = new V1DeploymentSpec()
+        return new V1DeploymentSpec()
                 .selector(new V1LabelSelector()
                         .putMatchLabelsItem("app", appId))
                 .template(new V1PodTemplateSpec()
@@ -50,18 +101,5 @@ public class KubernetesUtility {
                                 .namespace(namespace)
                                 .putLabelsItem("app", appId))
                         .spec(v1PodSpec));
-
-        // L0
-        V1Deployment deployment = new V1DeploymentBuilder()
-                .withMetadata(deploymentMetadata)
-                .withSpec(v1DeploymentSpec)
-                .build();
-
-        System.out.println(new JSONObject(deployment).toString(4));
-
-        // Call API
-        ApiClient client = Config.fromConfig(kubeConfig.getAbsolutePath());
-        AppsV1Api appsV1Api = new AppsV1Api(client);
-        appsV1Api.createNamespacedDeployment(namespace, deployment, null, null, null);
     }
 }

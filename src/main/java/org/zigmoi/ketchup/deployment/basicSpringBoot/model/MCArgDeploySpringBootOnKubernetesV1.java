@@ -13,9 +13,10 @@ public class MCArgDeploySpringBootOnKubernetesV1 {
     private String kubeconfigFilePath, namespace, appId;
     private String vmVendor, dockerBuildImageName, dockerBuildImageTag;
     private Map<String, List<String>> ipHostnameMap = new HashMap<>();
-    private String dockerRegistryVendor;
+    private String dockerRegistryVendor, deploymentName;
     private DockerVendorArg dockerVendorArg;
     private int port;
+    private boolean patchDeploymentIfAlreadyExists = false;
 
     public MCArgDeploySpringBootOnKubernetesV1 kubeconfigFilePath(String basePath) {
         this.kubeconfigFilePath = basePath;
@@ -29,6 +30,11 @@ public class MCArgDeploySpringBootOnKubernetesV1 {
 
     public MCArgDeploySpringBootOnKubernetesV1 namespace(String namespace) {
         this.namespace = namespace;
+        return this;
+    }
+
+    public MCArgDeploySpringBootOnKubernetesV1 patchDeploymentIfAlreadyExists(boolean patchDeploymentIfAlreadyExists) {
+        this.patchDeploymentIfAlreadyExists = patchDeploymentIfAlreadyExists;
         return this;
     }
 
@@ -64,6 +70,11 @@ public class MCArgDeploySpringBootOnKubernetesV1 {
 
     public MCArgDeploySpringBootOnKubernetesV1 port(int port) {
         this.port = port;
+        return this;
+    }
+
+    public MCArgDeploySpringBootOnKubernetesV1 deploymentName(String deploymentName) {
+        this.deploymentName = deploymentName;
         return this;
     }
 

@@ -74,4 +74,8 @@ public class BasicSpringBootDeploymentRequestDto {
     @ApiModelProperty(notes = "Optional. If blank, uses /app. Make sure that the code does not refer any file based on app home or base path.")
     @Nullable
     private String appBasePath = "/app";
+
+    @ApiModelProperty(notes = "Optional. If blank, updateDeploymentIfRunning = false. If true, this will delete the same 'named' deployment/service/ingress found in the Cluster.")
+    @Nullable
+    private boolean updateDeploymentIfRunning = true;
 }

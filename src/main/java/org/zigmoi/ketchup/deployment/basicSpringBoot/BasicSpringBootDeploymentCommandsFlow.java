@@ -169,12 +169,14 @@ public class BasicSpringBootDeploymentCommandsFlow implements IBasicSpringBootDe
         try {
             String tag = AWSECRUtility.getTag(arg.getDockerVendorArg().getRegistryBaseUrl(),
                     arg.getDockerVendorArg().getRepo(), arg.getDockerBuildImageTag());
-            KubernetesUtility.deployInAws(new File(arg.getKubeconfigFilePath()),
+            KubernetesUtility.createDeploymentInAws(new File(arg.getKubeconfigFilePath()),
                     arg.getNamespace(),
                     arg.getAppId(),
                     tag,
                     arg.getPort(),
-                    arg.getIpHostnameMap()
+                    arg.getIpHostnameMap(),
+                    arg.isPatchDeploymentIfAlreadyExists(),
+                    arg.getDeploymentName()
             );
             commandStatus.setSuccessful(true);
         } catch (IOException | ApiException e) {

@@ -1,18 +1,21 @@
 package org.zigmoi.ketchup.deployment.basicSpringBoot;
 
+import io.kubernetes.client.ApiException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.zigmoi.ketchup.common.FileUtility;
+import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.deployment.basicSpringBoot.model.*;
 import org.zigmoi.ketchup.exception.ConfigurationException;
+import org.zigmoi.ketchup.exception.UnexpectedException;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
 public class BasicSpringBootDeploymentFlow {
-
     private JSONObject config;
+
     private String id;
 
     public BasicSpringBootDeploymentFlow(JSONObject config) {
@@ -68,6 +71,8 @@ public class BasicSpringBootDeploymentFlow {
                 .kubeconfigFilePath(argJ.getString("kubeconfig-file-path"))
                 .namespace(argJ.getString("namespace"))
                 .appId(argJ.getString("app-id"))
+                .deploymentName(getDeploymentName(argJ.getString("app-id")))
+                .patchDeploymentIfAlreadyExists(Boolean.parseBoolean(argJ.getString("patch-deployment-if-exists")))
                 .vmVendor(argJ.getString("vm-vendor"))
                 .dockerRegistryVendor(argJ.getString("docker-registry-vendor"))
                 .dockerVendorArg(new MCArgDeploySpringBootOnKubernetesV1.DockerVendorArg()
@@ -160,13 +165,47 @@ public class BasicSpringBootDeploymentFlow {
         }
     }
 
+    public String getId() {
+        return this.id;
+    }
+
+    public boolean isDeploymentRunning() throws IOException, ApiException {
+        File kubeConfig = new File(getDeploymentStageArg().getKubeconfigFilePath());
+        String appId = getDeploymentStageArg().getAppId();
+        String namespace = getDeploymentStageArg().getNamespace();
+        return KubernetesUtility.deploymentAlreadyExists(kubeConfig, appId, namespace, getDeploymentName(appId));
+    }
+
+    private MCArgDeploySpringBootOnKubernetesV1 getDeploymentStageArg() {
+        JSONArray stages = config.getJSONArray("stages");
+        for (int i = 0; i < stages.length(); i++) {
+            JSONObject stageO = stages.getJSONObject(i);
+            String command = stageO.getString("command");
+            JSONArray args = stageO.getJSONArray("args");
+            if (BasicSpringBootDeploymentFlowConstants.C_DEPLOY_IN_KUBERNETES.equals(command)) {
+                return (MCArgDeploySpringBootOnKubernetesV1) getArgBuildSpringBootKubernetesDeployV1(args);
+            }
+        }
+        throw new UnexpectedException("Deployment stage info not found");
+    }
+
+    public static String getDeploymentName(String appId) {
+        return appId+"-deployment";
+    }
+
+    public void validate() {
+        try {
+            if (isDeploymentRunning() && !getDeploymentStageArg().isPatchDeploymentIfAlreadyExists()) {
+                throw new UnexpectedException("Deployment already exists and patchDeploymentIfAlreadyExists is false");
+            }
+        } catch (IOException | ApiException e) {
+            throw new UnexpectedException("Failed checking if deployment already exists", e);
+        }
+    }
+
     public static void main(String[] args) throws IOException {
         String flowConfigFile = "/home/tapo/IdeaProjects/zigmoi/ketchup/ketchup-core/conf/private/deployment_flow_config_sample.json";
         String deploymentFlowConfigJSON = FileUtility.readDataFromFile(new File(flowConfigFile));
         new BasicSpringBootDeploymentFlow(new JSONObject(deploymentFlowConfigJSON)).execute();
-    }
-
-    public String getId() {
-        return this.id;
     }
 }

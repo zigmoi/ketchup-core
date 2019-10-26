@@ -63,6 +63,7 @@ public class DeploymentServiceImpl implements DeploymentService {
 
         JSONObject config = convertToFlowConfig(projectResourceId, id, dto);
         BasicSpringBootDeploymentFlow flow = new BasicSpringBootDeploymentFlow(config);
+        flow.validate();
 
         DeploymentId deploymentId = new DeploymentId(AuthUtils.getCurrentTenantId(), projectResourceId, flow.getId());
         DeploymentEntity entity = new DeploymentEntity();
@@ -101,16 +102,16 @@ public class DeploymentServiceImpl implements DeploymentService {
         config.put("config-template-version", "v1");
 
         JSONArray stagesJA = new JSONArray();
-        JSONObject stagePulFromRemoteJ;
+        JSONObject stagePullFromRemoteJ;
         try {
-            stagePulFromRemoteJ = getPullFromRemoteConfig(projectResourceId, dto);
+            stagePullFromRemoteJ = getPullFromRemoteConfig(projectResourceId, dto);
         } catch (Exception e) {
-            throw new UnexpectedException("Failed to generate stagePulFromRemote config", e);
+            throw new UnexpectedException("Failed to generate stagePullFromRemote config", e);
         }
         JSONObject stageMvnCleanInstallJ;
         try {
             stageMvnCleanInstallJ = getMvnCleanInstallConfig(projectResourceId,
-                    stagePulFromRemoteJ.getJSONArray("args"), dto);
+                    stagePullFromRemoteJ.getJSONArray("args"), dto);
         } catch (Exception e) {
             throw new UnexpectedException("Failed to generate stageMvnCleanInstall config", e);
         }
@@ -129,7 +130,7 @@ public class DeploymentServiceImpl implements DeploymentService {
             throw new UnexpectedException("Failed to generate stageBuildSpringBootDockerImage config", e);
         }
 
-        stagesJA.put(stagePulFromRemoteJ);
+        stagesJA.put(stagePullFromRemoteJ);
         stagesJA.put(stageMvnCleanInstallJ);
         stagesJA.put(stageBuildSpringBootDockerImageJ);
         stagesJA.put(stageDeployInKubernetesJ);
@@ -159,6 +160,7 @@ public class DeploymentServiceImpl implements DeploymentService {
         argsJ.put("kubeconfig-file-path", kubeconfig.getAbsolutePath());
         argsJ.put("namespace", dto.getKubernetesNamespace());
         argsJ.put("app-id", dto.getServiceName());
+        argsJ.put("patch-deployment-if-exists", String.valueOf(dto.isUpdateDeploymentIfRunning()));
         if (!CloudProviders.AWS.toString().equals(kubernetesClusterSettingsResponseDto.getProvider())
                 && ContainerRegistryProviders.AWS_ECR.toString().equals(dockerRegistryVendor)) {
             throw new UnsupportedOperationException("When using " + ContainerRegistryProviders.AWS_ECR
