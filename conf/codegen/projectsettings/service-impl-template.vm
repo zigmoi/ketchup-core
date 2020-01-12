@@ -133,7 +133,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         JSONObject jo = new JSONObject(settingsEntity.getData());
         #foreach($field in $setting.getFieldDefs())
             #if(${field.data_type} == "map-string-string")
-                settingsDto.set${field.field_name_camel_case_first_upper}(TransformUtility.convertToMapStringString(jo.getJSONObject("${field.field_name_camel_case_first_lower}").toMap()));
+                settingsDto.set${field.field_name_camel_case_first_upper}(TransformUtility.convertToMapStringString(new JSONObject(jo.getString("${field.field_name_camel_case_first_lower}")).toMap()));
             #else
                 settingsDto.set${field.field_name_camel_case_first_upper}(jo.getString("${field.name}"));
             #end
