@@ -578,7 +578,9 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     private void convertToDto(ProjectSettingsEntity settingsEntity, HostnameIpMappingSettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
-        settingsDto.setHostnameIpMapping(TransformUtility.convertToMapStringString(jo.getJSONObject("hostnameIpMapping").toMap()));
+        if (jo.has("hostnameIpMapping")) {
+            settingsDto.setHostnameIpMapping(TransformUtility.convertToMapStringString(new JSONObject(jo.getString("hostnameIpMapping")).toMap()));
+        }
     }
 
     private void convertToEntity(HostnameIpMappingSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
