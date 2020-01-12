@@ -14,6 +14,8 @@ public interface ProjectService {
 
     void deleteProject(String projectResourceId);
 
+    void updateDescription(String projectResourceId, String description);
+
     void addMember(String projectResourceId, String member);
 
     void removeMember(String projectResourceId, String member);

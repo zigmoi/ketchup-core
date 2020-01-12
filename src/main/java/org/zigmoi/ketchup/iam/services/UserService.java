@@ -3,6 +3,7 @@ package org.zigmoi.ketchup.iam.services;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.zigmoi.ketchup.iam.entities.User;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,6 +11,8 @@ public interface UserService {
 
 
     void createUser(User user);
+
+    void updateUser(User user);
 
     Optional<User> getUser(String userName);
 

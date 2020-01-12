@@ -38,6 +38,21 @@ public class UserController {
         userService.createUser(user);
     }
 
+    @PutMapping("/v1/user")
+    public void updateUser(@RequestBody @Valid UserRequestDto userRequestDto) {
+        String userName = userRequestDto.getUserName();
+        User user = userService.getUser(userName)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format("User with username %s not found", userName)));
+        user.setDisplayName(userRequestDto.getDisplayName());
+        user.setEmail(userRequestDto.getEmail());
+        user.setFirstName(userRequestDto.getFirstName());
+        user.setLastName(userRequestDto.getLastName());
+        user.setEnabled(userRequestDto.isEnabled());
+        user.setRoles(userRequestDto.getRoles());
+        userService.updateUser(user);
+    }
+
     @GetMapping("/v1/user/{username}")
     public UserDto getUser(@PathVariable("username") String userName) {
         User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));

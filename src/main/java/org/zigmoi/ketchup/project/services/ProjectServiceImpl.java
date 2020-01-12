@@ -83,6 +83,20 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
     @Override
     @Transactional
+    public void updateDescription(String projectResourceId, String description) {
+        String identity = AuthUtils.getCurrentQualifiedUsername();
+        validateUserCanUpdateProjectDetails(identity, projectResourceId);
+
+        ProjectId projectId = new ProjectId();
+        projectId.setResourceId(projectResourceId);
+        projectId.setTenantId(AuthUtils.getCurrentTenantId());
+
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
+        project.setDescription(description);
+    }
+
+    @Override
+    @Transactional
     public void addMember(String projectResourceId, String member) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
         validateUserCanAddMember(identity, projectResourceId);
@@ -188,6 +202,13 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
     private void validateUserCanListMembers(String identity, String projectResourceId) {
         boolean canListProjectMembers = projectAclService.hasProjectPermission(identity, "list-project-members", projectResourceId);
         if (canListProjectMembers == false) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
+        }
+    }
+
+    private void validateUserCanUpdateProjectDetails(String identity, String projectResourceId) {
+        boolean canUpdateProject = projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
+        if (canUpdateProject == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
     }

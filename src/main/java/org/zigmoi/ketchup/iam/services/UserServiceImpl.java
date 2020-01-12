@@ -88,6 +88,14 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     }
 
     @Override
+    @Transactional
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
+    public void updateUser(@Valid User user) {
+        validateTenantId(user.getUsername());
+        userRepository.save(user);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public Optional<User> getUser(String userName) {

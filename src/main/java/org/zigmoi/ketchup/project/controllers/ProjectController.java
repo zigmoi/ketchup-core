@@ -39,6 +39,11 @@ public class ProjectController {
         projectService.deleteProject(projectName);
     }
 
+    @PutMapping("/v1/project/{projectName}/{projectDescription}")
+    public void updateDescription(@PathVariable("projectName") String projectName, @PathVariable("projectDescription") String description){
+        projectService.updateDescription(projectName, description);
+    }
+
     @GetMapping("/v1/projects")
     public List<Project> listAllProjects() {
         return projectService.listAllProjects();
