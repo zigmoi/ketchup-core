@@ -16,6 +16,10 @@ public class UserDto {
     private String email;
     private String firstName;
     private String lastName;
-    private Date creationDate;
+//    private Date creationDate;
+    private Date createdOn;
+    private String createdBy;
+    private Date lastUpdatedOn;
+    private String lastUpdatedBy;
     Set<String> roles = new HashSet<>();
 }

@@ -47,7 +47,7 @@ public class TenantServiceImpl implements TenantService {
         tenant.setId(tenantDto.getId());
         tenant.setDisplayName(tenantDto.getDisplayName());
         tenant.setEnabled(true);
-        tenant.setCreationDate(new Date());
+//        tenant.setCreationDate(new Date());
         tenantRepository.save(tenant);
         createDefaultUser(tenantDto.getId(), tenantDto.getDefaultUserEmail(), tenantDto.getDefaultUserPassword());
     }
@@ -62,7 +62,7 @@ public class TenantServiceImpl implements TenantService {
         user.setEmail(userEmail);
         user.setPassword(passwordEncoder.encode(userPassword));
         user.setEnabled(true);
-        user.setCreationDate(new Date());
+//        user.setCreationDate(new Date());
         user.setFirstName("Tenant Admin");
         user.setLastName("Tenant Admin");
         user.setDisplayName("Tenant Admin");

@@ -144,7 +144,11 @@ public class UserController {
         userDto.setEmail(user.getEmail());
         userDto.setFirstName(user.getFirstName());
         userDto.setLastName(user.getLastName());
-        userDto.setCreationDate(user.getCreationDate());
+//        userDto.setCreationDate(user.getCreationDate());
+        userDto.setCreatedOn(user.getCreatedOn());
+        userDto.setCreatedBy(user.getCreatedBy());
+        userDto.setLastUpdatedOn(user.getLastUpdatedOn());
+        userDto.setLastUpdatedBy(user.getLastUpdatedBy());
         userDto.setRoles(user.getRoles());
         return userDto;
     }

@@ -1,7 +1,12 @@
 package org.zigmoi.ketchup.iam.entities;
 
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,6 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "users")
 public class User implements UserDetails {
 
@@ -29,8 +35,22 @@ public class User implements UserDetails {
     private String lastName;
 
 
+//    @Temporal(TemporalType.TIMESTAMP)
+//    private Date creationDate;
+
     @Temporal(TemporalType.TIMESTAMP)
-    private Date creationDate;
+    @CreationTimestamp
+    private Date createdOn;
+
+    @CreatedBy
+    private String createdBy;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @UpdateTimestamp
+    private Date lastUpdatedOn;
+
+    @LastModifiedBy
+    private String lastUpdatedBy;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
@@ -133,12 +153,44 @@ public class User implements UserDetails {
         this.displayName = displayName;
     }
 
-    public Date getCreationDate() {
-        return creationDate;
+//    public Date getCreationDate() {
+//        return creationDate;
+//    }
+//
+//    public void setCreationDate(Date creationDate) {
+//        this.creationDate = creationDate;
+//    }
+
+    public Date getCreatedOn() {
+        return createdOn;
     }
 
-    public void setCreationDate(Date creationDate) {
-        this.creationDate = creationDate;
+    public void setCreatedOn(Date createdOn) {
+        this.createdOn = createdOn;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Date getLastUpdatedOn() {
+        return lastUpdatedOn;
+    }
+
+    public void setLastUpdatedOn(Date lastUpdatedOn) {
+        this.lastUpdatedOn = lastUpdatedOn;
+    }
+
+    public String getLastUpdatedBy() {
+        return lastUpdatedBy;
+    }
+
+    public void setLastUpdatedBy(String lastUpdatedBy) {
+        this.lastUpdatedBy = lastUpdatedBy;
     }
 
     public Set<String> getRoles() {

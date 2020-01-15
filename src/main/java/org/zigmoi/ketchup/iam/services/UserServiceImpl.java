@@ -82,7 +82,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 //        }
 //        currentUser.getRoles().contains("ROLE_")
 
-        user.setCreationDate(new Date());
+//        user.setCreationDate(new Date());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }

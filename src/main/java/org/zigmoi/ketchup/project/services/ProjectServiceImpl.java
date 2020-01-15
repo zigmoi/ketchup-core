@@ -62,7 +62,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
         Project project = new Project();
         project.setId(projectId1);
-        project.setCreationDate(new Date());
+       // project.setCreationDate(new Date());
         project.setDescription(projectDto.getDescription());
         project.setMembers(projectDto.getMembers());
         projectRepository.save(project);
