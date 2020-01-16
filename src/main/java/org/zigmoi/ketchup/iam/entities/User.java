@@ -2,7 +2,6 @@ package org.zigmoi.ketchup.iam.entities;
 
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -10,7 +9,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.zigmoi.ketchup.project.entities.ProjectId;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
@@ -33,10 +31,6 @@ public class User implements UserDetails {
     private String email;
     private String firstName;
     private String lastName;
-
-
-//    @Temporal(TemporalType.TIMESTAMP)
-//    private Date creationDate;
 
     @Temporal(TemporalType.TIMESTAMP)
     @CreationTimestamp
@@ -61,11 +55,6 @@ public class User implements UserDetails {
     @CollectionTable(name = "user_projects", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
     @Column(name = "project_resource_id")
     Set<String> projects = new HashSet<>();
-
-//    @ElementCollection(fetch = FetchType.LAZY)
-//    @CollectionTable(name = "user_deployments", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
-//    @Column(name = "deployment")
-//    Set<DeploymentId> deployments = new HashSet<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -153,14 +142,6 @@ public class User implements UserDetails {
         this.displayName = displayName;
     }
 
-//    public Date getCreationDate() {
-//        return creationDate;
-//    }
-//
-//    public void setCreationDate(Date creationDate) {
-//        this.creationDate = creationDate;
-//    }
-
     public Date getCreatedOn() {
         return createdOn;
     }
@@ -208,13 +189,5 @@ public class User implements UserDetails {
     public void setProjects(Set<String> projects) {
         this.projects = projects;
     }
-
-//    public Set<DeploymentId> getDeployments() {
-//        return deployments;
-//    }
-//
-//    public void setDeployments(Set<DeploymentId> deployments) {
-//        this.deployments = deployments;
-//    }
 
 }

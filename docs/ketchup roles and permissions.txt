@@ -1,0 +1,143 @@
+Overview:
+--------------------------------------------------------------
+tenant operations (crud, list-all): ROLE_SUPER_ADMIN required.
+user operations   (crud, list-all): ROLE_USER_ADMIN  required
+project operations: 	  permissions (project permissions required for specific project and for specific operation on that project.)
+project settings:   	  permissions (project permissions required for specific project and for specific operation on that project.)
+project members:    	  permissions (project permissions required for specific project and for specific operation on that project.)
+deployment:         	  permissions (project permissions required for specific project and for specific operation on that project.)
+
+
+ROLE_TENANT_ADMIN:
+--------------------------------------------------------------
+special role default user (admin@tenant_name) created in tenant will have.
+users with ROLE_TENANT_ADMIN can assign/revoke this role to other users.
+roles assigned to user having ROLE_TENANT_ADMIN cannot be revoked unless revoking operation is performed by user which has ROLE_TENANT_ADMIN.
+permissions assigned to user having ROLE_TENANT_ADMIN cannot be revoked unless revoking operation is performed by user which has ROLE_TENANT_ADMIN.
+
+default user (admin@tenant_name) in each tenant will have all permissions and role assigned.
+or in code every operation allows ROLE_TENANT_ADMIN to perform that operation.
+
+
+ROLE_SUPER_ADMIN:
+--------------------------------------------------------------
+can create, disable, delete tenants.
+can create users with ROLE_SUPER_ADMIN.
+no other operations.
+admin@zigmoi.com has this role by default.
+
+
+ROLE_USER_ADMIN:
+--------------------------------------------------------------
+can create, read, update, delete, list, enable/disable users.
+can assign role ROLE_USER_ADMIN to other users.
+
+
+ROLE_USER:
+This is default role which every user will have. do we need this?
+
+
+Permissions:
+--------------------------------------------------------------
+create-project:
+	 can create new projects but cannot create anything inside those projects unless update permission is given.
+	 allows to create new projects. (create permissions are not resource specific and are applied to all resources.)
+	 does not allows to add settings in any project.
+	 does not allows to create deployments in any project.
+	 does not allows to add members in any project.
+	 does not does not allow to remove members in any project.
+	 does not allow to update or delete existing setting or deployment or members in any project.
+assign-create-project:
+	 allows to assign/revoke create-project permissions to any user.
+update-project:
+	 allows to add new resources and update existing resources in a specific project for which permission is being given. 
+	 allows to update project details in that project.
+	 allows to add/update any/all settings in that project.
+	 allows to update any/all deployments in that project.
+	 allows to add members in that project. 
+	 does not allows to delete/remove existing members, existing settings, existing deployments in that project.
+assign-update-project:
+	 allows to assign/revoke update-project permissions to any user.
+	 can be assigned only for project for which assigning user has assign-update-project.
+read-project:
+	 allows to read any resource part of that project including project itself. (setting, members, deployments.)
+	 allows to get/read project details of that project. 
+	 allows to read settings in that project. 
+	 allows to read deployments in that project.
+assign-read-project:
+	 allows to assign/revoke read-project permissions to any user.
+	 can be assigned only for project for which assigning user has assign-read-project.
+delete-project:
+	 allows to delete any resource part of that project including project itself. (setting, members, deployments.)
+	 allows to delete specific project, 
+	 allows to delete any/all settings in that project, 
+	 allows to delete any/all deployments in that project.
+	 does not allows to read user details or list all users. (requires read permission to fetch that resource or user will have to provide manually.)
+assign-delete-project:
+	 allows to assign/revoke delete-project permissions to any user.
+	 can be assigned only for project for which assigning user has assign-delete-project.
+list-project-members:
+	 allows to fetch list of members in that project.
+assign-list-project-members:
+	 allows to assign/revoke list-project-members permissions to any user.
+	 can be assigned only for project for which assigning user has assign-list-project-members.
+
+create does not allow updates, read or delete in any project, only project can be created.
+update does not allow read, delete in any project, only updates to existing resources and adding new resources inside that project is allowed.
+update permission will only allow updates to that resource, delete permission will only to delete that resource/project.
+list all resources/projects will return resources after filtering them, only those resources for which user has read permission will be returned if user does not have read permission on any resource, list will return empty list of resources.
+to delete project when user does not have read permission on that project, UI should allow taking project name as input in textbox instead of showing list of projects, as list will be empty or will not show that project due to missing read permission. 
+
+question: what view does user get if he has delete project permission but not read project permission, can he see the list of all projects to select and delete?
+answer: user will not see any projects, ui should have option to enter project name to delete and delete button to delete resources in such scenarios. 
+
+
+ 
+Assigning roles and permissions:
+--------------------------------------------------------------
+user should have that a particular role to assign that role to other user.
+user should have assign-permission-x to assign that permission x to members or users.
+
+
+Project Membership:
+--------------------------------------------------------------
+Each project can have members.
+Each member may or may not have a permission assigned to it in that project.
+Membership has no association with permissions.
+So some members can exist which have no permissions in that project.
+Membership is to keep 2 way mapping between user and associated resource in this case project.
+So projects can show which users are members in it.
+Each user has a field projects having list of project he is member of.
+When updating membership user projects will be updated a special method will allow this which will not require ROLE_USER_ADMIN.
+Currently user projects cannot be updated from user services while updating user.
+
+Keeping membership associated with permissions has performance and other recursively complex issues, this was earlier incorporated and than removed for simplicity.
+User who has create-project or update-project permission can add members to that project.
+User who has delete-project or update-project permission can remove members to that project.
+Adding or removing user as member from project does not change his permissions or roles.
+
+
+List All Resources operation:
+--------------------------------------------------------------
+List all tenants can be only performed by user with ROLE_SUPER_ADMIN permission.
+
+List all users with all details can be only performed by user with ROLE_USER_ADMIN permission.
+
+List all projects will filter projects and list based on whether user has read permission or not for that project, so only those projects will be listed for which user has read permission. (can be cached for improved performance.)
+
+List all project settings in a project will be project wise listed and hence if user has read permission on project than he can list all settings in that project, we do not need to check each setting before listing as project id of all settings in one project will be same.
+
+List all project deployments in a project will be project wise listed and hence if user has read permission on project than he can list all deployments in that project, we do not need to check each deployment before listing as project id of all deployments in one project will be same. 
+
+List all project members in a project can be done is user has list-project-members permissions assigned for that project.
+
+Scenario:
+If ROLE_USER_ADMIN permission is not present but user wants to assign permission x to a user, can he fetch all users for selecting user.
+No: all users can be listed only when user has ROLE_USER_ADMIN, UI needs to provide inputbox and not list in such scenarios.
+Calling the Rest api will not be a issue as user needs to be manually provided instead of fetching all users and selecting one like in UI.
+
+
+Multi Tenancy Overview:
+--------------------------------------------------------------
+
+
