@@ -40,10 +40,9 @@ public class UserController {
 
     @PutMapping("/v1/user")
     public void updateUser(@RequestBody @Valid UserRequestDto userRequestDto) {
+        User user = new User();
         String userName = userRequestDto.getUserName();
-        User user = userService.getUser(userName)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        String.format("User with username %s not found", userName)));
+        user.setUserName(userName);
         user.setDisplayName(userRequestDto.getDisplayName());
         user.setEmail(userRequestDto.getEmail());
         user.setFirstName(userRequestDto.getFirstName());
@@ -105,36 +104,11 @@ public class UserController {
                 .collect(Collectors.toList());
     }
 
-    @GetMapping("/v1/user/{username}/projects")
-    public Set<String> listUserProjects(@PathVariable("username") String userName) {
-        User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
-        return user.getProjects();
-    }
-
     @GetMapping("/v1/user/{username}/roles")
     public Set<String> listUserRoles(@PathVariable("username") String userName) {
         User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
         return user.getRoles();
     }
-
-//    @GetMapping("/v1/user/{username}/globalSettings")
-//    public Set<GlobalSettingId> listUserGlobalSettings(@PathVariable("username") String userName) {
-//        return userService.getUser(userName).get().getGlobalSettings();
-//    }
-//
-//    @GetMapping("/v1/user/{username}/project/{projectId}/projectSettings")
-//    public Set<ProjectSettingId> listUserProjectSettings(@PathVariable("username") String userName, @PathVariable("projectId") String projectId) {
-//        //filter projects in memory or in sql based on projectId.
-//        return userService.getUser(userName).get().getProjectSettings();
-//    }
-//
-//    @GetMapping("/v1/user/{username}/project/{projectId}/deployments")
-//    public Set<DeploymentId> listUserDeployments(@PathVariable("username") String userName, @PathVariable("projectId") String projectId) {
-//        //filter projects in memory or in sql based on projectId.
-//        return userService.getUser(userName).get().getDeployments();
-//    }
-
-    //add and remove methods for projects, deployments, project settings and global settings.
 
     public UserDto prepareUserDto(User user) {
         UserDto userDto = new UserDto();
@@ -144,7 +118,6 @@ public class UserController {
         userDto.setEmail(user.getEmail());
         userDto.setFirstName(user.getFirstName());
         userDto.setLastName(user.getLastName());
-//        userDto.setCreationDate(user.getCreationDate());
         userDto.setCreatedOn(user.getCreatedOn());
         userDto.setCreatedBy(user.getCreatedBy());
         userDto.setLastUpdatedOn(user.getLastUpdatedOn());

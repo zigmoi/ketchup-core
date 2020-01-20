@@ -13,36 +13,30 @@ import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentRequestDto;
 import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentResponseDto;
 import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.entities.DeploymentId;
-import org.zigmoi.ketchup.deployment.repositories.DeploymentAclRepository;
 import org.zigmoi.ketchup.deployment.repositories.DeploymentRepository;
 import org.zigmoi.ketchup.exception.UnexpectedException;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
-import org.zigmoi.ketchup.iam.services.UserService;
 import org.zigmoi.ketchup.project.dtos.settings.*;
-import org.zigmoi.ketchup.project.services.ProjectService;
 import org.zigmoi.ketchup.project.services.ProjectSettingsService;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
 @Service
 public class DeploymentServiceImpl implements DeploymentService {
 
-    private final DeploymentAclRepository deploymentAclRepository;
+    @Autowired
     private final DeploymentRepository deploymentRepository;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private ProjectService projectService;
+
     @Autowired
     private ProjectSettingsService projectSettingsService;
 
     @Autowired
-    public DeploymentServiceImpl(DeploymentAclRepository deploymentAclRepository, DeploymentRepository deploymentRepository) {
-        this.deploymentAclRepository = deploymentAclRepository;
+    public DeploymentServiceImpl(DeploymentRepository deploymentRepository) {
         this.deploymentRepository = deploymentRepository;
     }
 
@@ -73,11 +67,6 @@ public class DeploymentServiceImpl implements DeploymentService {
         entity.setServiceName(dto.getServiceName());
         entity.setCurrentStatus(DeploymentsStatus.INITIALISED.toString());
 
-        entity.setCreatedBy(AuthUtils.getCurrentUsername());
-        entity.setCreatedOn(new Date());
-        entity.setDisplayName(dto.getDisplayName());
-        entity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        entity.setLastUpdatedOn(new Date());
 //        entity.setData(); todo snappy compress
 
         deploymentRepository.saveAndFlush(entity);
@@ -314,7 +303,11 @@ public class DeploymentServiceImpl implements DeploymentService {
     }
 
     @Override
-    public List<BasicSpringBootDeploymentResponseDto> listAllBasicSpringBootDeployments(String projectResourceId) {
-        return null;
+    public List<DeploymentEntity> listAllBasicSpringBootDeployments(String projectResourceId) {
+        return deploymentRepository.findAll()
+                .stream()
+                .filter(deploymentEntity ->
+                deploymentEntity.getId().getProjectResourceId().equalsIgnoreCase(projectResourceId))
+                .collect(Collectors.toList());
     }
 }

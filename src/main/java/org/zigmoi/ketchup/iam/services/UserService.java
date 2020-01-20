@@ -1,9 +1,7 @@
 package org.zigmoi.ketchup.iam.services;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.zigmoi.ketchup.iam.entities.User;
 
-import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,10 +25,6 @@ public interface UserService {
     void deleteUser(String userName);
 
     List<User> listAllUsers();
-
-    void addProject(String userName, String projectResourceId);
-
-    void removeProject(String userName, String projectResourceId);
 
     void addRole(String userName, String role);
 

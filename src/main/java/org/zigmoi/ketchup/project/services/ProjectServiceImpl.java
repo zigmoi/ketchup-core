@@ -8,13 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.services.TenantProviderService;
-import org.zigmoi.ketchup.iam.services.UserService;
 import org.zigmoi.ketchup.project.dtos.ProjectDto;
 import org.zigmoi.ketchup.project.entities.Project;
 import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.project.repositories.ProjectRepository;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -24,23 +22,13 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
     private final ProjectRepository projectRepository;
 
-    private final UserService userService;
-
     private final ProjectAclService projectAclService;
 
     @Autowired
-    public ProjectServiceImpl(ProjectRepository projectRepository, UserService userService, ProjectAclService projectAclService) {
+    public ProjectServiceImpl(ProjectRepository projectRepository, ProjectAclService projectAclService) {
         this.projectRepository = projectRepository;
-        this.userService = userService;
         this.projectAclService = projectAclService;
     }
-
-
-//    @Override
-//    @Transactional
-//    public boolean verifyMemberExists(ProjectId projectId, String member) {
-//        return projectRepository.existsByIdAndMembersExists(projectId, member);
-//    }
 
     @Override
     @Transactional
@@ -62,7 +50,6 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
         Project project = new Project();
         project.setId(projectId1);
-       // project.setCreationDate(new Date());
         project.setDescription(projectDto.getDescription());
         project.setMembers(projectDto.getMembers());
         projectRepository.save(project);
@@ -112,7 +99,6 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
             project.setMembers(members);
             projectRepository.save(project);
         }
-        userService.addProject(member, projectResourceId);
     }
 
     @Override
@@ -132,7 +118,6 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
             project.setMembers(members);
             projectRepository.save(project);
         }
-        userService.removeProject(member, projectResourceId);
     }
 
     @Override
@@ -200,7 +185,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
     }
 
     private void validateUserCanListMembers(String identity, String projectResourceId) {
-        boolean canListProjectMembers = projectAclService.hasProjectPermission(identity, "list-project-members", projectResourceId);
+        boolean canListProjectMembers = projectAclService.hasProjectPermission(identity, "read-project", projectResourceId);
         if (canListProjectMembers == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }

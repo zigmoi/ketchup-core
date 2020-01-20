@@ -6,6 +6,4 @@ INSERT INTO `project_acl` (`tenant_id`, `acl_rule_id`, `identity`, `permission_i
 ( 't1.com', '5', 'admin@t1.com', 'delete-project', '*', 'ALLOW'),
 ( 't1.com', '6', 'admin@t1.com', 'assign-delete-project', '*', 'ALLOW'),
 ( 't1.com', '7', 'admin@t1.com', 'create-project', '*', 'ALLOW'),
-( 't1.com', '8', 'admin@t1.com', 'assign-create-project', '*', 'ALLOW'),
-( 't1.com', '9', 'admin@t1.com', 'list-project-members', '*', 'ALLOW'),
-( 't1.com', '10', 'admin@t1.com', 'assign-list-project-members', '*', 'ALLOW');
+( 't1.com', '8', 'admin@t1.com', 'assign-create-project', '*', 'ALLOW');

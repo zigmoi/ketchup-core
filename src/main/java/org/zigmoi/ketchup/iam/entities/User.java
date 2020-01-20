@@ -51,11 +51,6 @@ public class User implements UserDetails {
     @Column(name = "role")
     Set<String> roles = new HashSet<>();
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "user_projects", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
-    @Column(name = "project_resource_id")
-    Set<String> projects = new HashSet<>();
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Set<SimpleGrantedAuthority> set = new HashSet<>();
@@ -180,14 +175,6 @@ public class User implements UserDetails {
 
     public void setRoles(Set<String> roles) {
         this.roles = roles;
-    }
-
-    public Set<String> getProjects() {
-        return projects;
-    }
-
-    public void setProjects(Set<String> projects) {
-        this.projects = projects;
     }
 
 }

@@ -9,8 +9,5 @@ import java.util.List;
 public interface UserRepository extends JpaRepository<User, String> {
 
     long countByEmail(String email);
-
     List<User> findAllByUserNameEndsWith(String tenantId);
-
-//    boolean existsByUserNameAndProjectsExists(String userName, ProjectId projectId);
 }

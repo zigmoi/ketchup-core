@@ -21,10 +21,7 @@ import org.zigmoi.ketchup.iam.exceptions.TenantNotFoundException;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
 
 import javax.validation.Valid;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 
 @Service("userDetailsService")
@@ -73,16 +70,20 @@ public class UserServiceImpl implements UserDetailsService, UserService {
                     String.format("User Password %s is invalid!", user.getPassword()));
         }
 
-//        String currentUserName = AuthUtils.getCurrentQualifiedUsername();
-//        User currentUser = userRepository.findById(currentUserName).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
-//                String.format("User with user name %s not found!", currentUserName)));
-//
-//        for (String role: user.getRoles()) {
-//            if("ROLE_SUPER_ADMIN".equalsIgnoreCase()){}
-//        }
-//        currentUser.getRoles().contains("ROLE_")
 
-//        user.setCreationDate(new Date());
+        if (Arrays.asList("ROLE_TENANT_ADMIN", "ROLE_USER_ADMIN", "ROLE_USER_READER", "ROLE_USER")
+                .containsAll(user.getRoles()) == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role found!");
+        }
+
+        String loggedInUserName = AuthUtils.getCurrentQualifiedUsername();
+        User loggedInUser = userRepository.findById(loggedInUserName).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                String.format("User with user name %s not found!", loggedInUserName)));
+
+        if (user.getRoles().contains("ROLE_TENANT_ADMIN") && loggedInUser.getRoles().contains("ROLE_TENANT_ADMIN") == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient privileges to assign Role ROLE_TENANT_ADMIN!");
+        }
+
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }
@@ -92,12 +93,34 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void updateUser(@Valid User user) {
         validateTenantId(user.getUsername());
+        if (Arrays.asList("ROLE_TENANT_ADMIN", "ROLE_USER_ADMIN", "ROLE_USER_READER", "ROLE_USER")
+                .containsAll(user.getRoles()) == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role found!");
+        }
+
+        User currentUser = userRepository.findById(user.getUsername()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format("User with username %s not found.", user.getUsername())));
+
+        String loggedInUserName = AuthUtils.getCurrentQualifiedUsername();
+        User loggedInUser = userRepository.findById(loggedInUserName).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                String.format("User with user name %s not found!", loggedInUserName)));
+
+        //check if role ROLE_TENANT_ADMIN is assigned or removed
+        // or if user already has ROLE_TENANT_ADMIN,
+        // than logged in user should have role ROLE_TENANT_ADMIN.
+        if ((user.getRoles().contains("ROLE_TENANT_ADMIN") || currentUser.getRoles().contains("ROLE_TENANT_ADMIN"))
+                && loggedInUser.getRoles().contains("ROLE_TENANT_ADMIN") == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient privileges to assign Role ROLE_TENANT_ADMIN!");
+        }
+
+        user.setPassword(currentUser.getPassword()); //keep existing password as it is, do not update it.
         userRepository.save(user);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_USER_READER')")
     public Optional<User> getUser(String userName) {
         validateTenantId(userName);
         return userRepository.findById(userName);
@@ -117,9 +140,19 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     public void updateUserStatus(String userName, boolean status) {
         validateTenantId(userName);
         User user = userRepository.findById(userName).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found.", userName)));
+                new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format("User with username %s not found.", userName)));
+
+        String loggedInUserName = AuthUtils.getCurrentQualifiedUsername();
+        User loggedInUser = userRepository.findById(loggedInUserName).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                String.format("User with user name %s not found!", loggedInUserName)));
+
+        if (user.getRoles().contains("ROLE_TENANT_ADMIN") && loggedInUser.getRoles().contains("ROLE_TENANT_ADMIN") == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient privileges, Role ROLE_TENANT_ADMIN required!");
+        }
+
         if (user.isEnabled() == status) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s has same status as requested.", userName));
+            return;
         }
         user.setEnabled(status);
         userRepository.save(user);
@@ -132,6 +165,15 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         validateTenantId(userName);
         User user = userRepository.findById(userName).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found.", userName)));
+
+        String loggedInUserName = AuthUtils.getCurrentQualifiedUsername();
+        User loggedInUser = userRepository.findById(loggedInUserName)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        String.format("User with user name %s not found!", loggedInUserName)));
+        if (user.getRoles().contains("ROLE_TENANT_ADMIN") && loggedInUser.getRoles().contains("ROLE_TENANT_ADMIN") == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient privileges, Role ROLE_TENANT_ADMIN required!");
+        }
+
         user.setDisplayName(displayName);
         userRepository.save(user);
     }
@@ -151,52 +193,25 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void deleteUser(String userName) {
         validateTenantId(userName);
-        if (userRepository.findById(userName).isPresent()) {
-            userRepository.deleteById(userName);
-        } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName));
+        User user = userRepository.findById(userName).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found.", userName)));
+
+        String loggedInUserName = AuthUtils.getCurrentQualifiedUsername();
+        User loggedInUser = userRepository.findById(loggedInUserName)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        String.format("User with user name %s not found!", loggedInUserName)));
+        if (user.getRoles().contains("ROLE_TENANT_ADMIN") && loggedInUser.getRoles().contains("ROLE_TENANT_ADMIN") == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient privileges, Role ROLE_TENANT_ADMIN required!");
         }
+
+        userRepository.deleteById(userName);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_USER_READER')")
     public List<User> listAllUsers() {
         return userRepository.findAllByUserNameEndsWith("@" + AuthUtils.getCurrentTenantId());
-    }
-
-//    @Override
-//    @Transactional
-//    public boolean verifyProjectExists(String userName, ProjectId projectId) {
-//        return userRepository.existsByUserNameAndProjectsExists(userName, projectId);
-//    }
-
-    @Override
-    @Transactional
-    public void addProject(String userName, String projectResourceId) {
-        validateTenantId(userName);
-        User user = userRepository.findById(userName).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
-        Set<String> userProjects = user.getProjects();
-        if (userProjects.contains(projectResourceId) == false) {
-            userProjects.add(projectResourceId);
-            user.setProjects(userProjects);
-            userRepository.save(user);
-        }
-    }
-
-    @Override
-    @Transactional
-    public void removeProject(String userName, String projectResourceId) {
-        validateTenantId(userName);
-        User user = userRepository.findById(userName).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
-        Set<String> userProjects = user.getProjects();
-        if (userProjects.contains(projectResourceId)) {
-            userProjects.remove(projectResourceId);
-            user.setProjects(userProjects);
-            userRepository.save(user);
-        }
     }
 
     @Override
@@ -204,8 +219,24 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void addRole(String userName, String role) {
         validateTenantId(userName);
+
+        if (Arrays.asList("ROLE_TENANT_ADMIN", "ROLE_USER_ADMIN", "ROLE_USER_READER", "ROLE_USER").contains(role) == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role!");
+        }
+
         User user = userRepository.findById(userName).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
+
+        String loggedInUserName = AuthUtils.getCurrentQualifiedUsername();
+        User loggedInUser = userRepository.findById(loggedInUserName)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        String.format("User with user name %s not found!", loggedInUserName)));
+        if (("ROLE_TENANT_ADMIN".equals(role) || user.getRoles().contains("ROLE_TENANT_ADMIN"))
+                && loggedInUser.getRoles().contains("ROLE_TENANT_ADMIN") == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient privileges, Role ROLE_TENANT_ADMIN required!");
+        }
+
+
         Set<String> userRoles = user.getRoles();
         if (userRoles.contains(role) == false) {
             userRoles.add(role);
@@ -219,8 +250,23 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void removeRole(String userName, String role) {
         validateTenantId(userName);
+
+        if (Arrays.asList("ROLE_TENANT_ADMIN", "ROLE_USER_ADMIN", "ROLE_USER_READER", "ROLE_USER").contains(role) == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role!");
+        }
+
         User user = userRepository.findById(userName).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
+
+        String loggedInUserName = AuthUtils.getCurrentQualifiedUsername();
+        User loggedInUser = userRepository.findById(loggedInUserName)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        String.format("User with user name %s not found!", loggedInUserName)));
+        if (("ROLE_TENANT_ADMIN".equals(role) || user.getRoles().contains("ROLE_TENANT_ADMIN"))
+                && loggedInUser.getRoles().contains("ROLE_TENANT_ADMIN") == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient privileges, Role ROLE_TENANT_ADMIN required!");
+        }
+
         Set<String> userRoles = user.getRoles();
         if (userRoles.contains(role)) {
             userRoles.remove(role);

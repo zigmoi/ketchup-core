@@ -89,11 +89,9 @@ public class ProjectController {
                                                                             @PathVariable("userName") String userName) {
         String identity = userName;
         List<String> projectPermissions = asList("create-project",
-                "read-project", "update-project",
-                "delete-project", "list-project-members",
+                "read-project", "update-project", "delete-project",
                 "assign-create-project", "assign-read-project",
-                "assign-update-project", "assign-delete-project",
-                "assign-list-project-members");
+                "assign-update-project", "assign-delete-project");
         List<ProjectPermissionStatusDto> allPermissionStatus = new ArrayList<>();
         for (String permissionId : projectPermissions) {
 
