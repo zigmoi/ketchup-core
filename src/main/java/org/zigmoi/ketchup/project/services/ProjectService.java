@@ -22,8 +22,6 @@ public interface ProjectService {
 
     Set<String> listMembers(String projectResourceId);
 
-    Set<ProjectId> findAllProjectIds();
-
     List<Project> listAllProjects();
 
     Optional<Project> findById(String projectResourceId);

@@ -16,40 +16,36 @@ import org.zigmoi.ketchup.project.repositories.ProjectRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ProjectServiceImpl extends TenantProviderService implements ProjectService {
 
     private final ProjectRepository projectRepository;
 
-    private final ProjectAclService projectAclService;
+    private PermissionUtilsService permissionUtilsService;
 
     @Autowired
-    public ProjectServiceImpl(ProjectRepository projectRepository, ProjectAclService projectAclService) {
+    public ProjectServiceImpl(ProjectRepository projectRepository, PermissionUtilsService permissionUtilsService) {
         this.projectRepository = projectRepository;
-        this.projectAclService = projectAclService;
+        this.permissionUtilsService = permissionUtilsService;
     }
 
     @Override
     @Transactional
     public void createProject(ProjectDto projectDto) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        String projectId = "*";
-        boolean canCreateProject = projectAclService.hasProjectPermission(identity, "create-project", projectId);
-        if (!canCreateProject) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
-        }
+        permissionUtilsService.validatePrincipalCanCreateProject(projectDto.getProjectResourceId());
 
-        ProjectId projectId1 = new ProjectId();
-        projectId1.setResourceId(projectDto.getProjectResourceId());
-        projectId1.setTenantId(AuthUtils.getCurrentTenantId());
+        ProjectId projectId = new ProjectId();
+        projectId.setResourceId(projectDto.getProjectResourceId());
+        projectId.setTenantId(AuthUtils.getCurrentTenantId());
 
-        if (projectRepository.existsById(projectId1)) {
+        if (projectRepository.existsById(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s already exists.", projectDto.getProjectResourceId()));
         }
 
         Project project = new Project();
-        project.setId(projectId1);
+        project.setId(projectId);
         project.setDescription(projectDto.getDescription());
         project.setMembers(projectDto.getMembers());
         projectRepository.save(project);
@@ -58,6 +54,8 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
     @Override
     @Transactional
     public void deleteProject(String projectResourceId) {
+        permissionUtilsService.validatePrincipalCanDeleteProject(projectResourceId);
+
         ProjectId projectId = new ProjectId();
         projectId.setResourceId(projectResourceId);
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
@@ -71,8 +69,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
     @Override
     @Transactional
     public void updateDescription(String projectResourceId, String description) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanUpdateProjectDetails(identity, projectResourceId);
+        permissionUtilsService.validatePrincipalCanUpdateProjectDetails(projectResourceId);
 
         ProjectId projectId = new ProjectId();
         projectId.setResourceId(projectResourceId);
@@ -85,8 +82,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
     @Override
     @Transactional
     public void addMember(String projectResourceId, String member) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanAddMember(identity, projectResourceId);
+        permissionUtilsService.validatePrincipalCanAddMember(projectResourceId);
 
         ProjectId projectId = new ProjectId();
         projectId.setResourceId(projectResourceId);
@@ -104,8 +100,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
     @Override
     @Transactional
     public void removeMember(String projectResourceId, String member) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanRemoveMember(identity, projectResourceId);
+        permissionUtilsService.validatePrincipalCanRemoveMember(projectResourceId);
 
         ProjectId projectId = new ProjectId();
         projectId.setResourceId(projectResourceId);
@@ -123,8 +118,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
     @Override
     @Transactional
     public Set<String> listMembers(String projectResourceId) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanListMembers(identity, projectResourceId);
+        permissionUtilsService.validatePrincipalCanListMembers(projectResourceId);
 
         ProjectId projectId = new ProjectId();
         projectId.setResourceId(projectResourceId);
@@ -134,29 +128,23 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
         return project.getMembers();
     }
 
-    //@TenantFilter
-    @Override
-    public Set<ProjectId> findAllProjectIds() {
-        return projectRepository.findAllProjectIds();
-    }
-
-
     @Override
     public List<Project> listAllProjects() {
         Sort sort = new Sort(Sort.Direction.ASC, "id.resourceId");
-        return projectRepository.findAll(sort);
+        return projectRepository.findAll(sort)
+                .stream()
+                .filter(project -> permissionUtilsService.canPrincipalReadProjectDetails(project.getId().getResourceId()))
+                .collect(Collectors.toList());
     }
 
     @Override
     public Optional<Project> findById(String projectResourceId) {
+        permissionUtilsService.validatePrincipalCanReadProjectDetails(projectResourceId);
+
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(projectResourceId);
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        boolean canReadProject = projectAclService.hasProjectPermission(identity, "read-project", projectResourceId);
-        if (!canReadProject) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
-        }
+
         return projectRepository.findById(projectId);
     }
 
@@ -168,33 +156,5 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
         return projectRepository.existsById(projectId);
     }
 
-    private void validateUserCanAddMember(String identity, String projectResourceId) {
-        boolean canCreateProject = projectAclService.hasProjectPermission(identity, "create-project", projectResourceId);
-        boolean canUpdateProject = projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
-        if (canCreateProject == false && canUpdateProject == false) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
-        }
-    }
 
-    private void validateUserCanRemoveMember(String identity, String projectResourceId) {
-        boolean canDeleteProject = projectAclService.hasProjectPermission(identity, "delete-project", projectResourceId);
-        boolean canUpdateProject = projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
-        if (canDeleteProject == false && canUpdateProject == false) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
-        }
-    }
-
-    private void validateUserCanListMembers(String identity, String projectResourceId) {
-        boolean canListProjectMembers = projectAclService.hasProjectPermission(identity, "read-project", projectResourceId);
-        if (canListProjectMembers == false) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
-        }
-    }
-
-    private void validateUserCanUpdateProjectDetails(String identity, String projectResourceId) {
-        boolean canUpdateProject = projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
-        if (canUpdateProject == false) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
-        }
-    }
 }
