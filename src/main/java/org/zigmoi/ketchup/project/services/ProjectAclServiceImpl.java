@@ -156,17 +156,6 @@ public class ProjectAclServiceImpl extends TenantProviderService implements Proj
         }
     }
 
-    public boolean hasCreateProjectPermission(String identity, String tenantId) {
-        String allProjectsResourceId = "*";
-        return hasProjectPermission(identity, "create-project", allProjectsResourceId);
-    }
-
-    public boolean hasAssignCreateProjectPermission(String identity, String tenantId) {
-        String allProjectsResourceId = "*";
-        return hasProjectPermission(identity, "assign-create-project", allProjectsResourceId);
-    }
-
-
     private ProjectAcl buildProjectAcl(String identity, String permission, String
             projectResourceId, String effect) {
         String aclId = UUID.randomUUID().toString();
