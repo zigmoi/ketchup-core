@@ -82,7 +82,8 @@ public class ProjectController {
     public boolean userHasProjectPermission(@PathVariable("resourceId") String resourceId,
                                             @PathVariable("userName") String userName,
                                             @PathVariable("permissionId") String permissionId) {
-        //if current user has read permissions in project he can check any users permissions in that project.
+        //if current user has read or any one of the assign permissions in project p
+        // he can check any users permissions in that project p.
         //user can check his own permissions in any project.
         if (userName.equalsIgnoreCase(AuthUtils.getCurrentQualifiedUsername()) == false) {
             permissionUtilsService.validatePrincipalCanReadProjectDetails(resourceId);

@@ -131,7 +131,11 @@ public class ProjectAclServiceImpl extends TenantProviderService implements Proj
     }
 
 
-    //to check if user has permission on a specific project (single not *).
+    //checking permissions does not need any permissions,
+    //from api point of view checks can be included in controller if required, to restrict users
+    //from checking permissions of other users.
+
+    //This function allows to check if user has permission on a specific project (single not *).
     @Override
     @Transactional
     public boolean hasProjectPermission(String identity, String permission, String projectResourceId) {
