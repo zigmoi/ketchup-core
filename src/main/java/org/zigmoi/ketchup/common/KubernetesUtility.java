@@ -1,9 +1,14 @@
 package org.zigmoi.ketchup.common;
 
-import io.kubernetes.client.ApiClient;
-import io.kubernetes.client.ApiException;
-import io.kubernetes.client.apis.AppsV1Api;
-import io.kubernetes.client.models.*;
+
+import com.google.common.io.ByteStreams;
+import io.kubernetes.client.PodLogs;
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.apis.AppsV1Api;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -11,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +24,27 @@ import java.util.Map;
 public class KubernetesUtility {
 
     private final static Logger logger = LoggerFactory.getLogger(KubernetesUtility.class);
+
+    public static void main(String[] args) throws IOException, ApiException {
+        getPodLogs();
+    }
+
+    public static void getPodLogs() throws IOException, ApiException {
+        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+        Configuration.setDefaultApiClient(client);
+        CoreV1Api coreApi = new CoreV1Api(client);
+
+        V1Pod pod = coreApi.listNamespacedPod("default", "false", null, null, null, null, null, null, null, null)
+                .getItems()
+                .get(0);
+        System.out.println(pod.getMetadata().getName());
+
+        PodLogs logs = new PodLogs();
+        InputStream is = logs.streamNamespacedPodLog(pod);
+      //  InputStream is = logs.streamNamespacedPodLog("default", "demo-pipeline-run-1-build-image-h7pc5-pod-hpg7k", "step-build-and-push");
+        ByteStreams.copy(is, System.out);
+
+    }
 
     public static void createDeploymentInAws(File kubeConfig, String namespace, String appId, String awsEcrImageLink, int port,
                                              Map<String, List<String>> hostnameAlias, boolean updateIfAlreadyExists, String deploymentName) throws IOException, ApiException {
@@ -44,7 +71,7 @@ public class KubernetesUtility {
 
         if (deploymentAlreadyExists(appsV1Api, appId, namespace, deploymentName) && updateIfAlreadyExists) {
             List<V1Deployment> deployments = new ArrayList<>();
-            appsV1Api.patchNamespacedDeployment(deploymentName, namespace, deployments, null, null);
+            appsV1Api.patchNamespacedDeployment(deploymentName, namespace, deployments, null, null,null ,false );
         } else {
             appsV1Api.createNamespacedDeployment(namespace, deployment, null, null, null);
         }
@@ -58,7 +85,7 @@ public class KubernetesUtility {
 
     private static boolean deploymentAlreadyExists(AppsV1Api appsV1Api, String appId, String namespace, String deploymentName) throws ApiException {
         String label = "app="+appId;
-        V1DeploymentList deploymentList = appsV1Api.listNamespacedDeployment(namespace, true, null, null,
+        V1DeploymentList deploymentList = appsV1Api.listNamespacedDeployment(namespace, "true", null, null,
                 null, label, null, null, -1, false);
         if (deploymentList == null || deploymentList.getItems().isEmpty()) {
             return false;

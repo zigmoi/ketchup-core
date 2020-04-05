@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.services.TenantProviderService;
+import org.zigmoi.ketchup.iam.services.UserService;
 import org.zigmoi.ketchup.project.dtos.ProjectDto;
 import org.zigmoi.ketchup.project.entities.Project;
 import org.zigmoi.ketchup.project.entities.ProjectId;
@@ -25,10 +26,13 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
     private PermissionUtilsService permissionUtilsService;
 
+    private UserService userService;
+
     @Autowired
-    public ProjectServiceImpl(ProjectRepository projectRepository, PermissionUtilsService permissionUtilsService) {
+    public ProjectServiceImpl(ProjectRepository projectRepository, PermissionUtilsService permissionUtilsService, UserService userService) {
         this.projectRepository = projectRepository;
         this.permissionUtilsService = permissionUtilsService;
+        this.userService = userService;
     }
 
     @Override
@@ -47,7 +51,6 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
         Project project = new Project();
         project.setId(projectId);
         project.setDescription(projectDto.getDescription());
-        project.setMembers(projectDto.getMembers());
         projectRepository.save(project);
     }
 
@@ -79,41 +82,41 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
         project.setDescription(description);
     }
 
-    @Override
-    @Transactional
-    public void addMember(String projectResourceId, String member) {
-        permissionUtilsService.validatePrincipalCanAddMember(projectResourceId);
+//    @Override
+//    @Transactional
+//    public void addMember(String projectResourceId, String member) {
+//        permissionUtilsService.validatePrincipalCanAddMember(projectResourceId);
+//
+//        ProjectId projectId = new ProjectId();
+//        projectId.setResourceId(projectResourceId);
+//        projectId.setTenantId(AuthUtils.getCurrentTenantId());
+//
+//        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
+//        Set<String> members = project.getMembers();
+//        if (members.contains(member) == false) {
+//            members.add(member);
+//            project.setMembers(members);
+//            projectRepository.save(project);
+//        }
+//    }
 
-        ProjectId projectId = new ProjectId();
-        projectId.setResourceId(projectResourceId);
-        projectId.setTenantId(AuthUtils.getCurrentTenantId());
-
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
-        Set<String> members = project.getMembers();
-        if (members.contains(member) == false) {
-            members.add(member);
-            project.setMembers(members);
-            projectRepository.save(project);
-        }
-    }
-
-    @Override
-    @Transactional
-    public void removeMember(String projectResourceId, String member) {
-        permissionUtilsService.validatePrincipalCanRemoveMember(projectResourceId);
-
-        ProjectId projectId = new ProjectId();
-        projectId.setResourceId(projectResourceId);
-        projectId.setTenantId(AuthUtils.getCurrentTenantId());
-
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
-        Set<String> members = project.getMembers();
-        if (members.contains(member)) {
-            members.remove(member);
-            project.setMembers(members);
-            projectRepository.save(project);
-        }
-    }
+//    @Override
+//    @Transactional
+//    public void removeMember(String projectResourceId, String member) {
+//        permissionUtilsService.validatePrincipalCanRemoveMember(projectResourceId);
+//
+//        ProjectId projectId = new ProjectId();
+//        projectId.setResourceId(projectResourceId);
+//        projectId.setTenantId(AuthUtils.getCurrentTenantId());
+//
+//        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
+//        Set<String> members = project.getMembers();
+//        if (members.contains(member)) {
+//            members.remove(member);
+//            project.setMembers(members);
+//            projectRepository.save(project);
+//        }
+//    }
 
     @Override
     @Transactional
@@ -123,9 +126,13 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
         ProjectId projectId = new ProjectId();
         projectId.setResourceId(projectResourceId);
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
+        projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
 
-        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
-        return project.getMembers();
+        return userService.listAllUsers()
+                .stream()
+                .filter(user -> permissionUtilsService.hasAnyPermissions(user.getUsername(), projectResourceId))
+                .map(user -> user.getUsername())
+                .collect(Collectors.toSet());
     }
 
     @Override

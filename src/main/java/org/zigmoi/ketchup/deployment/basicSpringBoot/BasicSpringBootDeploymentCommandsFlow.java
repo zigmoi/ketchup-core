@@ -1,6 +1,7 @@
 package org.zigmoi.ketchup.deployment.basicSpringBoot;
 
-import io.kubernetes.client.ApiException;
+
+import io.kubernetes.client.openapi.ApiException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.zigmoi.ketchup.common.*;

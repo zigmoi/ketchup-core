@@ -38,14 +38,5 @@ public class Project {
     @LastModifiedBy
     private String lastUpdatedBy;
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "project_members",
-            joinColumns = {
-                    @JoinColumn(name = "tenantId", referencedColumnName = "tenantId"),
-                    @JoinColumn(name = "resourceId", referencedColumnName = "resourceId")
-            })
-    @Column(name = "member")
-    Set<String> members = new HashSet<>();
-
 }
 

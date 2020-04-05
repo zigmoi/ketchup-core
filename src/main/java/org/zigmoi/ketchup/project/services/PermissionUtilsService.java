@@ -5,6 +5,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
+import org.zigmoi.ketchup.project.dtos.ProjectAclDto;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class PermissionUtilsService {
@@ -12,6 +16,68 @@ public class PermissionUtilsService {
     @Autowired
     private ProjectAclService projectAclService;
 
+    public boolean hasAnyPermissions(String identity, String projectResourceId) {
+        return projectAclService.hasProjectPermission(identity, "read-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "update-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "delete-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "create-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-read-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-update-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-delete-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-create-project", projectResourceId);
+
+    }
+
+    public void validateUserCanCheckPermissions(String identity, String projectResourceId) {
+        //if current user has read or any one of the assign permissions in project p
+        // he can check any users permissions in that project p.
+        //user can check his own permissions in any project.
+        if (identity.equalsIgnoreCase(AuthUtils.getCurrentQualifiedUsername())) {
+            return;
+        }
+        boolean hasPermission = projectAclService.hasProjectPermission(identity, "read-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-read-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-update-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-delete-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-create-project", projectResourceId);
+        if (hasPermission == false) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
+        }
+    }
+
+    public void revokeAllProjectPermissions(String identity, String projectResourceId) {
+        ProjectAclDto projectAclDto = new ProjectAclDto();
+        projectAclDto.setIdentity(identity);
+        projectAclDto.setProjectResourceId(projectResourceId);
+        Set<String> permissions = new HashSet<>();
+        permissions.add("");
+        permissions.add("");
+        permissions.add("");
+        permissions.add("");
+        permissions.add("");
+        permissions.add("");
+        permissions.add("");
+        permissions.add("");
+        projectAclDto.setPermissions(permissions);
+        projectAclService.revokePermission(projectAclDto);
+    }
+
+    public void validateUserCanListPermissions(String identity, String projectResourceId) {
+        //if current user has read or any one of the assign permissions in project p
+        // he can check any users permissions in that project p.
+        //user can check his own permissions in any project.
+        if (identity.equalsIgnoreCase(AuthUtils.getCurrentQualifiedUsername())) {
+            return;
+        }
+        boolean hasPermission = projectAclService.hasProjectPermission(identity, "read-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-read-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-update-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-delete-project", projectResourceId) ||
+                projectAclService.hasProjectPermission(identity, "assign-create-project", projectResourceId);
+        if (hasPermission == false) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
+        }
+    }
 
     public void validateUserCanCreateProject(String identity, String projectResourceId) {
         boolean hasPermission = projectAclService.hasProjectPermission(identity, "create-project", projectResourceId);

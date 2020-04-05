@@ -14,6 +14,5 @@ import java.util.Set;
 public class ProjectDto {
     private String projectResourceId;
     private String description;
-    Set<String> members = new HashSet<>();
 }
 

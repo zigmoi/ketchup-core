@@ -82,9 +82,7 @@ public class ProjectController {
     public boolean userHasProjectPermission(@PathVariable("resourceId") String resourceId,
                                             @PathVariable("userName") String userName,
                                             @PathVariable("permissionId") String permissionId) {
-        //if current user has read or any one of the assign permissions in project p
-        // he can check any users permissions in that project p.
-        //user can check his own permissions in any project.
+
         if (userName.equalsIgnoreCase(AuthUtils.getCurrentQualifiedUsername()) == false) {
             permissionUtilsService.validatePrincipalCanReadProjectDetails(resourceId);
         }
@@ -119,20 +117,20 @@ public class ProjectController {
         return allPermissionStatus;
     }
 
-    @PutMapping("/v1/project/{resourceId}/member/{action}/{userName}")
-    public void manageProjectMembers(@PathVariable("resourceId") String resourceId,
-                                     @PathVariable("action") String action,
-                                     @PathVariable("userName") String userName) {
-
-        if ("ADD".equalsIgnoreCase(action)) {
-            projectService.addMember(resourceId, userName);
-        } else if ("REMOVE".equalsIgnoreCase(action)) {
-            projectService.removeMember(resourceId, userName);
-        } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Invalid action, allowed values are ADD and REMOVE.");
-        }
-    }
+//    @PutMapping("/v1/project/{resourceId}/member/{action}/{userName}")
+//    public void manageProjectMembers(@PathVariable("resourceId") String resourceId,
+//                                     @PathVariable("action") String action,
+//                                     @PathVariable("userName") String userName) {
+//
+//        if ("ADD".equalsIgnoreCase(action)) {
+//            projectService.addMember(resourceId, userName);
+//        } else if ("REMOVE".equalsIgnoreCase(action)) {
+//            projectService.removeMember(resourceId, userName);
+//        } else {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+//                    "Invalid action, allowed values are ADD and REMOVE.");
+//        }
+//    }
 
     @GetMapping("/v1/project/{resourceId}/members")
     public List<String> listProjectMembers(@PathVariable("resourceId") String resourceId) {
@@ -142,15 +140,15 @@ public class ProjectController {
                 .collect(Collectors.toList());
     }
 
-    @PostMapping("/v1/project/{resourceId}/member/{memberName}/add")
-    public void addProjectMember(@PathVariable("resourceId") String resourceId,
-                                 @PathVariable("memberName") String memberName) {
-        projectService.addMember(resourceId, memberName);
-    }
+//    @PostMapping("/v1/project/{resourceId}/member/{memberName}/add")
+//    public void addProjectMember(@PathVariable("resourceId") String resourceId,
+//                                 @PathVariable("memberName") String memberName) {
+//        projectService.addMember(resourceId, memberName);
+//    }
 
-    @PostMapping("/v1/project/{resourceId}/member/{memberName}/remove")
-    public void removeProjectMember(@PathVariable("resourceId") String resourceId,
-                                    @PathVariable("memberName") String memberName) {
-        projectService.removeMember(resourceId, memberName);
-    }
+//    @PostMapping("/v1/project/{resourceId}/member/{memberName}/remove")
+//    public void removeProjectMember(@PathVariable("resourceId") String resourceId,
+//                                    @PathVariable("memberName") String memberName) {
+//        projectService.removeMember(resourceId, memberName);
+//    }
 }

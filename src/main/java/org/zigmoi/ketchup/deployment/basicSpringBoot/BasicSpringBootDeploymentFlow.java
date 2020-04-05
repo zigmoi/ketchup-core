@@ -1,6 +1,7 @@
 package org.zigmoi.ketchup.deployment.basicSpringBoot;
 
-import io.kubernetes.client.ApiException;
+
+import io.kubernetes.client.openapi.ApiException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.zigmoi.ketchup.common.FileUtility;
