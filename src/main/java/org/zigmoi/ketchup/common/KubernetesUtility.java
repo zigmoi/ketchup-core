@@ -2,14 +2,21 @@ package org.zigmoi.ketchup.common;
 
 
 import com.google.common.io.ByteStreams;
+import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.PodLogs;
+import io.kubernetes.client.openapi.ApiCallback;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
+import io.kubernetes.client.util.Watch;
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Response;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,13 +27,99 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class KubernetesUtility {
 
     private final static Logger logger = LoggerFactory.getLogger(KubernetesUtility.class);
 
     public static void main(String[] args) throws IOException, ApiException {
-        getPodLogs();
+        watchPipelineRunStatus();
+      //  watchListPods();
+    }
+
+    public static void watchPipelineRunStatus() throws IOException, ApiException {
+        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+        Configuration.setDefaultApiClient(client);
+
+
+        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+        String group = "tekton.dev"; // String | the custom resource's group
+        String version = "v1alpha1"; // String | the custom resource's version
+        String plural = "pipelineruns"; // String | the custom object's plural name. For TPRs this would be lowercase plural kind.
+        String name = "demo-pipeline-run-1"; // String | the custom object's name
+        String fieldSelector= "metadata.name=demo-pipeline-run-1";
+
+        OkHttpClient httpClient =
+                client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
+        client.setHttpClient(httpClient);
+
+        Watch<V1beta1CustomResourceDefinition> watch =
+                Watch.createWatch(
+                        client,
+                        apiInstance.listNamespacedCustomObjectCall(group, version, "default",
+                                plural,null,null,fieldSelector,null,
+                                5,null, 75, true, null),
+                        new TypeToken<Watch.Response<V1beta1CustomResourceDefinition>>() {}.getType());
+
+        try {
+            for (Watch.Response<V1beta1CustomResourceDefinition> item : watch) {
+                System.out.printf("%s : %s%n", item.type, item.object.toString());
+            }
+        } finally {
+            watch.close();
+        }
+    }
+
+    public static void watchListPods() throws IOException, ApiException {
+        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+        Configuration.setDefaultApiClient(client);
+
+        OkHttpClient httpClient =
+                client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
+        client.setHttpClient(httpClient);
+
+        CoreV1Api coreApi = new CoreV1Api();
+        Watch<V1Pod> watch =
+                Watch.createWatch(
+                        client,
+                        coreApi.listNamespacedPodCall("default", "false", false,
+                                null,"metadata.name=ketchup-sb-demo1-basic-springboot-demo-ketchup-5c7f87c866-cs4xp",null,5,null,
+                                30,true,null),
+                        new TypeToken<Watch.Response<V1Pod>>() {}.getType());
+
+        try {
+            for (Watch.Response<V1Pod> item : watch) {
+                System.out.printf("%s : %s%n", item.type, item.object.toString());
+            }
+        } finally {
+            watch.close();
+        }
+    }
+
+
+
+    public static void getPipeLineRunDetails() throws IOException, ApiException {
+        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+        Configuration.setDefaultApiClient(client);
+        CoreV1Api coreApi = new CoreV1Api(client);
+
+        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+        String group = "tekton.dev"; // String | the custom resource's group
+        String version = "v1alpha1"; // String | the custom resource's version
+        String plural = "pipelineruns"; // String | the custom object's plural name. For TPRs this would be lowercase plural kind.
+        String name = "demo-pipeline-run-1"; // String | the custom object's name
+        try {
+            Object result = apiInstance.getNamespacedCustomObjectStatus(group, version,"default", plural, name);
+            System.out.println(result);
+        } catch (ApiException e) {
+            System.err.println("Exception when calling CustomObjectsApi#getClusterCustomObject");
+            System.err.println("Status code: " + e.getCode());
+            System.err.println("Reason: " + e.getResponseBody());
+            System.err.println("Response headers: " + e.getResponseHeaders());
+            e.printStackTrace();
+        }
+
     }
 
     public static void getPodLogs() throws IOException, ApiException {
