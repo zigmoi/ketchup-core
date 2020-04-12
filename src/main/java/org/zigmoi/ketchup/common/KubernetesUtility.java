@@ -37,14 +37,14 @@ public class KubernetesUtility {
 
     public static void main(String[] args) throws IOException, ApiException {
         //create pipeline resources in order. (createPipelineRun should be last.)
-        createPipelineResource("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/resource.yaml");
-        createPipelineTask("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/task-makisu.yaml");
-        createPipelineTask("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/task-helm.yaml");
-        createSecret("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/secrets.yaml");
-        createServiceAccount("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/service-account.yaml");
-        createPipeline("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/pipeline.yaml");
-        createPipelineRun("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/pipeline-run.yaml");
-
+        String baseResourcePath= "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/";
+        createPipelineResource(baseResourcePath.concat("resource.yaml"));
+        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
+        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
+        createSecret(baseResourcePath.concat("secrets.yaml"));
+        createServiceAccount(baseResourcePath.concat("service-account.yaml"));
+        createPipeline(baseResourcePath.concat("pipeline.yaml"));
+        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
 
        //  watchPipelineRunStatus();
         //  watchListPods();
