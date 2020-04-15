@@ -37,16 +37,16 @@ public class KubernetesUtility {
 
     public static void main(String[] args) throws IOException, ApiException {
         //create pipeline resources in order. (createPipelineRun should be last.)
-        String baseResourcePath= "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/";
-        createPipelineResource(baseResourcePath.concat("resource.yaml"));
-        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
-        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
-        createSecret(baseResourcePath.concat("secrets.yaml"));
-        createServiceAccount(baseResourcePath.concat("service-account.yaml"));
-        createPipeline(baseResourcePath.concat("pipeline.yaml"));
-        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
+//        String baseResourcePath= "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/";
+//        createPipelineResource(baseResourcePath.concat("resource.yaml"));
+//        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
+//        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
+//        createSecret(baseResourcePath.concat("secrets.yaml"));
+//        createServiceAccount(baseResourcePath.concat("service-account.yaml"));
+//        createPipeline(baseResourcePath.concat("pipeline.yaml"));
+//        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
 
-       //  watchPipelineRunStatus();
+         watchPipelineRunStatus();
         //  watchListPods();
     }
 
@@ -240,24 +240,47 @@ public class KubernetesUtility {
         JSONObject details = new JSONObject();
         String startTime = JsonPath.read(responseJson, "$.status.startTime");
         details.put("startTime", startTime);
-        String completionTime = JsonPath.read(responseJson, "$.status.completionTime");
-        details.put("completionTime", completionTime);
         String status = JsonPath.read(responseJson, "$.status.conditions[0].status");
         details.put("status", status);
         String reason = JsonPath.read(responseJson, "$.status.conditions[0].reason");
         details.put("reason", reason);
         String message = JsonPath.read(responseJson, "$.status.conditions[0].message");
         details.put("message", message);
+        String completionTime = JsonPath.read(responseJson, "$.status.completionTime");
+        details.put("completionTime", completionTime);
 
-        JSONArray stepDetails = new JSONArray();
+        //jsonpath getting parent field using conditions on child.
+//        List<Object> test = JsonPath.read(responseJson, "$.status[?(@.taskRuns[?(@.pipelineTaskName == 'build-image')])].taskRuns");
+//        System.out.println("test: " + test.get(0).toString());
+
+        JSONArray taskDetails = new JSONArray();
         LinkedHashMap<String, Object> taskRuns = JsonPath.read(responseJson, "$.status.taskRuns");
         for (Map.Entry<String, Object> tr : taskRuns.entrySet()) {
+            String taskName = tr.getKey();
             String taskRunJson = new Gson().toJson(tr.getValue());
             String taskBaseName = JsonPath.read(taskRunJson, "$.pipelineTaskName");
             String podName = JsonPath.read(taskRunJson, "$.status.podName");
+            String taskStartTime = JsonPath.read(taskRunJson, "$.status.startTime");
+            String taskCompletionTime = JsonPath.read(taskRunJson, "$.status.completionTime");
+            String taskStatus = JsonPath.read(responseJson, "$.status.conditions[0].status");
+            String taskReason = JsonPath.read(responseJson, "$.status.conditions[0].reason");
+            String taskMessage = JsonPath.read(responseJson, "$.status.conditions[0].message");
+
+            JSONObject taskJson = new JSONObject();
+            taskJson.put("name", taskName);
+            taskJson.put("baseName", taskBaseName);
+            taskJson.put("podName", podName);
+            taskJson.put("startTime", taskStartTime);
+            taskJson.put("completionTime", taskCompletionTime);
+            taskJson.put("status", taskStatus);
+            taskJson.put("reason", taskReason);
+            taskJson.put("message", taskMessage);
+
+
             JSONArray steps = new JSONArray(JsonPath.read(taskRunJson, "$.status.steps").toString());
             System.out.println(steps.length());
             if ("build-image".equalsIgnoreCase(taskBaseName)) {
+                JSONArray stepDetails = new JSONArray();
                 for (Object stepEntry : steps) {
                     JSONObject step = (JSONObject) stepEntry;
                     String stepName = step.getString("name");
@@ -273,24 +296,29 @@ public class KubernetesUtility {
                         stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
                     }
                 }
+                taskJson.put("steps", stepDetails);
             } else if ("deploy-chart-in-cluster".equalsIgnoreCase(taskBaseName)) {
+                JSONArray stepDetails = new JSONArray();
                 for (Object stepEntry : steps) {
                     JSONObject step = (JSONObject) stepEntry;
                     String stepName = step.getString("name");
                     if ("get-kubeconfig".equalsIgnoreCase(stepName)) {
-                        int order = 4;
+                        int order = 1;
                         stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
                     } else if ("get-helm-chart".equalsIgnoreCase(stepName)) {
-                        int order = 5;
+                        int order = 2;
                         stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
                     } else if ("install-app-in-cluster".equalsIgnoreCase(stepName)) {
-                        int order = 6;
+                        int order = 3;
                         stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
                     }
                 }
+                taskJson.put("steps", stepDetails);
             }
+            taskDetails.put(taskJson);
         }
-        details.put("steps", stepDetails);
+        //details.put("steps", stepDetails);
+        details.put("tasks", taskDetails);
         System.out.println("Details: " + details);
 
     }
