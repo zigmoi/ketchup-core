@@ -1,16 +1,24 @@
 package org.zigmoi.ketchup.deployment.controllers;
 
+import com.google.common.io.ByteStreams;
+import io.kubernetes.client.openapi.ApiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentRequestDto;
 import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentResponseDto;
 import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.services.DeploymentService;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,6 +41,15 @@ public class DeploymentController {
             }
         });
         return emitter;
+    }
+
+    @GetMapping("public/deployment/logs")
+    public ResponseEntity<StreamingResponseBody> streamPipelineLogs(@RequestParam("podName") String podName,@RequestParam("containerName") String containerName) throws IOException, ApiException {
+       InputStream logStream =  KubernetesUtility.getPodLogs("default", podName, containerName);
+        StreamingResponseBody stream = out -> {
+            ByteStreams.copy(logStream, out);
+        };
+        return new ResponseEntity(stream, HttpStatus.OK);
     }
 
     @PutMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}/status/{status}")

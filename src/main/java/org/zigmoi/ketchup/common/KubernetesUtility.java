@@ -5,7 +5,6 @@ import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
@@ -50,6 +49,7 @@ public class KubernetesUtility {
 
        //  watchPipelineRunStatus();
         //  watchListPods();
+       // getPodLogs("default", "demo-pipeline-run-1-build-image-lfkqj-pod-zfrfg", "step-build-and-push");
     }
 
     public static void createSecret(String resourceFilePath) throws IOException {
@@ -277,7 +277,7 @@ public class KubernetesUtility {
 
     private static JSONObject parsePipelineRunResponse(String responseJson) {
         JSONObject details = new JSONObject();
-        String startTime = getData(responseJson, "$.status.startTime1");
+        String startTime = getData(responseJson, "$.status.startTime");
         details.put("startTime", startTime);
         String status = getData(responseJson, "$.status.conditions[0].status");
         details.put("status", status);
@@ -475,20 +475,21 @@ public class KubernetesUtility {
 
     }
 
-    public static void getPodLogs() throws IOException, ApiException {
+    public static InputStream getPodLogs(String namespace, String podName, String containerName) throws IOException, ApiException {
         ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
         Configuration.setDefaultApiClient(client);
-        CoreV1Api coreApi = new CoreV1Api(client);
+//        CoreV1Api coreApi = new CoreV1Api(client);
 
-        V1Pod pod = coreApi.listNamespacedPod("default", "false", null, null, null, null, null, null, null, null)
-                .getItems()
-                .get(0);
-        System.out.println(pod.getMetadata().getName());
-
+//        V1Pod pod = coreApi.listNamespacedPod("default", "false", null, null, null, null, null, null, null, null)
+//                .getItems()
+//                .get(0);
+//        System.out.println(pod.getMetadata().getName());
+//
         PodLogs logs = new PodLogs();
-        InputStream is = logs.streamNamespacedPodLog(pod);
-        //  InputStream is = logs.streamNamespacedPodLog("default", "demo-pipeline-run-1-build-image-h7pc5-pod-hpg7k", "step-build-and-push");
-        ByteStreams.copy(is, System.out);
+       // InputStream is = logs.streamNamespacedPodLog(pod);
+        InputStream is = logs.streamNamespacedPodLog(namespace, podName, containerName);
+       // ByteStreams.copy(is, System.out);
+        return is;
 
     }
 
