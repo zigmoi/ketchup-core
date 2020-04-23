@@ -5,6 +5,7 @@ import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
@@ -21,6 +22,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,16 +39,16 @@ public class KubernetesUtility {
 
     public static void main(String[] args) throws IOException, ApiException {
         //create pipeline resources in order. (createPipelineRun should be last.)
-//        String baseResourcePath= "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/";
-//        createPipelineResource(baseResourcePath.concat("resource.yaml"));
-//        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
-//        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
-//        createSecret(baseResourcePath.concat("secrets.yaml"));
-//        createServiceAccount(baseResourcePath.concat("service-account.yaml"));
-//        createPipeline(baseResourcePath.concat("pipeline.yaml"));
-//        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
+        String baseResourcePath= "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/";
+        createPipelineResource(baseResourcePath.concat("resource.yaml"));
+        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
+        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
+        createSecret(baseResourcePath.concat("secrets.yaml"));
+        createServiceAccount(baseResourcePath.concat("service-account.yaml"));
+        createPipeline(baseResourcePath.concat("pipeline.yaml"));
+        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
 
-         watchPipelineRunStatus();
+       //  watchPipelineRunStatus();
         //  watchListPods();
     }
 
@@ -199,6 +201,43 @@ public class KubernetesUtility {
         return (LinkedHashMap<String, Object>) Yaml.loadAs(new File(filePath), Map.class);
     }
 
+    public static void watchAndStreamPipelineRunStatus(String pipelineRunName, SseEmitter emitter) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+        Configuration.setDefaultApiClient(client);
+
+
+        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+        String group = "tekton.dev"; // String | the custom resource's group
+        String version = "v1alpha1"; // String | the custom resource's version
+        String plural = "pipelineruns"; // String | the custom object's plural name. For TPRs this would be lowercase plural kind.
+        String fieldSelector = "metadata.name=".concat(pipelineRunName);
+
+        OkHttpClient httpClient =
+                client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
+        client.setHttpClient(httpClient);
+
+        Watch<Object> watch =
+                Watch.createWatch(
+                        client,
+                        apiInstance.listNamespacedCustomObjectCall(group, version, "default",
+                                plural, null, null, fieldSelector, null,
+                                5, null, 75, true, null),
+                        new TypeToken<Watch.Response<Object>>() {
+                        }.getType());
+
+        try {
+            for (Watch.Response<Object> item : watch) {
+                String responseJson = new Gson().toJson(item.object);
+                System.out.println(responseJson);
+                emitter.send(parsePipelineRunResponse(responseJson).toString());
+                //  System.out.printf("%s : %s%n", item.type, item.object.toString());
+            }
+        } finally {
+            watch.close();
+            emitter.complete();
+        }
+    }
+
     public static void watchPipelineRunStatus() throws IOException, ApiException {
         ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
         Configuration.setDefaultApiClient(client);
@@ -236,17 +275,17 @@ public class KubernetesUtility {
         }
     }
 
-    private static void parsePipelineRunResponse(String responseJson) {
+    private static JSONObject parsePipelineRunResponse(String responseJson) {
         JSONObject details = new JSONObject();
-        String startTime = JsonPath.read(responseJson, "$.status.startTime");
+        String startTime = getData(responseJson, "$.status.startTime1");
         details.put("startTime", startTime);
-        String status = JsonPath.read(responseJson, "$.status.conditions[0].status");
+        String status = getData(responseJson, "$.status.conditions[0].status");
         details.put("status", status);
-        String reason = JsonPath.read(responseJson, "$.status.conditions[0].reason");
+        String reason = getData(responseJson, "$.status.conditions[0].reason");
         details.put("reason", reason);
-        String message = JsonPath.read(responseJson, "$.status.conditions[0].message");
+        String message = getData(responseJson, "$.status.conditions[0].message");
         details.put("message", message);
-        String completionTime = JsonPath.read(responseJson, "$.status.completionTime");
+        String completionTime = getData(responseJson, "$.status.completionTime");
         details.put("completionTime", completionTime);
 
         //jsonpath getting parent field using conditions on child.
@@ -254,17 +293,26 @@ public class KubernetesUtility {
 //        System.out.println("test: " + test.get(0).toString());
 
         JSONArray taskDetails = new JSONArray();
-        LinkedHashMap<String, Object> taskRuns = JsonPath.read(responseJson, "$.status.taskRuns");
+        LinkedHashMap<String, Object> taskRuns = new LinkedHashMap<>();
+        try{
+            taskRuns = JsonPath.read(responseJson, "$.status.taskRuns");
+        }catch(Exception e){
+            logger.error("exception in getting taskruns, " , e);
+            details.put("tasks", taskDetails);
+            System.out.println("Details: " + details);
+            return details;
+        }
+
         for (Map.Entry<String, Object> tr : taskRuns.entrySet()) {
             String taskName = tr.getKey();
             String taskRunJson = new Gson().toJson(tr.getValue());
-            String taskBaseName = JsonPath.read(taskRunJson, "$.pipelineTaskName");
-            String podName = JsonPath.read(taskRunJson, "$.status.podName");
-            String taskStartTime = JsonPath.read(taskRunJson, "$.status.startTime");
-            String taskCompletionTime = JsonPath.read(taskRunJson, "$.status.completionTime");
-            String taskStatus = JsonPath.read(responseJson, "$.status.conditions[0].status");
-            String taskReason = JsonPath.read(responseJson, "$.status.conditions[0].reason");
-            String taskMessage = JsonPath.read(responseJson, "$.status.conditions[0].message");
+            String taskBaseName = getData(taskRunJson, "$.pipelineTaskName");
+            String podName = getData(taskRunJson, "$.status.podName");
+            String taskStartTime = getData(taskRunJson, "$.status.startTime");
+            String taskCompletionTime = getData(taskRunJson, "$.status.completionTime");
+            String taskStatus = getData(responseJson, "$.status.conditions[0].status");
+            String taskReason = getData(responseJson, "$.status.conditions[0].reason");
+            String taskMessage = getData(responseJson, "$.status.conditions[0].message");
 
             JSONObject taskJson = new JSONObject();
             taskJson.put("name", taskName);
@@ -277,7 +325,15 @@ public class KubernetesUtility {
             taskJson.put("message", taskMessage);
 
 
-            JSONArray steps = new JSONArray(JsonPath.read(taskRunJson, "$.status.steps").toString());
+            JSONArray steps;
+            try {
+                steps =  new JSONArray( JsonPath.read(taskRunJson, "$.status.steps").toString());
+            }catch (Exception e){
+                logger.error("Error in getting steps. ", e);
+                taskJson.put("steps", new JSONArray());
+                continue;
+            }
+
             System.out.println(steps.length());
             if ("build-image".equalsIgnoreCase(taskBaseName)) {
                 JSONArray stepDetails = new JSONArray();
@@ -320,7 +376,18 @@ public class KubernetesUtility {
         //details.put("steps", stepDetails);
         details.put("tasks", taskDetails);
         System.out.println("Details: " + details);
+        return details;
 
+    }
+
+    private static String getData( String inputJson, String jsonPath) {
+       String response= "";
+        try{
+            response = JsonPath.read(inputJson, jsonPath);
+        }catch(Exception e){
+            logger.error("Exception in reading value at specified json path not found. ", e);
+        }
+        return response;
     }
 
     private static JSONObject parseStepDetails(Map.Entry<String, Object> tr, String taskBaseName, String podName, JSONObject step, String stepName, int order) {

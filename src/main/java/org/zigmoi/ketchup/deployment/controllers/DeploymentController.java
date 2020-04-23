@@ -1,28 +1,39 @@
 package org.zigmoi.ketchup.deployment.controllers;
 
-import org.apache.commons.lang.text.StrSubstitutor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.zeroturnaround.exec.InvalidExitValueException;
-import org.zeroturnaround.exec.ProcessExecutor;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentRequestDto;
 import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentResponseDto;
 import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.services.DeploymentService;
 
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @RestController
 public class DeploymentController {
+    private ExecutorService nonBlockingService = Executors.newCachedThreadPool();
 
     @Autowired
     private DeploymentService deploymentService;
+
+    @GetMapping("/public/sse")
+    public SseEmitter handleSse(@RequestParam("pipelineRunName") String pipelineRunName) {
+        SseEmitter emitter = new SseEmitter();
+        nonBlockingService.execute(() -> {
+            try {
+                KubernetesUtility.watchAndStreamPipelineRunStatus(pipelineRunName, emitter);
+            } catch (Exception ex) {
+                emitter.completeWithError(ex);
+            }
+        });
+        return emitter;
+    }
 
     @PutMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}/status/{status}")
     public void updateDeploymentStatus(@PathVariable("status") String status, @PathVariable String deploymentResourceId, @PathVariable String projectResourceId) {
