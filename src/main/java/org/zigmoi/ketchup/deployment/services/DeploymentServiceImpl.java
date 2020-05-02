@@ -65,7 +65,7 @@ public class DeploymentServiceImpl implements DeploymentService {
 
         entity.setType(DeploymentsType.BASIC_SPRING_BOOT.toString());
         entity.setServiceName(dto.getServiceName());
-        entity.setCurrentStatus(DeploymentsStatus.INITIALISED.toString());
+//        entity.setCurrentStatus(DeploymentsStatus.INITIALISED.toString());
 
 //        entity.setData(); todo snappy compress
 

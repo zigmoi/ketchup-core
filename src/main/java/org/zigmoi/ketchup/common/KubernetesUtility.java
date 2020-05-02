@@ -39,12 +39,12 @@ public class KubernetesUtility {
         //create pipeline resources in order. (createPipelineRun should be last.)
         String baseResourcePath = "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/";
         createPipelineResource(baseResourcePath.concat("resource.yaml"));
-//        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
-//        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
-//        createSecret(baseResourcePath.concat("secrets.yaml"));
-//        createServiceAccount(baseResourcePath.concat("service-account.yaml"));
-//        createPipeline(baseResourcePath.concat("pipeline.yaml"));
-//        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
+        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
+        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
+        createSecret(baseResourcePath.concat("secrets.yaml"));
+        createServiceAccount(baseResourcePath.concat("service-account.yaml"));
+        createPipeline(baseResourcePath.concat("pipeline.yaml"));
+        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
 
         //  watchPipelineRunStatus();
         //  watchListPods();
@@ -138,6 +138,9 @@ public class KubernetesUtility {
         String pretty = "false";
 
         LinkedHashMap<String, Object> resource = loadYamlResourceAsMap(resourceFilePath);
+        String rJson = new Gson().toJson(resource);
+        System.out.println(getData(rJson, "$.metadata.name"));
+        System.out.println(rJson);
 
 //        try {
         Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
