@@ -1,7 +1,6 @@
 package org.zigmoi.ketchup.common;
 
 
-import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.jayway.jsonpath.JsonPath;
@@ -38,21 +37,21 @@ public class KubernetesUtility {
 
     public static void main(String[] args) throws IOException, ApiException {
         //create pipeline resources in order. (createPipelineRun should be last.)
-        String baseResourcePath= "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/";
+        String baseResourcePath = "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/";
         createPipelineResource(baseResourcePath.concat("resource.yaml"));
-        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
-        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
-        createSecret(baseResourcePath.concat("secrets.yaml"));
-        createServiceAccount(baseResourcePath.concat("service-account.yaml"));
-        createPipeline(baseResourcePath.concat("pipeline.yaml"));
-        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
+//        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
+//        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
+//        createSecret(baseResourcePath.concat("secrets.yaml"));
+//        createServiceAccount(baseResourcePath.concat("service-account.yaml"));
+//        createPipeline(baseResourcePath.concat("pipeline.yaml"));
+//        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
 
-       //  watchPipelineRunStatus();
+        //  watchPipelineRunStatus();
         //  watchListPods();
-       // getPodLogs("default", "demo-pipeline-run-1-build-image-lfkqj-pod-zfrfg", "step-build-and-push");
+        // getPodLogs("default", "demo-pipeline-run-1-build-image-lfkqj-pod-zfrfg", "step-build-and-push");
     }
 
-    public static void createSecret(String resourceFilePath) throws IOException {
+    public static String createSecret(String resourceFilePath) throws IOException, ApiException {
         ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
         Configuration.setDefaultApiClient(client);
 
@@ -62,19 +61,21 @@ public class KubernetesUtility {
         V1Secret resource = (V1Secret) Yaml.load(new File(resourceFilePath));
         CoreV1Api api = new CoreV1Api();
 
-        try {
-            Object result = api.createNamespacedSecret(namespace, resource, pretty, null, null);
-            System.out.println(result);
-        } catch (ApiException e) {
-            System.err.println("Exception when calling create secret.");
-            System.err.println("Status code: " + e.getCode());
-            System.err.println("Reason: " + e.getResponseBody());
-            System.err.println("Response headers: " + e.getResponseHeaders());
-            e.printStackTrace();
-        }
+//        try {
+        Object result = api.createNamespacedSecret(namespace, resource, pretty, null, null);
+        System.out.println(result);
+        String responseJson = new Gson().toJson(result);
+        return getData(responseJson, "$.metadata.name");
+//        } catch (ApiException e) {
+//            System.err.println("Exception when calling create secret.");
+//            System.err.println("Status code: " + e.getCode());
+//            System.err.println("Reason: " + e.getResponseBody());
+//            System.err.println("Response headers: " + e.getResponseHeaders());
+//            e.printStackTrace();
+//        }
     }
 
-    public static void createServiceAccount(String resourceFilePath) throws IOException {
+    public static String createServiceAccount(String resourceFilePath) throws IOException, ApiException {
         ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
         Configuration.setDefaultApiClient(client);
 
@@ -84,19 +85,21 @@ public class KubernetesUtility {
         V1ServiceAccount resource = (V1ServiceAccount) Yaml.load(new File(resourceFilePath));
         CoreV1Api api = new CoreV1Api();
 
-        try {
-            Object result = api.createNamespacedServiceAccount(namespace, resource, pretty, null, null);
-            System.out.println(result);
-        } catch (ApiException e) {
-            System.err.println("Exception when calling create secret.");
-            System.err.println("Status code: " + e.getCode());
-            System.err.println("Reason: " + e.getResponseBody());
-            System.err.println("Response headers: " + e.getResponseHeaders());
-            e.printStackTrace();
-        }
+//        try {
+        Object result = api.createNamespacedServiceAccount(namespace, resource, pretty, null, null);
+        System.out.println(result);
+        String responseJson = new Gson().toJson(result);
+        return getData(responseJson, "$.metadata.name");
+//        } catch (ApiException e) {
+//            System.err.println("Exception when calling create secret.");
+//            System.err.println("Status code: " + e.getCode());
+//            System.err.println("Reason: " + e.getResponseBody());
+//            System.err.println("Response headers: " + e.getResponseHeaders());
+//            e.printStackTrace();
+//        }
     }
 
-    public static void createPipelineResource(String resourceFilePath) throws IOException {
+    public static String createPipelineResource(String resourceFilePath) throws IOException, ApiException {
         ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
         Configuration.setDefaultApiClient(client);
 
@@ -109,19 +112,21 @@ public class KubernetesUtility {
 
         LinkedHashMap<String, Object> resource = loadYamlResourceAsMap(resourceFilePath);
 
-        try {
-            Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
-            System.out.println(result);
-        } catch (ApiException e) {
-            System.err.println("Exception when calling create pipeline resource.");
-            System.err.println("Status code: " + e.getCode());
-            System.err.println("Reason: " + e.getResponseBody());
-            System.err.println("Response headers: " + e.getResponseHeaders());
-            e.printStackTrace();
-        }
+//        try {
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        System.out.println(result);
+        String responseJson = new Gson().toJson(result);
+        return getData(responseJson, "$.metadata.name");
+//        } catch (ApiException e) {
+//            System.err.println("Exception when calling create pipeline resource.");
+//            System.err.println("Status code: " + e.getCode());
+//            System.err.println("Reason: " + e.getResponseBody());
+//            System.err.println("Response headers: " + e.getResponseHeaders());
+//            e.printStackTrace();
+//        }
     }
 
-    public static void createPipelineTask(String resourceFilePath) throws IOException {
+    public static String createPipelineTask(String resourceFilePath) throws IOException, ApiException {
         ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
         Configuration.setDefaultApiClient(client);
 
@@ -134,20 +139,22 @@ public class KubernetesUtility {
 
         LinkedHashMap<String, Object> resource = loadYamlResourceAsMap(resourceFilePath);
 
-        try {
-            Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
-            System.out.println(result);
-        } catch (ApiException e) {
-            System.err.println("Exception when calling create pipeline task.");
-            System.err.println("Status code: " + e.getCode());
-            System.err.println("Reason: " + e.getResponseBody());
-            System.err.println("Response headers: " + e.getResponseHeaders());
-            e.printStackTrace();
-        }
+//        try {
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        System.out.println(result);
+        String responseJson = new Gson().toJson(result);
+        return getData(responseJson, "$.metadata.name");
+//        } catch (ApiException e) {
+//            System.err.println("Exception when calling create pipeline task.");
+//            System.err.println("Status code: " + e.getCode());
+//            System.err.println("Reason: " + e.getResponseBody());
+//            System.err.println("Response headers: " + e.getResponseHeaders());
+//            e.printStackTrace();
+//        }
     }
 
 
-    public static void createPipeline(String resourceFilePath) throws IOException {
+    public static String createPipeline(String resourceFilePath) throws IOException, ApiException {
         ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
         Configuration.setDefaultApiClient(client);
 
@@ -160,19 +167,21 @@ public class KubernetesUtility {
 
         LinkedHashMap<String, Object> resource = loadYamlResourceAsMap(resourceFilePath);
 
-        try {
-            Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
-            System.out.println(result);
-        } catch (ApiException e) {
-            System.err.println("Exception when calling create pipeline.");
-            System.err.println("Status code: " + e.getCode());
-            System.err.println("Reason: " + e.getResponseBody());
-            System.err.println("Response headers: " + e.getResponseHeaders());
-            e.printStackTrace();
-        }
+//        try {
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        System.out.println(result);
+        String responseJson = new Gson().toJson(result);
+        return getData(responseJson, "$.metadata.name");
+//        } catch (ApiException e) {
+//            System.err.println("Exception when calling create pipeline.");
+//            System.err.println("Status code: " + e.getCode());
+//            System.err.println("Reason: " + e.getResponseBody());
+//            System.err.println("Response headers: " + e.getResponseHeaders());
+//            e.printStackTrace();
+//        }
     }
 
-    public static void createPipelineRun(String resourceFilePath) throws IOException {
+    public static String createPipelineRun(String resourceFilePath) throws IOException, ApiException {
         ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
         Configuration.setDefaultApiClient(client);
 
@@ -185,16 +194,18 @@ public class KubernetesUtility {
 
         LinkedHashMap<String, Object> resource = loadYamlResourceAsMap(resourceFilePath);
 
-        try {
-            Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
-            System.out.println(result);
-        } catch (ApiException e) {
-            System.err.println("Exception when calling create pipelinerun.");
-            System.err.println("Status code: " + e.getCode());
-            System.err.println("Reason: " + e.getResponseBody());
-            System.err.println("Response headers: " + e.getResponseHeaders());
-            e.printStackTrace();
-        }
+//        try {
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        System.out.println(result);
+        String responseJson = new Gson().toJson(result);
+        return getData(responseJson, "$.metadata.name");
+//        } catch (ApiException e) {
+//            System.err.println("Exception when calling create pipelinerun.");
+//            System.err.println("Status code: " + e.getCode());
+//            System.err.println("Reason: " + e.getResponseBody());
+//            System.err.println("Response headers: " + e.getResponseHeaders());
+//            e.printStackTrace();
+//        }
     }
 
     private static LinkedHashMap<String, Object> loadYamlResourceAsMap(String filePath) throws IOException {
@@ -294,10 +305,10 @@ public class KubernetesUtility {
 
         JSONArray taskDetails = new JSONArray();
         LinkedHashMap<String, Object> taskRuns = new LinkedHashMap<>();
-        try{
+        try {
             taskRuns = JsonPath.read(responseJson, "$.status.taskRuns");
-        }catch(Exception e){
-            logger.error("exception in getting taskruns, " , e);
+        } catch (Exception e) {
+            logger.error("exception in getting taskruns, ", e);
             details.put("tasks", taskDetails);
             System.out.println("Details: " + details);
             return details;
@@ -327,8 +338,8 @@ public class KubernetesUtility {
 
             JSONArray steps;
             try {
-                steps =  new JSONArray( JsonPath.read(taskRunJson, "$.status.steps").toString());
-            }catch (Exception e){
+                steps = new JSONArray(JsonPath.read(taskRunJson, "$.status.steps").toString());
+            } catch (Exception e) {
                 logger.error("Error in getting steps. ", e);
                 taskJson.put("steps", new JSONArray());
                 continue;
@@ -380,11 +391,11 @@ public class KubernetesUtility {
 
     }
 
-    private static String getData( String inputJson, String jsonPath) {
-       String response= "";
-        try{
+    private static String getData(String inputJson, String jsonPath) {
+        String response = "";
+        try {
             response = JsonPath.read(inputJson, jsonPath);
-        }catch(Exception e){
+        } catch (Exception e) {
             logger.error("Exception in reading value at specified json path not found. ", e);
         }
         return response;
@@ -486,9 +497,9 @@ public class KubernetesUtility {
 //        System.out.println(pod.getMetadata().getName());
 //
         PodLogs logs = new PodLogs();
-       // InputStream is = logs.streamNamespacedPodLog(pod);
+        // InputStream is = logs.streamNamespacedPodLog(pod);
         InputStream is = logs.streamNamespacedPodLog(namespace, podName, containerName);
-       // ByteStreams.copy(is, System.out);
+        // ByteStreams.copy(is, System.out);
         return is;
 
     }

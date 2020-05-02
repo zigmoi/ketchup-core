@@ -24,10 +24,6 @@ public class DeploymentEntity {
     private String displayName;
     private String serviceName;
     private String data;
-    private String currentStatus;
-    private String previousStatus;
-    private String errorMessage;
-    private String logs;
 
     @Temporal(TemporalType.TIMESTAMP)
     @CreationTimestamp

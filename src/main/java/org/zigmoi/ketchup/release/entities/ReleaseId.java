@@ -1,4 +1,4 @@
-package org.zigmoi.ketchup.deployment.entities;
+package org.zigmoi.ketchup.release.entities;
 
 import lombok.Data;
 import org.zigmoi.ketchup.iam.entities.TenantEntity;
@@ -9,18 +9,21 @@ import java.io.Serializable;
 
 @Data
 @Embeddable
-public class DeploymentId extends TenantEntity implements Serializable  {
+public class ReleaseId extends TenantEntity implements Serializable  {
 
     @Column(length = 36)
     private String projectResourceId;
     @Column(length = 36)
     private String deploymentResourceId;
+    @Column(length = 36)
+    private String releaseResourceId;
 
-    public DeploymentId(){}
+    public ReleaseId(){}
 
-    public DeploymentId(String tenantId, String projectResourceId, String deploymentResourceId) {
+    public ReleaseId(String tenantId, String projectResourceId, String deploymentResourceId, String releaseResourceId) {
         super.tenantId = tenantId;
         this.projectResourceId = projectResourceId;
         this.deploymentResourceId = deploymentResourceId;
+        this.releaseResourceId = releaseResourceId;
     }
 }
