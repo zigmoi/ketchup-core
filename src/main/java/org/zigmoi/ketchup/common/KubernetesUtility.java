@@ -38,17 +38,48 @@ public class KubernetesUtility {
     public static void main(String[] args) throws IOException, ApiException {
         //create pipeline resources in order. (createPipelineRun should be last.)
         String baseResourcePath = "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/";
-        createPipelineResource(baseResourcePath.concat("resource.yaml"));
-        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
-        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
+        createCustomResource(baseResourcePath.concat("resource.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineresources", "false");
+        createCustomResource(baseResourcePath.concat("task-makisu.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
+        createCustomResource(baseResourcePath.concat("task-helm.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
+        createCustomResource(baseResourcePath.concat("pipeline.yaml"), "default", "tekton.dev", "v1alpha1", "pipelines", "false");
         createSecret(baseResourcePath.concat("secrets.yaml"));
         createServiceAccount(baseResourcePath.concat("service-account.yaml"));
-        createPipeline(baseResourcePath.concat("pipeline.yaml"));
-        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
+
+        createCustomResource(baseResourcePath.concat("pipeline-run.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineruns", "false");
+
+//        createPipelineResource(baseResourcePath.concat("resource.yaml"));
+//        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
+//        createPipelineTask(baseResourcePath.concat("task-helm.yaml"));
+//        createSecret(baseResourcePath.concat("secrets.yaml"));
+//        createServiceAccount(baseResourcePath.concat("service-account.yaml"));
+//        createPipeline(baseResourcePath.concat("pipeline.yaml"));
+//        createPipelineRun(baseResourcePath.concat("pipeline-run.yaml"));
 
         //  watchPipelineRunStatus();
         //  watchListPods();
         // getPodLogs("default", "demo-pipeline-run-1-build-image-lfkqj-pod-zfrfg", "step-build-and-push");
+    }
+
+    public static void createSecretUsingYamlContent(String resourceContent, String namespace, String pretty) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+        Configuration.setDefaultApiClient(client);
+
+        V1Secret resource = (V1Secret) Yaml.load(resourceContent);
+        CoreV1Api api = new CoreV1Api();
+
+        Object result = api.createNamespacedSecret(namespace, resource, pretty, null, null);
+        System.out.println(result);
+    }
+
+    public static void createServiceAccountUsingYamlContent(String resourceContent, String namespace, String pretty) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+        Configuration.setDefaultApiClient(client);
+
+        V1ServiceAccount resource = (V1ServiceAccount) Yaml.load(resourceContent);
+        CoreV1Api api = new CoreV1Api();
+
+        Object result = api.createNamespacedServiceAccount(namespace, resource, pretty, null, null);
+        System.out.println(result);
     }
 
     public static String createSecret(String resourceFilePath) throws IOException, ApiException {
@@ -97,6 +128,50 @@ public class KubernetesUtility {
 //            System.err.println("Response headers: " + e.getResponseHeaders());
 //            e.printStackTrace();
 //        }
+    }
+
+    public String getResourceNameUsingResourceYamlPath(String resourceFilePath) throws IOException {
+        LinkedHashMap<String, Object> resource =
+                (LinkedHashMap<String, Object>) Yaml.loadAs(new File(resourceFilePath), Map.class);
+        String resourceJson = new Gson().toJson(resource);
+        System.out.println(resourceJson);
+        String resourceName = getData(resourceJson, "$.metadata.name");
+        return resourceName;
+    }
+
+    public String getResourceNameUsingResourceJson(String resourceJson) {
+        System.out.println(resourceJson);
+        String resourceName = getData(resourceJson, "$.metadata.name");
+        return resourceName;
+    }
+
+    public String getResourceNameUsingResourceYaml(String resourceYaml) {
+        LinkedHashMap<String, Object> resource =
+                (LinkedHashMap<String, Object>) Yaml.loadAs(resourceYaml, Map.class);
+        String resourceJson = new Gson().toJson(resource);
+        System.out.println(resourceJson);
+        String resourceName = getData(resourceJson, "$.metadata.name");
+        return resourceName;
+    }
+
+    public static void createCustomResource(String resourceFilePath, String namespace, String group, String version, String plural, String pretty) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+        Configuration.setDefaultApiClient(client);
+        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+
+        LinkedHashMap<String, Object> resource = loadYamlResourceAsMap(resourceFilePath);
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        System.out.println(result);
+    }
+
+    public static void createCRDUsingYamlContent(String resourceYaml, String namespace, String group, String version, String plural, String pretty) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+        Configuration.setDefaultApiClient(client);
+        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+
+        LinkedHashMap<String, Object> resource = (LinkedHashMap<String, Object>) Yaml.loadAs(resourceYaml, Map.class);
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        System.out.println(result);
     }
 
     public static String createPipelineResource(String resourceFilePath) throws IOException, ApiException {
