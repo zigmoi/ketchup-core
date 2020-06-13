@@ -67,11 +67,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsId.setProjectId(dto.getProjectId());
         settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
-        settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setCreatedOn(new Date());
         settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
         settingsEntity.setType(ProjectSettingsType.CONTAINER_REGISTRY.toString());
         convertToEntity(dto, settingsEntity);
         projectSettingsRepository.save(settingsEntity);
@@ -110,8 +106,6 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
         settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
         convertToEntity(dto, settingsEntity);
         projectSettingsRepository.save(settingsEntity);
     }
@@ -182,11 +176,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsId.setProjectId(dto.getProjectId());
         settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
-        settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setCreatedOn(new Date());
         settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
         settingsEntity.setType(ProjectSettingsType.KUBERNETES_CLUSTER.toString());
         convertToEntity(dto, settingsEntity);
         projectSettingsRepository.save(settingsEntity);
@@ -225,8 +215,6 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
         settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
         convertToEntity(dto, settingsEntity);
         projectSettingsRepository.save(settingsEntity);
     }
@@ -295,11 +283,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsId.setProjectId(dto.getProjectId());
         settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
-        settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setCreatedOn(new Date());
         settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
         settingsEntity.setType(ProjectSettingsType.BUILD_TOOL.toString());
         convertToEntity(dto, settingsEntity);
         projectSettingsRepository.save(settingsEntity);
@@ -338,8 +322,6 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
         settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
         convertToEntity(dto, settingsEntity);
         projectSettingsRepository.save(settingsEntity);
     }
@@ -408,11 +390,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsId.setProjectId(dto.getProjectId());
         settingsId.setSettingId(getNewSettingId());
         settingsEntity.setId(settingsId);
-        settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setCreatedOn(new Date());
         settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
         settingsEntity.setType(ProjectSettingsType.K8S_HOST_ALIAS.toString());
         convertToEntity(dto, settingsEntity);
         projectSettingsRepository.save(settingsEntity);
@@ -451,8 +429,6 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
         settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
         convertToEntity(dto, settingsEntity);
         projectSettingsRepository.save(settingsEntity);
     }
