@@ -60,8 +60,11 @@ public class KubernetesUtility {
         // getPodLogs("default", "demo-pipeline-run-1-build-image-lfkqj-pod-zfrfg", "step-build-and-push");
     }
 
-    public static void createSecretUsingYamlContent(String resourceContent, String namespace, String pretty) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+    public static void createSecretUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfigPath) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(kubeConfigPath);
+//        client.setWriteTimeout(15000);
+//        client.setConnectTimeout(15000);
+//        client.setReadTimeout(15000);
         Configuration.setDefaultApiClient(client);
 
         V1Secret resource = (V1Secret) Yaml.load(resourceContent);
@@ -71,8 +74,11 @@ public class KubernetesUtility {
         System.out.println(result);
     }
 
-    public static void createServiceAccountUsingYamlContent(String resourceContent, String namespace, String pretty) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+    public static void createServiceAccountUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfigPath) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(kubeConfigPath);
+//        client.setWriteTimeout(15000);
+//        client.setConnectTimeout(15000);
+//        client.setReadTimeout(15000);
         Configuration.setDefaultApiClient(client);
 
         V1ServiceAccount resource = (V1ServiceAccount) Yaml.load(resourceContent);
@@ -164,8 +170,11 @@ public class KubernetesUtility {
         System.out.println(result);
     }
 
-    public static void createCRDUsingYamlContent(String resourceYaml, String namespace, String group, String version, String plural, String pretty) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+    public static void createCRDUsingYamlContent(String resourceYaml, String namespace, String group, String version, String plural, String pretty, String kubeConfigPath) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(kubeConfigPath);
+//        client.setWriteTimeout(15000);
+//        client.setConnectTimeout(15000);
+//        client.setReadTimeout(15000);
         Configuration.setDefaultApiClient(client);
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
 
@@ -318,11 +327,14 @@ public class KubernetesUtility {
             for (Watch.Response<Object> item : watch) {
                 String responseJson = new Gson().toJson(item.object);
                 System.out.println(responseJson);
-                emitter.send(parsePipelineRunResponse(responseJson).toString());
+                SseEmitter.SseEventBuilder eventBuilderDataStream = SseEmitter.event().name("data").data(parsePipelineRunResponse(responseJson).toString());
+                emitter.send(eventBuilderDataStream);
                 //  System.out.printf("%s : %s%n", item.type, item.object.toString());
             }
         } finally {
             watch.close();
+            SseEmitter.SseEventBuilder eventBuilderCloseStream = SseEmitter.event().data("").name("close");
+            emitter.send(eventBuilderCloseStream);
             emitter.complete();
         }
     }
@@ -512,6 +524,7 @@ public class KubernetesUtility {
         }
         return stepJson;
     }
+
 
     public static void watchListPods() throws IOException, ApiException {
         ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");

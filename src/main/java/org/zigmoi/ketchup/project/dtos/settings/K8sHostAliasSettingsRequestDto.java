@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Map;
 
 @Data
-public class HostnameIpMappingSettingsRequestDto {
+public class K8sHostAliasSettingsRequestDto {
 
     private String projectId;
     private String displayName;

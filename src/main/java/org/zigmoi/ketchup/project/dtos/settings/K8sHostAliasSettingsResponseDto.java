@@ -3,9 +3,10 @@ package org.zigmoi.ketchup.project.dtos.settings;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.Map;
 
 @Data
-public class CloudProviderSettingsResponseDto {
+public class K8sHostAliasSettingsResponseDto {
 
     private String projectId;
     private String settingId;
@@ -15,7 +16,5 @@ public class CloudProviderSettingsResponseDto {
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
 
-    private String provider;
-    private String accessId;
-    private String secretKey;
+    private Map<String, String> hostnameIpMapping;
 }

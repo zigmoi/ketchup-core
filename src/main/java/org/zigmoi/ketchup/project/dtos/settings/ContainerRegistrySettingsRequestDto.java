@@ -8,8 +8,8 @@ public class ContainerRegistrySettingsRequestDto {
     private String projectId;
     private String displayName;
 
-    private String provider;
-    private String cloudCredentialId;
-    private String registryId;
+    private String type;
     private String registryUrl;
+    private String registryUsername;
+    private String registryPassword;
 }

@@ -3,88 +3,176 @@ package org.zigmoi.ketchup.release.services;
 import io.kubernetes.client.openapi.ApiException;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.common.KubernetesUtility;
+import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.services.TenantProviderService;
-import org.zigmoi.ketchup.iam.services.UserService;
 import org.zigmoi.ketchup.project.services.PermissionUtilsService;
 import org.zigmoi.ketchup.release.entities.PipelineResource;
+import org.zigmoi.ketchup.release.entities.PipelineResourceId;
 import org.zigmoi.ketchup.release.entities.Release;
 import org.zigmoi.ketchup.release.entities.ReleaseId;
+import org.zigmoi.ketchup.release.repositories.PipelineResourceRepository;
 import org.zigmoi.ketchup.release.repositories.ReleaseRepository;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class ReleaseServiceImpl extends TenantProviderService implements ReleaseService {
 
     private final ReleaseRepository releaseRepository;
 
+    private final PipelineResourceRepository pipelineResourceRepository;
+
     private PermissionUtilsService permissionUtilsService;
 
-    private UserService userService;
-
     @Autowired
-    public ReleaseServiceImpl(ReleaseRepository releaseRepository, PermissionUtilsService permissionUtilsService, UserService userService) {
+    public ReleaseServiceImpl(ReleaseRepository releaseRepository, PipelineResourceRepository pipelineResourceRepository, PermissionUtilsService permissionUtilsService) {
         this.releaseRepository = releaseRepository;
+        this.pipelineResourceRepository = pipelineResourceRepository;
         this.permissionUtilsService = permissionUtilsService;
-        this.userService = userService;
     }
 
 
     @Override
     @Transactional
-    public void create() {
+    public void create(String deploymentResourceId) {
+        //validate and fetch deploymentId.
+        //get projectId from deployment.
+        //handle duplicate pipeline resources error in k8s.
+
+        String tenantId = AuthUtils.getCurrentTenantId();
+        String projectResourceId = "p1";
+
+
         Release r = new Release();
-        ReleaseId id = new ReleaseId();
-        id.setProjectResourceId("p1");
-        id.setDeploymentResourceId("d1");
-        id.setReleaseResourceId("r1");
-        id.setTenantId("t1.com");
-        r.setId(id);
+        ReleaseId releaseId = new ReleaseId();
+        releaseId.setReleaseResourceId(UUID.randomUUID().toString());
+        releaseId.setTenantId(tenantId);
+        r.setId(releaseId);
+        r.setDeploymentResourceId(deploymentResourceId);
+        r.setProjectResourceId(projectResourceId);
 
         //generate helm values json and save it.
 
         //generate pipeline all resources and save them, name can be parsed from them directly.
         List<PipelineResource> pipelineResources = getAllPipelineResources("standard-sb-1");
-        r.setPipelineResources(pipelineResources);
-
+        pipelineResources.stream().forEach(pipelineResource ->
+        {
+            PipelineResourceId pipelineResourceId = new PipelineResourceId();
+            pipelineResourceId.setTenantId(tenantId);
+            pipelineResourceId.setGuid(UUID.randomUUID().toString());
+            pipelineResource.setId(pipelineResourceId);
+            pipelineResource.setProjectResourceId(projectResourceId);
+            pipelineResource.setReleaseResourceId(releaseId.getReleaseResourceId());
+        });
+        pipelineResourceRepository.saveAll(pipelineResources);
         releaseRepository.save(r);
 
-        deployPipelineResources(pipelineResources);
+        deployPipelineResources(pipelineResources, "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
+    }
 
-//        //deploy pipeline resources.
-//        String baseResourcePath = "/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/";
-//        try {
-//            //create pipeline resources in order. (createPipelineRun should be last.)
-//            KubernetesUtility.createSecret(baseResourcePath.concat("secrets.yaml"));
-//            KubernetesUtility.createServiceAccount(baseResourcePath.concat("service-account.yaml"));
-//            KubernetesUtility.createCustomResource(baseResourcePath.concat("resource.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineresources", "false");
-//            KubernetesUtility.createCustomResource(baseResourcePath.concat("task-makisu.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
-//            KubernetesUtility.createCustomResource(baseResourcePath.concat("task-helm.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
-//            KubernetesUtility.createCustomResource(baseResourcePath.concat("pipeline.yaml"), "default", "tekton.dev", "v1alpha1", "pipelines", "false");
-//            KubernetesUtility.createCustomResource(baseResourcePath.concat("pipeline-run.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineruns", "false");
-//        } catch (IOException | ApiException e) {
-//            //delete all resources.
-//            e.printStackTrace();
-//        }
+    @Override
+    @Transactional
+    public void rollback(String deploymentResourceId) {
 
     }
 
-    private void deployPipelineResources(List<PipelineResource> pipelineResources) {
+    @Override
+    @Transactional
+    public void stop(String releaseResourceId) {
+        ReleaseId id = new ReleaseId();
+        id.setTenantId(AuthUtils.getCurrentTenantId());
+        id.setReleaseResourceId(releaseResourceId);
 
+        Release release = releaseRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format("Release with id %s not found.", releaseResourceId)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Release findById(String releaseResourceId) {
+        ReleaseId id = new ReleaseId();
+        id.setTenantId(AuthUtils.getCurrentTenantId());
+        id.setReleaseResourceId(releaseResourceId);
+        return releaseRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format("Release with id %s not found.", releaseResourceId)));
+    }
+
+    @Override
+    @Transactional
+    public void delete(String releaseResourceId) {
+        ReleaseId id = new ReleaseId();
+        id.setTenantId(AuthUtils.getCurrentTenantId());
+        id.setReleaseResourceId(releaseResourceId);
+
+        if (releaseRepository.existsById(id) == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Release with id %s not found.", releaseResourceId));
+        }
+
+        releaseRepository.deleteById(id);
+        pipelineResourceRepository.deleteAllByReleaseResourceId(releaseResourceId);
+    }
+
+    @Override
+    @Transactional
+    public void update(Release release) {
+
+    }
+
+    @Override
+    @Transactional
+    public Set<Release> listAllInDeployment(String deploymentResourceId) {
+        return releaseRepository.findDistinctByDeploymentResourceIdOrderByCreatedOnDesc(deploymentResourceId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Release> listAllInProject(String projectResourceId) {
+        return releaseRepository.findDistinctByProjectResourceId(projectResourceId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<PipelineResource> listAllPipelineResources(String releaseResourceId) {
+        ReleaseId id = new ReleaseId();
+        id.setTenantId(AuthUtils.getCurrentTenantId());
+        id.setReleaseResourceId(releaseResourceId);
+
+        if (releaseRepository.existsById(id) == false) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Release with id %s not found.", releaseResourceId));
+        }
+        return pipelineResourceRepository.findDistinctByReleaseResourceId(releaseResourceId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PipelineResource getPipelineResourceById(String pipelineResourceId) {
+        PipelineResourceId id = new PipelineResourceId();
+        id.setTenantId(AuthUtils.getCurrentTenantId());
+        id.setGuid(pipelineResourceId);
+        return pipelineResourceRepository
+                .findById(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                String.format("Pipeline Resource with id %s not found.", pipelineResourceId)));
+    }
+
+
+    private void deployPipelineResources(List<PipelineResource> pipelineResources, String kubeConfigPath) {
         pipelineResources.stream()
                 .filter(r -> "secret".equalsIgnoreCase(r.getResourceType()))
                 .forEach(secret -> {
                     try {
-                        KubernetesUtility.createSecretUsingYamlContent(secret.getResourceContent(), "default", "false");
+                        KubernetesUtility.createSecretUsingYamlContent(secret.getResourceContent(), "default", "false", kubeConfigPath);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -97,7 +185,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "service-account".equalsIgnoreCase(r.getResourceType()))
                 .forEach(serviceAccount -> {
                     try {
-                        KubernetesUtility.createServiceAccountUsingYamlContent(serviceAccount.getResourceContent(), "default", "false");
+                        KubernetesUtility.createServiceAccountUsingYamlContent(serviceAccount.getResourceContent(), "default", "false", kubeConfigPath);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -109,7 +197,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "pipeline-resource".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipelineResource -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipelineResource.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelineresources", "false");
+                        KubernetesUtility.createCRDUsingYamlContent(pipelineResource.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelineresources", "false", kubeConfigPath);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -121,7 +209,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "task".equalsIgnoreCase(r.getResourceType()))
                 .forEach(task -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(task.getResourceContent(), "default", "tekton.dev", "v1alpha1", "tasks", "false");
+                        KubernetesUtility.createCRDUsingYamlContent(task.getResourceContent(), "default", "tekton.dev", "v1alpha1", "tasks", "false", kubeConfigPath);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -133,7 +221,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "pipeline".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipeline -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipeline.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelines", "false");
+                        KubernetesUtility.createCRDUsingYamlContent(pipeline.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelines", "false", kubeConfigPath);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -146,7 +234,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "pipeline-run".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipelineRun -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipelineRun.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelineruns", "false");
+                        KubernetesUtility.createCRDUsingYamlContent(pipelineRun.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelineruns", "false", kubeConfigPath);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -155,42 +243,6 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 });
 
 
-    }
-
-    @Override
-    @Transactional
-    public void stop(String releaseResourceId) {
-
-    }
-
-    @Override
-    @Transactional
-    public Optional<Release> findById(String releaseResourceId) {
-        return Optional.empty();
-    }
-
-    @Override
-    @Transactional
-    public void delete(String releaseResourceId) {
-
-    }
-
-    @Override
-    @Transactional
-    public void update(Release release) {
-
-    }
-
-    @Override
-    @Transactional
-    public Set<Release> listAllInDeployment() {
-        return null;
-    }
-
-    @Override
-    @Transactional
-    public Set<Release> listAllInProject() {
-        return null;
     }
 
 

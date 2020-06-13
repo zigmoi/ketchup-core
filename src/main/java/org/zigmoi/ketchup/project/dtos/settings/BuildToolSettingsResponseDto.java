@@ -15,7 +15,6 @@ public class BuildToolSettingsResponseDto {
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
 
-    private String provider;
-    private String fileName;
+    private String type;
     private String fileData;
 }

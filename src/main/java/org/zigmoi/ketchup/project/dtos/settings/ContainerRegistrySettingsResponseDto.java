@@ -15,8 +15,9 @@ public class ContainerRegistrySettingsResponseDto {
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
 
-    private String provider;
-    private String cloudCredentialId;
-    private String registryId;
+    private String type;
     private String registryUrl;
+    private String registryUsername;
+    private String registryPassword;
+
 }

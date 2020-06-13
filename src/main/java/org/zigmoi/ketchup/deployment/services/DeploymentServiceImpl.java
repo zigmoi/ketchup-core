@@ -136,8 +136,8 @@ public class DeploymentServiceImpl implements DeploymentService {
 
         KubernetesClusterSettingsResponseDto kubernetesClusterSettingsResponseDto =
                 projectSettingsService.getKubernetesCluster(projectResourceId, dto.getKubernetesClusterSettingId());
-        HostnameIpMappingSettingsResponseDto hostnameIpMappingSettingsResponseDto = isNullOrEmpty(dto.getExternalResourceIpHostnameMappingSettingId()) ? null :
-                projectSettingsService.getHostnameIpMapping(projectResourceId, dto.getExternalResourceIpHostnameMappingSettingId());
+        K8sHostAliasSettingsResponseDto hostnameIpMappingSettingsResponseDto = isNullOrEmpty(dto.getExternalResourceIpHostnameMappingSettingId()) ? null :
+                projectSettingsService.getK8sHostAlias(projectResourceId, dto.getExternalResourceIpHostnameMappingSettingId());
 
         JSONArray argsJa = new JSONArray();
         JSONObject argsJ = new JSONObject();
@@ -150,12 +150,12 @@ public class DeploymentServiceImpl implements DeploymentService {
         argsJ.put("namespace", dto.getKubernetesNamespace());
         argsJ.put("app-id", dto.getServiceName());
         argsJ.put("patch-deployment-if-exists", String.valueOf(dto.isUpdateDeploymentIfRunning()));
-        if (!CloudProviders.AWS.toString().equals(kubernetesClusterSettingsResponseDto.getProvider())
-                && ContainerRegistryProviders.AWS_ECR.toString().equals(dockerRegistryVendor)) {
-            throw new UnsupportedOperationException("When using " + ContainerRegistryProviders.AWS_ECR
-                    + ", Cloud Provider must be : " + CloudProviders.AWS);
-        }
-        argsJ.put("vm-vendor", kubernetesClusterSettingsResponseDto.getProvider());
+//        if (!CloudProviders.AWS.toString().equals(kubernetesClusterSettingsResponseDto.getProvider())
+//                && ContainerRegistryProviders.AWS_ECR.toString().equals(dockerRegistryVendor)) {
+//            throw new UnsupportedOperationException("When using " + ContainerRegistryProviders.AWS_ECR
+//                    + ", Cloud Provider must be : " + CloudProviders.AWS);
+//        }
+//        argsJ.put("vm-vendor", kubernetesClusterSettingsResponseDto.getProvider());
         argsJ.put("docker-registry-vendor", stageBuildSpringBootDockerImageArgs.getJSONObject(0).getString("docker-registry-vendor"));
         argsJ.put("docker-registry-vendor-args",
                 stageBuildSpringBootDockerImageArgs.getJSONObject(0).getJSONObject("docker-registry-vendor-args"));
@@ -183,24 +183,24 @@ public class DeploymentServiceImpl implements DeploymentService {
         config.put("arg-schema", "v1");
 
         ContainerRegistrySettingsResponseDto containerRegistry = projectSettingsService.getContainerRegistry(projectResourceId, dto.getContainerRegistrySettingId());
-        CloudProviderSettingsResponseDto cloudProvider = projectSettingsService.getCloudProvider(projectResourceId, dto.getCloudProviderSettingId());
+//        CloudProviderSettingsResponseDto cloudProvider = projectSettingsService.getCloudProvider(projectResourceId, dto.getCloudProviderSettingId());
 
         JSONArray argsJa = new JSONArray();
 
         String basePath = ((JSONObject) stageMvnCleanInstallArgs.get(0)).getString("base-path")
                 + "/" + ((JSONObject) stageMvnCleanInstallArgs.get(0)).getString("repo-name");
         String dockerFilePath = basePath + "/" + "Dockerfile";
-        String dockerRegistryVendor = containerRegistry.getProvider();
+        String dockerRegistryVendor = containerRegistry.getType();
         if (!ContainerRegistryProviders.AWS_ECR.toString().equals(dockerRegistryVendor)) {
             throw new UnsupportedOperationException("Container provider not supported yet");
         }
 
         JSONObject dockerRegistryVendorArgsJ = new JSONObject();
         dockerRegistryVendorArgsJ.put("repo", dto.getDockerImageRepoName());
-        dockerRegistryVendorArgsJ.put("registry-id", containerRegistry.getRegistryId());
+        dockerRegistryVendorArgsJ.put("registry-id", containerRegistry.getRegistryUsername());
         dockerRegistryVendorArgsJ.put("registry-base-url", containerRegistry.getRegistryUrl());
-        dockerRegistryVendorArgsJ.put("aws-access-key-id", cloudProvider.getAccessId());
-        dockerRegistryVendorArgsJ.put("aws-secret-key", cloudProvider.getSecretKey());
+//        dockerRegistryVendorArgsJ.put("aws-access-key-id", cloudProvider.getAccessId());
+//        dockerRegistryVendorArgsJ.put("aws-secret-key", cloudProvider.getSecretKey());
 
         JSONObject dockerFileTemplateArgsJ = new JSONObject();
         dockerFileTemplateArgsJ.put("app-home", dto.getAppBasePath());
@@ -259,18 +259,18 @@ public class DeploymentServiceImpl implements DeploymentService {
         config.put("command", BasicSpringBootDeploymentFlowConstants.C_PULL_FROM_REMOTE);
         config.put("arg-schema", "v1");
 
-        GitProviderSettingsResponseDto gitProvider = projectSettingsService.getGitProvider(projectResourceId, dto.getGitProviderSettingId());
+//        GitProviderSettingsResponseDto gitProvider = projectSettingsService.getGitProvider(projectResourceId, dto.getGitProviderSettingId());
 
         JSONArray argsJa = new JSONArray();
 
         JSONObject argsJ = new JSONObject();
         argsJ.put("base-path", ConfigUtility.instance().getProperty("deployment.basic-spring-boot.pull-from-remote.tmp-build-base-path"));
         argsJ.put("repo-name", dto.getGitRepoName());
-        argsJ.put("git-vendor", gitProvider.getProvider());
+//        argsJ.put("git-vendor", gitProvider.getProvider());
         JSONObject gitVendorArgJ = new JSONObject();
-        gitVendorArgJ.put("url", constructRepoUrl(gitProvider.getProvider(), dto.getGitRepoName()));
-        gitVendorArgJ.put("username", gitProvider.getUsername());
-        gitVendorArgJ.put("password", gitProvider.getPassword());
+//        gitVendorArgJ.put("url", constructRepoUrl(gitProvider.getProvider(), dto.getGitRepoName()));
+//        gitVendorArgJ.put("username", gitProvider.getUsername());
+//        gitVendorArgJ.put("password", gitProvider.getPassword());
         argsJ.put("git-vendor-arg", gitVendorArgJ);
 
         argsJa.put(argsJ);

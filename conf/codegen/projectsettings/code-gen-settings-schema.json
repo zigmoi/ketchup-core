@@ -1,32 +1,18 @@
 {
   "build-tool" : [
-    {"provider" : "string"},
-    {"fileName" : "string"},
+    {"type" : "string"},
     {"fileData" : "string"}
   ],
-  "cloud-provider" : [
-    {"provider" : "string"},
-    {"accessId" : "string"},
-    {"secretKey" : "string"}
-  ],
   "container-registry" : [
-    {"provider" : "string"},
-    {"cloudCredentialId" : "string"},
-    {"registryId" : "string"},
-    {"registryUrl" : "string"}
-  ],
-  "git-provider" :  [
-    {"provider" : "string"},
-    {"repoListUrl" : "string"},
-    {"username" : "string"},
-    {"password" : "string"}
+    {"type" : "string"},
+    {"registryUrl" : "string"},
+    {"registryUsername" : "string"},
+    {"registryPassword" : "string"}
   ],
   "hostname-ip-mapping" : [
     {"hostnameIpMapping" : "map-string-string"}
   ],
   "kubernetes-cluster" : [
-    {"provider" : "string"},
-    {"fileName" : "string"},
     {"fileData" : "string"}
   ]
 }

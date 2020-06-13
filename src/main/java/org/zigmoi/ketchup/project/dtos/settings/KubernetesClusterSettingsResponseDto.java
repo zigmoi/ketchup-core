@@ -15,7 +15,5 @@ public class KubernetesClusterSettingsResponseDto {
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
 
-    private String provider;
-    private String fileName;
     private String fileData;
 }

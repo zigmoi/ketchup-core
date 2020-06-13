@@ -130,21 +130,23 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     private void convertToDto(ProjectSettingsEntity settingsEntity, ContainerRegistrySettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
-        settingsDto.setProvider(jo.getString("provider"));
-        settingsDto.setCloudCredentialId(jo.getString("cloudCredentialId"));
-        settingsDto.setRegistryId(jo.getString("registryId"));
+        settingsDto.setType(jo.getString("type"));
+        settingsDto.setRegistryPassword(jo.getString("registryPassword"));
+        settingsDto.setRegistryUsername(jo.getString("registryUsername"));
         settingsDto.setRegistryUrl(jo.getString("registryUrl"));
     }
 
     private void convertToEntity(ContainerRegistrySettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
-        jo.put("provider", settingsDto.getProvider());
-        jo.put("cloudCredentialId", settingsDto.getCloudCredentialId());
-        jo.put("registryId", settingsDto.getRegistryId());
+        jo.put("type", settingsDto.getType());
+        jo.put("registryPassword", settingsDto.getRegistryPassword());
+        jo.put("registryUsername", settingsDto.getRegistryUsername());
         jo.put("registryUrl", settingsDto.getRegistryUrl());
         settingsEntity.setData(jo.toString());
     }
     // container-registry api impl ends
+
+
     // kubernetes-cluster api impl starts
     @Override
     public List<KubernetesClusterSettingsResponseDto> listAllKubernetesCluster(String projectId) {
@@ -243,19 +245,21 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     private void convertToDto(ProjectSettingsEntity settingsEntity, KubernetesClusterSettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
-        settingsDto.setProvider(jo.getString("provider"));
-        settingsDto.setFileName(jo.getString("fileName"));
+//        settingsDto.setProvider(jo.getString("provider"));
+//        settingsDto.setFileName(jo.getString("fileName"));
         settingsDto.setFileData(jo.getString("fileData"));
     }
 
     private void convertToEntity(KubernetesClusterSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
-        jo.put("provider", settingsDto.getProvider());
-        jo.put("fileName", settingsDto.getFileName());
+//        jo.put("provider", settingsDto.getProvider());
+//        jo.put("fileName", settingsDto.getFileName());
         jo.put("fileData", settingsDto.getFileData());
         settingsEntity.setData(jo.toString());
     }
     // kubernetes-cluster api impl ends
+
+
     // build-tool api impl starts
     @Override
     public List<BuildToolSettingsResponseDto> listAllBuildTool(String projectId) {
@@ -354,139 +358,28 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
 
     private void convertToDto(ProjectSettingsEntity settingsEntity, BuildToolSettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
-        settingsDto.setProvider(jo.getString("provider"));
-        settingsDto.setFileName(jo.getString("fileName"));
+        settingsDto.setType(jo.getString("type"));
+//        settingsDto.setFileName(jo.getString("fileName"));
         settingsDto.setFileData(jo.getString("fileData"));
     }
 
     private void convertToEntity(BuildToolSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
-        jo.put("provider", settingsDto.getProvider());
-        jo.put("fileName", settingsDto.getFileName());
+        jo.put("type", settingsDto.getType());
+//        jo.put("fileName", settingsDto.getFileName());
         jo.put("fileData", settingsDto.getFileData());
         settingsEntity.setData(jo.toString());
     }
     // build-tool api impl ends
-    // git-provider api impl starts
-    @Override
-    public List<GitProviderSettingsResponseDto> listAllGitProvider(String projectId) {
-        List<GitProviderSettingsResponseDto> settings = new ArrayList<>();
-        for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
-                ProjectSettingsType.GIT_PROVIDER.toString())){
-            GitProviderSettingsResponseDto settingsDto = new GitProviderSettingsResponseDto();
-            settingsDto.setProjectId(settingsEntity.getId().getProjectId());
-            settingsDto.setSettingId(settingsEntity.getId().getSettingId());
-            settingsDto.setDisplayName(settingsEntity.getDisplayName());
-            settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
-            settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
-            settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
-            settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
-            convertToDto(settingsEntity, settingsDto);
-            settings.add(settingsDto);
-        }
-        return settings;
-    }
 
-    @Override
-    public void createGitProvider(GitProviderSettingsRequestDto dto) {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId(AuthUtils.getCurrentTenantId());
-        projectId.setResourceId(dto.getProjectId());
-        if (!projectService.validateProject(projectId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
-                    projectId.getResourceId()));
-        }
-        ProjectSettingsEntity settingsEntity = new ProjectSettingsEntity();
-        ProjectSettingsId settingsId = new ProjectSettingsId();
-        settingsId.setTenantId(AuthUtils.getCurrentTenantId());
-        settingsId.setProjectId(dto.getProjectId());
-        settingsId.setSettingId(getNewSettingId());
-        settingsEntity.setId(settingsId);
-        settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setCreatedOn(new Date());
-        settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
-        settingsEntity.setType(ProjectSettingsType.GIT_PROVIDER.toString());
-        convertToEntity(dto, settingsEntity);
-        projectSettingsRepository.save(settingsEntity);
-    }
 
-    @Override
-    public GitProviderSettingsResponseDto getGitProvider(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
-                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
-        if (!settingsEntityOpt.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s not found.",
-                            settingId, projectId));
-        }
-        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        GitProviderSettingsResponseDto settingsDto = new GitProviderSettingsResponseDto();
-        settingsDto.setProjectId(settingsEntity.getId().getProjectId());
-        settingsDto.setSettingId(settingsEntity.getId().getSettingId());
-        settingsDto.setDisplayName(settingsEntity.getDisplayName());
-        settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
-        settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
-        settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
-        settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
-        convertToDto(settingsEntity, settingsDto);
-        return settingsDto;
-    }
-
-    @Override
-    public void updateGitProvider(String projectId, String settingId, GitProviderSettingsRequestDto dto) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
-                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
-        if (!settingsEntityOpt.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s",
-                            settingId, projectId));
-        }
-        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
-        convertToEntity(dto, settingsEntity);
-        projectSettingsRepository.save(settingsEntity);
-    }
-
-    @Override
-    public void deleteGitProvider(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
-                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
-        if (!settingsEntityOpt.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s",
-                            settingId, projectId));
-        }
-        projectSettingsRepository.delete(settingsEntityOpt.get());
-    }
-
-    private void convertToDto(ProjectSettingsEntity settingsEntity, GitProviderSettingsResponseDto settingsDto) {
-        JSONObject jo = new JSONObject(settingsEntity.getData());
-        settingsDto.setProvider(jo.getString("provider"));
-        settingsDto.setRepoListUrl(jo.getString("repoListUrl"));
-        settingsDto.setUsername(jo.getString("username"));
-        settingsDto.setPassword(jo.getString("password"));
-    }
-
-    private void convertToEntity(GitProviderSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
-        JSONObject jo = new JSONObject();
-        jo.put("provider", settingsDto.getProvider());
-        jo.put("repoListUrl", settingsDto.getRepoListUrl());
-        jo.put("username", settingsDto.getUsername());
-        jo.put("password", settingsDto.getPassword());
-        settingsEntity.setData(jo.toString());
-    }
-    // git-provider api impl ends
     // hostname-ip-mapping api impl starts
     @Override
-    public List<HostnameIpMappingSettingsResponseDto> listAllHostnameIpMapping(String projectId) {
-        List<HostnameIpMappingSettingsResponseDto> settings = new ArrayList<>();
+    public List<K8sHostAliasSettingsResponseDto> listAllK8sHostAlias(String projectId) {
+        List<K8sHostAliasSettingsResponseDto> settings = new ArrayList<>();
         for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
-                ProjectSettingsType.HOSTNAME_IP_MAPPING.toString())){
-            HostnameIpMappingSettingsResponseDto settingsDto = new HostnameIpMappingSettingsResponseDto();
+                ProjectSettingsType.K8S_HOST_ALIAS.toString())){
+            K8sHostAliasSettingsResponseDto settingsDto = new K8sHostAliasSettingsResponseDto();
             settingsDto.setProjectId(settingsEntity.getId().getProjectId());
             settingsDto.setSettingId(settingsEntity.getId().getSettingId());
             settingsDto.setDisplayName(settingsEntity.getDisplayName());
@@ -501,7 +394,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
-    public void createHostnameIpMapping(HostnameIpMappingSettingsRequestDto dto) {
+    public void createK8sHostAlias(K8sHostAliasSettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(dto.getProjectId());
@@ -520,13 +413,13 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsEntity.setDisplayName(dto.getDisplayName());
         settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
         settingsEntity.setLastUpdatedOn(new Date());
-        settingsEntity.setType(ProjectSettingsType.HOSTNAME_IP_MAPPING.toString());
+        settingsEntity.setType(ProjectSettingsType.K8S_HOST_ALIAS.toString());
         convertToEntity(dto, settingsEntity);
         projectSettingsRepository.save(settingsEntity);
     }
 
     @Override
-    public HostnameIpMappingSettingsResponseDto getHostnameIpMapping(String projectId, String settingId) {
+    public K8sHostAliasSettingsResponseDto getK8sHostAlias(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
                 .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
@@ -535,7 +428,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
                             settingId, projectId));
         }
         ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        HostnameIpMappingSettingsResponseDto settingsDto = new HostnameIpMappingSettingsResponseDto();
+        K8sHostAliasSettingsResponseDto settingsDto = new K8sHostAliasSettingsResponseDto();
         settingsDto.setProjectId(settingsEntity.getId().getProjectId());
         settingsDto.setSettingId(settingsEntity.getId().getSettingId());
         settingsDto.setDisplayName(settingsEntity.getDisplayName());
@@ -548,7 +441,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
-    public void updateHostnameIpMapping(String projectId, String settingId, HostnameIpMappingSettingsRequestDto dto) {
+    public void updateK8sHostAlias(String projectId, String settingId, K8sHostAliasSettingsRequestDto dto) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
                 .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
@@ -565,7 +458,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
     }
 
     @Override
-    public void deleteHostnameIpMapping(String projectId, String settingId) {
+    public void deleteK8sHostAlias(String projectId, String settingId) {
         Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
                 .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
         if (!settingsEntityOpt.isPresent()) {
@@ -576,130 +469,19 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         projectSettingsRepository.delete(settingsEntityOpt.get());
     }
 
-    private void convertToDto(ProjectSettingsEntity settingsEntity, HostnameIpMappingSettingsResponseDto settingsDto) {
+    private void convertToDto(ProjectSettingsEntity settingsEntity, K8sHostAliasSettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
         if (jo.has("hostnameIpMapping")) {
             settingsDto.setHostnameIpMapping(TransformUtility.convertToMapStringString(new JSONObject(jo.getString("hostnameIpMapping")).toMap()));
         }
     }
 
-    private void convertToEntity(HostnameIpMappingSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
+    private void convertToEntity(K8sHostAliasSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
         JSONObject jo = new JSONObject();
         jo.put("hostnameIpMapping", new JSONObject(settingsDto.getHostnameIpMapping()).toString());
         settingsEntity.setData(jo.toString());
     }
     // hostname-ip-mapping api impl ends
-    // cloud-provider api impl starts
-    @Override
-    public List<CloudProviderSettingsResponseDto> listAllCloudProvider(String projectId) {
-        List<CloudProviderSettingsResponseDto> settings = new ArrayList<>();
-        for (ProjectSettingsEntity settingsEntity : projectSettingsRepository.findAllByIdProjectIdAndType(projectId,
-                ProjectSettingsType.CLOUD_PROVIDER.toString())){
-            CloudProviderSettingsResponseDto settingsDto = new CloudProviderSettingsResponseDto();
-            settingsDto.setProjectId(settingsEntity.getId().getProjectId());
-            settingsDto.setSettingId(settingsEntity.getId().getSettingId());
-            settingsDto.setDisplayName(settingsEntity.getDisplayName());
-            settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
-            settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
-            settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
-            settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
-            convertToDto(settingsEntity, settingsDto);
-            settings.add(settingsDto);
-        }
-        return settings;
-    }
-
-    @Override
-    public void createCloudProvider(CloudProviderSettingsRequestDto dto) {
-        ProjectId projectId = new ProjectId();
-        projectId.setTenantId(AuthUtils.getCurrentTenantId());
-        projectId.setResourceId(dto.getProjectId());
-        if (!projectService.validateProject(projectId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
-                    projectId.getResourceId()));
-        }
-        ProjectSettingsEntity settingsEntity = new ProjectSettingsEntity();
-        ProjectSettingsId settingsId = new ProjectSettingsId();
-        settingsId.setTenantId(AuthUtils.getCurrentTenantId());
-        settingsId.setProjectId(dto.getProjectId());
-        settingsId.setSettingId(getNewSettingId());
-        settingsEntity.setId(settingsId);
-        settingsEntity.setCreatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setCreatedOn(new Date());
-        settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
-        settingsEntity.setType(ProjectSettingsType.CLOUD_PROVIDER.toString());
-        convertToEntity(dto, settingsEntity);
-        projectSettingsRepository.save(settingsEntity);
-    }
-
-    @Override
-    public CloudProviderSettingsResponseDto getCloudProvider(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
-                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
-        if (!settingsEntityOpt.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s not found.",
-                            settingId, projectId));
-        }
-        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        CloudProviderSettingsResponseDto settingsDto = new CloudProviderSettingsResponseDto();
-        settingsDto.setProjectId(settingsEntity.getId().getProjectId());
-        settingsDto.setSettingId(settingsEntity.getId().getSettingId());
-        settingsDto.setDisplayName(settingsEntity.getDisplayName());
-        settingsDto.setCreatedOn(settingsEntity.getCreatedOn());
-        settingsDto.setCreatedBy(settingsEntity.getCreatedBy());
-        settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
-        settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
-        convertToDto(settingsEntity, settingsDto);
-        return settingsDto;
-    }
-
-    @Override
-    public void updateCloudProvider(String projectId, String settingId, CloudProviderSettingsRequestDto dto) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
-                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
-        if (!settingsEntityOpt.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s",
-                            settingId, projectId));
-        }
-        ProjectSettingsEntity settingsEntity = settingsEntityOpt.get();
-        settingsEntity.setDisplayName(dto.getDisplayName());
-        settingsEntity.setLastUpdatedBy(AuthUtils.getCurrentUsername());
-        settingsEntity.setLastUpdatedOn(new Date());
-        convertToEntity(dto, settingsEntity);
-        projectSettingsRepository.save(settingsEntity);
-    }
-
-    @Override
-    public void deleteCloudProvider(String projectId, String settingId) {
-        Optional<ProjectSettingsEntity> settingsEntityOpt = projectSettingsRepository
-                .findById(new ProjectSettingsId(AuthUtils.getCurrentTenantId(), projectId, settingId));
-        if (!settingsEntityOpt.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Setting id : %s not found for Project : %s",
-                            settingId, projectId));
-        }
-        projectSettingsRepository.delete(settingsEntityOpt.get());
-    }
-
-    private void convertToDto(ProjectSettingsEntity settingsEntity, CloudProviderSettingsResponseDto settingsDto) {
-        JSONObject jo = new JSONObject(settingsEntity.getData());
-        settingsDto.setProvider(jo.getString("provider"));
-        settingsDto.setAccessId(jo.getString("accessId"));
-        settingsDto.setSecretKey(jo.getString("secretKey"));
-    }
-
-    private void convertToEntity(CloudProviderSettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
-        JSONObject jo = new JSONObject();
-        jo.put("provider", settingsDto.getProvider());
-        jo.put("accessId", settingsDto.getAccessId());
-        jo.put("secretKey", settingsDto.getSecretKey());
-        settingsEntity.setData(jo.toString());
-    }
-    // cloud-provider api impl ends
 
     private static String getNewSettingId() {
         return UUID.randomUUID().toString();

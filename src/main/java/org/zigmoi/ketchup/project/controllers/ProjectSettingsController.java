@@ -44,6 +44,8 @@ public class ProjectSettingsController {
         service.deleteContainerRegistry(projectId, settingId);
     }
     /* container-registry api ends */
+
+
     /* kubernetes-cluster api starts */
     @PostMapping("v1/settings/kubernetes-cluster")
     public void createKubernetesCluster(@RequestBody @Valid KubernetesClusterSettingsRequestDto dto) {
@@ -70,6 +72,8 @@ public class ProjectSettingsController {
         service.deleteKubernetesCluster(projectId, settingId);
     }
     /* kubernetes-cluster api ends */
+
+
     /* build-tool api starts */
     @PostMapping("v1/settings/build-tool")
     public void createBuildTool(@RequestBody @Valid BuildToolSettingsRequestDto dto) {
@@ -96,82 +100,32 @@ public class ProjectSettingsController {
         service.deleteBuildTool(projectId, settingId);
     }
     /* build-tool api ends */
-    /* git-provider api starts */
-    @PostMapping("v1/settings/git-provider")
-    public void createGitProvider(@RequestBody @Valid GitProviderSettingsRequestDto dto) {
-        service.createGitProvider(dto);
+
+
+    /* k8s-host-alias api starts */
+    @PostMapping("v1/settings/k8s-host-alias")
+    public void createK8sHostAlias(@RequestBody @Valid K8sHostAliasSettingsRequestDto dto) {
+        service.createK8sHostAlias(dto);
     }
 
-    @GetMapping("v1/settings/list-all-git-provider/{projectId}")
-    public List<GitProviderSettingsResponseDto> listAllGitProvider(@PathVariable("projectId")  String projectId) {
-        return service.listAllGitProvider(projectId);
+    @GetMapping("v1/settings/list-all-k8s-host-alias/{projectId}")
+    public List<K8sHostAliasSettingsResponseDto> listAllK8sHostAlias(@PathVariable("projectId")  String projectId) {
+        return service.listAllK8sHostAlias(projectId);
     }
 
-    @GetMapping("v1/settings/git-provider/{projectId}/{settingId}")
-    public GitProviderSettingsResponseDto getGitProvider(@PathVariable String settingId, @PathVariable String projectId) {
-        return service.getGitProvider(projectId, settingId);
+    @GetMapping("v1/settings/k8s-host-alias/{projectId}/{settingId}")
+    public K8sHostAliasSettingsResponseDto getK8sHostAlias(@PathVariable String settingId, @PathVariable String projectId) {
+        return service.getK8sHostAlias(projectId, settingId);
     }
 
-    @PutMapping("v1/settings/git-provider/{projectId}/{settingId}")
-    public void updateGitProvider(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid GitProviderSettingsRequestDto dto) {
-        service.updateGitProvider(projectId, settingId, dto);
+    @PutMapping("v1/settings/k8s-host-alias/{projectId}/{settingId}")
+    public void updateK8sHostAlias(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid K8sHostAliasSettingsRequestDto dto) {
+        service.updateK8sHostAlias(projectId, settingId, dto);
     }
 
-    @DeleteMapping("v1/settings/git-provider/{projectId}/{settingId}")
-    public void deleteGitProvider(@PathVariable String settingId, @PathVariable String projectId) {
-        service.deleteGitProvider(projectId, settingId);
+    @DeleteMapping("v1/settings/k8s-host-alias/{projectId}/{settingId}")
+    public void deleteK8sHostAlias(@PathVariable String settingId, @PathVariable String projectId) {
+        service.deleteK8sHostAlias(projectId, settingId);
     }
-    /* git-provider api ends */
-    /* hostname-ip-mapping api starts */
-    @PostMapping("v1/settings/hostname-ip-mapping")
-    public void createHostnameIpMapping(@RequestBody @Valid HostnameIpMappingSettingsRequestDto dto) {
-        service.createHostnameIpMapping(dto);
-    }
-
-    @GetMapping("v1/settings/list-all-hostname-ip-mapping/{projectId}")
-    public List<HostnameIpMappingSettingsResponseDto> listAllHostnameIpMapping(@PathVariable("projectId")  String projectId) {
-        return service.listAllHostnameIpMapping(projectId);
-    }
-
-    @GetMapping("v1/settings/hostname-ip-mapping/{projectId}/{settingId}")
-    public HostnameIpMappingSettingsResponseDto getHostnameIpMapping(@PathVariable String settingId, @PathVariable String projectId) {
-        return service.getHostnameIpMapping(projectId, settingId);
-    }
-
-    @PutMapping("v1/settings/hostname-ip-mapping/{projectId}/{settingId}")
-    public void updateHostnameIpMapping(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid HostnameIpMappingSettingsRequestDto dto) {
-        service.updateHostnameIpMapping(projectId, settingId, dto);
-    }
-
-    @DeleteMapping("v1/settings/hostname-ip-mapping/{projectId}/{settingId}")
-    public void deleteHostnameIpMapping(@PathVariable String settingId, @PathVariable String projectId) {
-        service.deleteHostnameIpMapping(projectId, settingId);
-    }
-    /* hostname-ip-mapping api ends */
-    /* cloud-provider api starts */
-    @PostMapping("v1/settings/cloud-provider")
-    public void createCloudProvider(@RequestBody @Valid CloudProviderSettingsRequestDto dto) {
-        service.createCloudProvider(dto);
-    }
-
-    @GetMapping("v1/settings/list-all-cloud-provider/{projectId}")
-    public List<CloudProviderSettingsResponseDto> listAllCloudProvider(@PathVariable("projectId")  String projectId) {
-        return service.listAllCloudProvider(projectId);
-    }
-
-    @GetMapping("v1/settings/cloud-provider/{projectId}/{settingId}")
-    public CloudProviderSettingsResponseDto getCloudProvider(@PathVariable String settingId, @PathVariable String projectId) {
-        return service.getCloudProvider(projectId, settingId);
-    }
-
-    @PutMapping("v1/settings/cloud-provider/{projectId}/{settingId}")
-    public void updateCloudProvider(@PathVariable String settingId, @PathVariable String projectId, @RequestBody @Valid CloudProviderSettingsRequestDto dto) {
-        service.updateCloudProvider(projectId, settingId, dto);
-    }
-
-    @DeleteMapping("v1/settings/cloud-provider/{projectId}/{settingId}")
-    public void deleteCloudProvider(@PathVariable String settingId, @PathVariable String projectId) {
-        service.deleteCloudProvider(projectId, settingId);
-    }
-    /* cloud-provider api ends */
+    /* k8s-host-alias api ends */
 }

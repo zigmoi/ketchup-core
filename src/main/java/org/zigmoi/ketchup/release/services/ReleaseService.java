@@ -1,21 +1,20 @@
 package org.zigmoi.ketchup.release.services;
 
-import org.zigmoi.ketchup.project.dtos.ProjectDto;
-import org.zigmoi.ketchup.project.entities.Project;
-import org.zigmoi.ketchup.project.entities.ProjectId;
+import org.zigmoi.ketchup.release.entities.PipelineResource;
 import org.zigmoi.ketchup.release.entities.Release;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public interface ReleaseService {
 
-    void create();
+    void create(String deploymentResourceId);
+    void rollback(String deploymentResourceId); //rollback current release to previous version.
     void stop(String releaseResourceId);
-    Optional<Release> findById(String releaseResourceId);
+    Release findById(String releaseResourceId);
     void delete(String releaseResourceId);
     void update(Release release);
-    Set<Release> listAllInDeployment();
-    Set<Release> listAllInProject();
+    Set<Release> listAllInDeployment(String deploymentResourceId);
+    Set<Release> listAllInProject(String projectResourceId);
+    Set<PipelineResource> listAllPipelineResources(String releaseResourceId);
+    PipelineResource getPipelineResourceById(String pipelineResourceId);
 }

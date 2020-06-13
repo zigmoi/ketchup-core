@@ -3,10 +3,8 @@ package org.zigmoi.ketchup.project.services;
 public enum ProjectSettingsType {
 
     BUILD_TOOL("build-tool"),
-    CLOUD_PROVIDER("cloud-provider"),
     CONTAINER_REGISTRY("container-registry"),
-    GIT_PROVIDER("git-provider"),
-    HOSTNAME_IP_MAPPING("hostname-ip-mapping"),
+    K8S_HOST_ALIAS("k8s-host-alias"),
     KUBERNETES_CLUSTER("kubernetes-cluster"),
     ;
 
@@ -19,10 +17,8 @@ public enum ProjectSettingsType {
     public String[] getAll() {
         return new String[]{
                 "build-tool",
-                "cloud-provider",
                 "container-registry",
-                "git-provider",
-                "hostname-ip-mapping",
+                "k8s-host-alias",
                 "kubernetes-cluster",
         };
     }
