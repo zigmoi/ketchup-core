@@ -1,0 +1,67 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: ${pipelineName}
+spec:
+  resources:
+    - name: ${gitResourceName}
+      type: git
+  tasks:
+    - name: build-image
+      taskRef:
+        name: ${makisuBuildImageTaskName}
+      resources:
+        inputs:
+          - name: ${gitResourceName}
+            resource: ${gitResourceName}
+      params:
+#        - name: CURL_IMAGE
+#          value: curlimages/curl
+        - name: MAKISU_IMAGE
+          value: gcr.io/uber-container-tools/makisu:v0.1.14
+        - name: WORKSPACE
+          value: /workspace/${gitResourceName}
+        - name: IMAGE_REGISTRY_URL
+          value: ${containerRegistryUrl}
+        - name: MAKISU_ARG_MODIFY_FS
+          value: "true"
+        - name: IMAGE_TAG
+          value: ${imageTag}
+        - name: MAKISU_CONTEXT_PATH
+          value: .
+#        - name: IMAGE_REGISTRY_CONFIG_URL
+#          value: http://191.101.165.0:8000/image_registry_config.json
+#        - name: IMAGE_REGISTRY_CONFIG_FILE_NAME
+#          value: image_registry_config.json
+        - name: IMAGE_REGISTRY_CONFIG
+          value: ${imageRegistryConfig}
+        - name: MAKISU_CACHE_REDIS_ADDR
+          value: redis-1585680551-master.default.svc.cluster.local:6379
+        - name: MAKISU_CACHE_REDIS_PASSWORD
+          value: Oi25VLvMZF
+    - name: deploy-chart-in-cluster
+      taskRef:
+        name: ${helmDeployTaskName}
+      params:
+        - name: CURL_IMAGE
+          value: curlimages/curl
+        - name: HELM_IMAGE
+          value: alpine/helm:latest
+        - name: WORKSPACE
+          value: /workspace/${gitResourceName}
+        - name: KUBECONFIG_URL
+          value: http://191.101.165.0:8000/kubeconfig
+        - name: KUBECONFIG_FILE_NAME
+          value: kubeconfig
+        - name: HELM_CHART_URL
+          value: http://191.101.165.0:8000/basic-springboot-demo-ketchup-0.1.0.tgz
+#        - name: HELM_CHART_NAME
+#          value: basic-springboot-demo-ketchup-0.1.0.tgz
+        - name: HELM_CHART_CONFIG_FILE_URL
+          value: http://191.101.165.0:8000/helm-chart-config.yaml
+        - name: HELM_CHART_RELEASE_NAME
+          value: ${helmReleaseName}
+        - name: KUBERNETES_NAMESPACE
+          value: ${devKubernetesNamespace}
+      runAfter:
+        - build-image

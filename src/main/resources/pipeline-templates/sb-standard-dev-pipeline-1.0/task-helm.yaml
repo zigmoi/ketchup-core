@@ -1,0 +1,70 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: ${helmDeployTaskName}
+spec:
+  inputs:
+    params:
+    - name: CURL_IMAGE
+      description: The image used to run curl cmd.
+      default: curlimages/curl
+    - name: HELM_IMAGE
+      description: The image used to run helm cmd.
+      default: alpine/helm:latest
+    - name: WORKSPACE
+      description: Current tekton execution dir.
+      default: /workspace/source
+    - name: KUBECONFIG_URL
+      description: URL path of the kubeconfig file to download.
+      default: http://192.168.0.101:8000/kubeconfig
+    - name: KUBECONFIG_FILE_NAME
+      description: Name of kubeconfig file.
+      default: kubeconfig
+    - name: HELM_CHART_URL
+      description: URL path of helm chart to deploy.
+      default: http://192.168.0.101:8000/basic-springboot-demo-ketchup-0.1.0.tgz
+#    - name: HELM_CHART_NAME
+#      description: Name of helm chart to deploy.
+#      default: basic-springboot-demo-ketchup-0.1.0.tgz
+    - name: HELM_CHART_CONFIG_FILE_URL
+      description: URL to download helm config.yaml for this release.
+      default: http://192.168.0.101:8000/config.yaml
+    - name: HELM_CHART_RELEASE_NAME
+      description: Helm chart release name for this deployment.
+      default: ketchup-sb-demo
+    - name: KUBERNETES_NAMESPACE
+      description: Namespace to deploy helm chart.
+      default: default
+
+  steps:
+  - name: get-kubeconfig
+    workingdir: $(inputs.params.WORKSPACE)
+    image: $(inputs.params.CURL_IMAGE)
+    args:
+    - $(inputs.params.KUBECONFIG_URL)
+    - --output
+    - $(inputs.params.KUBECONFIG_FILE_NAME)
+    securityContext:
+      runAsUser: 0
+#  - name: get-helm-chart
+#    workingdir: $(inputs.params.WORKSPACE)
+#    image: $(inputs.params.CURL_IMAGE)
+#    args:
+#    - $(inputs.params.HELM_CHART_URL)
+#    - --output
+#    - $(inputs.params.HELM_CHART_NAME)
+#    securityContext:
+#      runAsUser: 0
+  - name: install-app-in-cluster
+    workingdir: $(inputs.params.WORKSPACE)
+    image: $(inputs.params.HELM_IMAGE)
+    args:
+    - install
+    - $(inputs.params.HELM_CHART_RELEASE_NAME)
+    - $(inputs.params.HELM_CHART_URL)
+    - -f
+    - $(inputs.params.HELM_CHART_CONFIG_FILE_URL)
+    - -n
+    - $(inputs.params.KUBERNETES_NAMESPACE)
+    - --kubeconfig
+    - $(inputs.params.KUBECONFIG_FILE_NAME)

@@ -1,9 +1,14 @@
 package org.zigmoi.ketchup.deployment.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.zigmoi.ketchup.common.ConfigUtility;
 import org.zigmoi.ketchup.common.FileUtility;
 import org.zigmoi.ketchup.common.StringUtility;
@@ -11,12 +16,17 @@ import org.zigmoi.ketchup.deployment.basicSpringBoot.BasicSpringBootDeploymentFl
 import org.zigmoi.ketchup.deployment.basicSpringBoot.BasicSpringBootDeploymentFlowConstants;
 import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentRequestDto;
 import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentResponseDto;
+import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
+import org.zigmoi.ketchup.deployment.dtos.DeploymentRequestDto;
 import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.entities.DeploymentId;
 import org.zigmoi.ketchup.deployment.repositories.DeploymentRepository;
 import org.zigmoi.ketchup.exception.UnexpectedException;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
-import org.zigmoi.ketchup.project.dtos.settings.*;
+import org.zigmoi.ketchup.project.dtos.settings.BuildToolSettingsResponseDto;
+import org.zigmoi.ketchup.project.dtos.settings.ContainerRegistrySettingsResponseDto;
+import org.zigmoi.ketchup.project.dtos.settings.K8sHostAliasSettingsResponseDto;
+import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsResponseDto;
 import org.zigmoi.ketchup.project.services.ProjectSettingsService;
 
 import java.io.File;
@@ -28,6 +38,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 
 @Service
 public class DeploymentServiceImpl implements DeploymentService {
+    private static final Logger logger = LoggerFactory.getLogger(DeploymentServiceImpl.class);
 
     @Autowired
     private final DeploymentRepository deploymentRepository;
@@ -40,6 +51,10 @@ public class DeploymentServiceImpl implements DeploymentService {
         this.deploymentRepository = deploymentRepository;
     }
 
+    private String getNewDeploymentId() {
+        return UUID.randomUUID().toString();
+    }
+
     @Override
     public void updateDeploymentStatus(String projectResourceId, String deploymentResourceId, String status) {
 
@@ -48,6 +63,76 @@ public class DeploymentServiceImpl implements DeploymentService {
     @Override
     public void updateDeploymentDisplayName(String projectResourceId, String deploymentResourceId, String displayName) {
 
+    }
+
+    @Override
+    @Transactional
+    public String createDeployment(String projectResourceId, DeploymentRequestDto deploymentRequestDto) {
+        DeploymentId deploymentId = new DeploymentId(AuthUtils.getCurrentTenantId(), projectResourceId, getNewDeploymentId());
+        DeploymentEntity deploymentEntity = new DeploymentEntity();
+        deploymentEntity.setId(deploymentId);
+        deploymentEntity.setType(DeploymentsType.BASIC_SPRING_BOOT.toString());
+        deploymentEntity.setDisplayName(deploymentRequestDto.getDisplayName());
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            JSONObject deploymentJson = new JSONObject(objectMapper.writeValueAsString(deploymentRequestDto));
+            JSONObject deploymentIdJson = new JSONObject(objectMapper.writeValueAsString(deploymentId));
+            deploymentJson.put("deploymentId", deploymentIdJson);
+
+            //get all setting values and store it in deployment.
+            final KubernetesClusterSettingsResponseDto devKubernetesCluster = projectSettingsService.getKubernetesCluster(projectResourceId, deploymentRequestDto.getDevKubernetesClusterSettingId());
+            final ContainerRegistrySettingsResponseDto containerRegistry = projectSettingsService.getContainerRegistry(projectResourceId, deploymentRequestDto.getContainerRegistrySettingId());
+            final BuildToolSettingsResponseDto buildTool = projectSettingsService.getBuildTool(projectResourceId, deploymentRequestDto.getBuildToolSettingId());
+            //save settings for host alias settings
+
+            deploymentJson.put("devKubeconfig", devKubernetesCluster.getFileData());
+            deploymentJson.put("containerRegistryType", containerRegistry.getType());
+            deploymentJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
+            deploymentJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
+            deploymentJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
+            deploymentJson.put("buildToolType", buildTool.getType());
+            deploymentJson.put("buildToolSettingsData", buildTool.getFileData());
+
+            deploymentEntity.setData(deploymentJson.toString());
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        deploymentRepository.save(deploymentEntity);
+        return deploymentId.getDeploymentResourceId();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DeploymentDetailsDto getDeployment(String deploymentResourceId) {
+        DeploymentEntity deploymentEntity = deploymentRepository.getByDeploymentResourceId(deploymentResourceId);
+        ObjectMapper objectMapper = new ObjectMapper();
+        DeploymentDetailsDto deploymentDetailsDto = null;
+        try {
+            deploymentDetailsDto = objectMapper.readValue(deploymentEntity.getData(), DeploymentDetailsDto.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return deploymentDetailsDto;
+    }
+
+    @Override
+    public Optional<BasicSpringBootDeploymentResponseDto> getBasicSpringBootDeployment(String projectResourceId, String deploymentResourceId) {
+        return Optional.empty();
+    }
+
+    @Override
+    public void deleteDeployment(String projectResourceId, String deploymentResourceId) {
+
+    }
+
+    @Override
+    public List<DeploymentEntity> listAllBasicSpringBootDeployments(String projectResourceId) {
+        return deploymentRepository.findAll()
+                .stream()
+                .filter(deploymentEntity ->
+                        deploymentEntity.getId().getProjectResourceId().equalsIgnoreCase(projectResourceId))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -64,7 +149,7 @@ public class DeploymentServiceImpl implements DeploymentService {
         entity.setId(deploymentId);
 
         entity.setType(DeploymentsType.BASIC_SPRING_BOOT.toString());
-        entity.setServiceName(dto.getServiceName());
+//        entity.setServiceName(dto.getServiceName());
 //        entity.setCurrentStatus(DeploymentsStatus.INITIALISED.toString());
 
 //        entity.setData(); todo snappy compress
@@ -75,10 +160,6 @@ public class DeploymentServiceImpl implements DeploymentService {
         new Thread(flow::execute).start();
 
         return config.toString();
-    }
-
-    private String getNewDeploymentId() {
-        return UUID.randomUUID().toString();
     }
 
     private JSONObject convertToFlowConfig(String projectResourceId, String deploymentResourceId, BasicSpringBootDeploymentRequestDto dto) {
@@ -189,7 +270,7 @@ public class DeploymentServiceImpl implements DeploymentService {
 
         String basePath = ((JSONObject) stageMvnCleanInstallArgs.get(0)).getString("base-path")
                 + "/" + ((JSONObject) stageMvnCleanInstallArgs.get(0)).getString("repo-name");
-        String dockerFilePath = basePath + "/" + "Dockerfile";
+        String dockerFilePath = basePath + "/" + "Dockerfile" ;
         String dockerRegistryVendor = containerRegistry.getType();
         if (!ContainerRegistryProviders.AWS_ECR.toString().equals(dockerRegistryVendor)) {
             throw new UnsupportedOperationException("Container provider not supported yet");
@@ -292,22 +373,4 @@ public class DeploymentServiceImpl implements DeploymentService {
         return url;
     }
 
-    @Override
-    public Optional<BasicSpringBootDeploymentResponseDto> getBasicSpringBootDeployment(String projectResourceId, String deploymentResourceId) {
-        return Optional.empty();
-    }
-
-    @Override
-    public void deleteDeployment(String projectResourceId, String deploymentResourceId) {
-
-    }
-
-    @Override
-    public List<DeploymentEntity> listAllBasicSpringBootDeployments(String projectResourceId) {
-        return deploymentRepository.findAll()
-                .stream()
-                .filter(deploymentEntity ->
-                deploymentEntity.getId().getProjectResourceId().equalsIgnoreCase(projectResourceId))
-                .collect(Collectors.toList());
-    }
 }

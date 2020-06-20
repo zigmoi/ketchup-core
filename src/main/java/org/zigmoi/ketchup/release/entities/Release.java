@@ -44,8 +44,9 @@ public class Release {
     private String pipelineStatusJson;
     private String commitId;
     private String helmChartId; // this will be part of deployment but copied here so we know which chart was used.
-    private String helmValuesJson; // this will be part of deployment but copied here so we know what values were used.
+    private String helmValuesYaml; // this will be part of deployment but copied here so we know what values were used.
     private String pipelineTemplateId; // this will be part of deployment but copied here so we know which template was used.
     private String helmReleaseId;
+    private String makisuImageRegistryConfigJson;
 
 }

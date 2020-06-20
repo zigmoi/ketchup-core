@@ -66,7 +66,7 @@ public class ReleaseController {
                 }
             });
         } else {
-            String pipelineRunName = "demo-pipeline-run-1";
+            String pipelineRunName = "pipeline-run-".concat(releaseResourceId);
             nonBlockingService.execute(() -> {
                 try {
                     KubernetesUtility.watchAndStreamPipelineRunStatus(pipelineRunName, emitter);

@@ -22,7 +22,6 @@ public class DeploymentEntity {
     private DeploymentId id;
     private String type;
     private String displayName;
-    private String serviceName;
     private String data;
 
     @Temporal(TemporalType.TIMESTAMP)

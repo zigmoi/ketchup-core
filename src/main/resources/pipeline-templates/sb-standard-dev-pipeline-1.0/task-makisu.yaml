@@ -1,0 +1,72 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: ${makisuBuildImageTaskName}
+spec:
+  inputs:
+    params:
+    - name: MAKISU_IMAGE
+      description: The image on which builds will run
+      default: gcr.io/uber-container-tools/makisu:v0.1.14
+#    - name: CURL_IMAGE
+#      description: The image used to run curl cmd.
+#      default: curlimages/curl
+    - name: WORKSPACE
+      description: Code source dir where image should be built.
+      default: /workspace/source
+    - name: IMAGE_REGISTRY_URL
+      description: Docker (any) registry url to store built image.
+      default: kubernetes.docker.internal:5000
+    - name: MAKISU_ARG_MODIFY_FS
+      description: Makisu flag to toggle modifyfs.
+      default: "true"
+    - name: IMAGE_TAG
+      description: Tag name for built image.
+      default: kubernetes.docker.internal:5000/ketchup-demo-basicspringboot
+    - name: MAKISU_CONTEXT_PATH
+      description: Path where makisu will execute build.
+      default: .
+#    - name: IMAGE_REGISTRY_CONFIG_URL
+#      description: URL to download helm config.yaml for this release.
+#      default: http://192.168.0.101:8000/image_registry_config.json
+#    - name: IMAGE_REGISTRY_CONFIG_FILE_NAME
+#      description: Path where makisu will execute build.
+#      default: image_registry_config.json
+    - name: IMAGE_REGISTRY_CONFIG
+      description: Config for image registry to push and pull images.
+      default: ""
+    - name: MAKISU_CACHE_REDIS_ADDR
+      description: Address for redis cache to use for makisu image id kv pairs.
+      default: redis-1583955302-master.default.svc.cluster.local:6379
+    - name: MAKISU_CACHE_REDIS_PASSWORD
+      description: makisu cache redis password.
+      default: egQHM4ogxM
+    resources:
+    - name: ${gitResourceName}
+      type: git
+
+  steps:
+#  - name: get-image-registry-config
+#    workingdir: $(inputs.params.WORKSPACE)
+#    image: $(inputs.params.CURL_IMAGE)
+#    args:
+#    - $(inputs.params.IMAGE_REGISTRY_CONFIG_URL)
+#    - --output
+#    - $(inputs.params.IMAGE_REGISTRY_CONFIG_FILE_NAME)
+#    securityContext:
+#      runAsUser: 0
+
+  - name: build-and-push
+    workingdir: $(inputs.params.WORKSPACE)
+    image: $(inputs.params.MAKISU_IMAGE)
+    args:
+    - build
+    - --push=$(inputs.params.IMAGE_REGISTRY_URL)
+    - --modifyfs=$(inputs.params.MAKISU_ARG_MODIFY_FS)
+    - -t=$(inputs.params.IMAGE_TAG)
+    - --registry-config=$(inputs.params.IMAGE_REGISTRY_CONFIG)
+    - --redis-cache-addr=$(inputs.params.MAKISU_CACHE_REDIS_ADDR)
+    - --redis-cache-password=$(inputs.params.MAKISU_CACHE_REDIS_PASSWORD)
+    - $(inputs.params.MAKISU_CONTEXT_PATH)
+    securityContext:
+      runAsUser: 0

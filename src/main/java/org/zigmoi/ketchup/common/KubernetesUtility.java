@@ -16,6 +16,7 @@ import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Yaml;
 import okhttp3.OkHttpClient;
+import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -25,6 +26,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,8 +62,8 @@ public class KubernetesUtility {
         // getPodLogs("default", "demo-pipeline-run-1-build-image-lfkqj-pod-zfrfg", "step-build-and-push");
     }
 
-    public static void createSecretUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfigPath) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(kubeConfigPath);
+    public static void createSecretUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
 //        client.setWriteTimeout(15000);
 //        client.setConnectTimeout(15000);
 //        client.setReadTimeout(15000);
@@ -74,8 +76,8 @@ public class KubernetesUtility {
         System.out.println(result);
     }
 
-    public static void createServiceAccountUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfigPath) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(kubeConfigPath);
+    public static void createServiceAccountUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
 //        client.setWriteTimeout(15000);
 //        client.setConnectTimeout(15000);
 //        client.setReadTimeout(15000);
@@ -170,8 +172,8 @@ public class KubernetesUtility {
         System.out.println(result);
     }
 
-    public static void createCRDUsingYamlContent(String resourceYaml, String namespace, String group, String version, String plural, String pretty, String kubeConfigPath) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(kubeConfigPath);
+    public static void createCRDUsingYamlContent(String resourceYaml, String namespace, String group, String version, String plural, String pretty, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
 //        client.setWriteTimeout(15000);
 //        client.setConnectTimeout(15000);
 //        client.setReadTimeout(15000);
