@@ -90,6 +90,17 @@ public class KubernetesUtility {
         System.out.println(result);
     }
 
+    public static void createConfigmapUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        Configuration.setDefaultApiClient(client);
+
+        V1ConfigMap resource = (V1ConfigMap) Yaml.load(resourceContent);
+        CoreV1Api api = new CoreV1Api();
+
+        Object result = api.createNamespacedConfigMap(namespace, resource, pretty, null, null);
+        System.out.println(result);
+    }
+
     public static String createSecret(String resourceFilePath) throws IOException, ApiException {
         ApiClient client = Config.fromConfig("/Users/neo/Documents/dev/java/ketchup-demo-basicspringboot/standard-tkn-pipeline1-cloud/kubeconfig");
         Configuration.setDefaultApiClient(client);
@@ -443,15 +454,16 @@ public class KubernetesUtility {
                 for (Object stepEntry : steps) {
                     JSONObject step = (JSONObject) stepEntry;
                     String stepName = step.getString("name");
-                    if ("get-image-registry-config".equalsIgnoreCase(stepName)) {
+//                    if ("get-image-registry-config".equalsIgnoreCase(stepName)) {
+//                        int order = 1;
+//                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
+//                    } else
+                    if (stepName.startsWith("git-source-")) {
+                        //git pull image name is dynamic, hence using prefix to match it.
                         int order = 1;
                         stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
-                    } else if (stepName.startsWith("git-source-")) {
-                        //git pull image name is dynamic, hence using prefix to match it.
-                        int order = 2;
-                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
                     } else if ("build-and-push".equalsIgnoreCase(stepName)) {
-                        int order = 3;
+                        int order = 2;
                         stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
                     }
                 }
@@ -461,14 +473,17 @@ public class KubernetesUtility {
                 for (Object stepEntry : steps) {
                     JSONObject step = (JSONObject) stepEntry;
                     String stepName = step.getString("name");
-                    if ("get-kubeconfig".equalsIgnoreCase(stepName)) {
+//                    if ("get-kubeconfig".equalsIgnoreCase(stepName)) {
+//                        int order = 1;
+//                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
+//                    }
+//                    else if ("get-helm-chart".equalsIgnoreCase(stepName)) {
+//                        int order = 2;
+//                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
+//                    }
+
+                    if ("install-app-in-cluster".equalsIgnoreCase(stepName)) {
                         int order = 1;
-                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
-                    } else if ("get-helm-chart".equalsIgnoreCase(stepName)) {
-                        int order = 2;
-                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
-                    } else if ("install-app-in-cluster".equalsIgnoreCase(stepName)) {
-                        int order = 3;
                         stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
                     }
                 }

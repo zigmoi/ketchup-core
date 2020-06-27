@@ -24,14 +24,6 @@ public class ProjectSettingsEntity {
     private String displayName;
     private String data;
 
-//    @Temporal(TemporalType.TIMESTAMP)
-//    private Date createdOn;
-//    private String createdBy;
-//    @Temporal(TemporalType.TIMESTAMP)
-//    private Date lastUpdatedOn;
-//    private String lastUpdatedBy;
-
-
     @Temporal(TemporalType.TIMESTAMP)
     @CreationTimestamp
     private Date createdOn;

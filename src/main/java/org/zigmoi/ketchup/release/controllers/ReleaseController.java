@@ -3,19 +3,24 @@ package org.zigmoi.ketchup.release.controllers;
 import com.google.common.io.ByteStreams;
 import io.kubernetes.client.openapi.ApiException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.release.entities.Release;
 import org.zigmoi.ketchup.release.services.ReleaseService;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.security.Principal;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,6 +31,9 @@ public class ReleaseController {
 
     @Autowired
     private ReleaseService releaseService;
+
+    @Autowired
+    ResourceLoader resourceLoader;
 
     @PostMapping("/v1/release")
     public void createRelease(@RequestParam("deploymentId") String deploymentResourceId) {
@@ -120,5 +128,17 @@ public class ReleaseController {
         });
         return emitter;
     }
+
+//    @RequestMapping(value = "/public/helm-chart-template", method = RequestMethod.GET)
+//    public void downloadHelmChartTemplate(@RequestParam("templateName") String templateName, HttpServletResponse response) throws IOException {
+//        String baseResourcePath = "classpath:/helm-charts/";
+//        String chartName = "basic-springboot-demo-ketchup-0.1.0.tgz";
+//        Resource resource = resourceLoader.getResource(baseResourcePath.concat(chartName));
+//        String fileName = chartName;
+//        response.setContentType("application/octet-stream");
+//        response.setHeader("Content-disposition", "attachment; filename=" + fileName);
+//        org.apache.commons.io.IOUtils.copy(resource.getInputStream(), response.getOutputStream());
+//        response.flushBuffer();
+//    }
 
 }

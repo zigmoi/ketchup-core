@@ -8,9 +8,6 @@ spec:
     - name: MAKISU_IMAGE
       description: The image on which builds will run
       default: gcr.io/uber-container-tools/makisu:v0.1.14
-#    - name: CURL_IMAGE
-#      description: The image used to run curl cmd.
-#      default: curlimages/curl
     - name: WORKSPACE
       description: Code source dir where image should be built.
       default: /workspace/source
@@ -26,12 +23,6 @@ spec:
     - name: MAKISU_CONTEXT_PATH
       description: Path where makisu will execute build.
       default: .
-#    - name: IMAGE_REGISTRY_CONFIG_URL
-#      description: URL to download helm config.yaml for this release.
-#      default: http://192.168.0.101:8000/image_registry_config.json
-#    - name: IMAGE_REGISTRY_CONFIG_FILE_NAME
-#      description: Path where makisu will execute build.
-#      default: image_registry_config.json
     - name: IMAGE_REGISTRY_CONFIG
       description: Config for image registry to push and pull images.
       default: ""
@@ -46,16 +37,6 @@ spec:
       type: git
 
   steps:
-#  - name: get-image-registry-config
-#    workingdir: $(inputs.params.WORKSPACE)
-#    image: $(inputs.params.CURL_IMAGE)
-#    args:
-#    - $(inputs.params.IMAGE_REGISTRY_CONFIG_URL)
-#    - --output
-#    - $(inputs.params.IMAGE_REGISTRY_CONFIG_FILE_NAME)
-#    securityContext:
-#      runAsUser: 0
-
   - name: build-and-push
     workingdir: $(inputs.params.WORKSPACE)
     image: $(inputs.params.MAKISU_IMAGE)
