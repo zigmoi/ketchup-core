@@ -1,6 +1,7 @@
 package org.zigmoi.ketchup.common;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Config;
@@ -62,7 +63,7 @@ public class GitUtility {
 
     public void pull(File gitFile) throws IOException, GitAPIException {
         Git git = Git.open(gitFile);
-        git
+        PullResult result = git
                 .pull()
                 .setCredentialsProvider(new UsernamePasswordCredentialsProvider(GIT_USERNAME, GIT_PASSWORD))
                 .call();
