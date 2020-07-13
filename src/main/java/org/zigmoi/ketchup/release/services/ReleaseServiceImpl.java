@@ -6,6 +6,7 @@ import io.kubernetes.client.openapi.ApiException;
 import org.apache.commons.collections.map.SingletonMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -320,6 +321,30 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             e.printStackTrace();
         }
 
+        try {
+            PipelineResource makisuRegistrySecret = new PipelineResource();
+            makisuRegistrySecret.setFormat("yaml");
+            makisuRegistrySecret.setResourceType("secret");
+
+            Map<String, Object> secretValues = new HashMap<>();
+            secretValues.put("kind", "Secret");
+            secretValues.put("apiVersion", "v1");
+            secretValues.put("type", "Opaque");
+            secretValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("makisuValuesSecretName")));
+            secretValues.put("data", new SingletonMap("makisuConfig", pipelineTemplatingVariables.get("makisuValuesYaml")));
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+            Yaml yaml = new Yaml(options);
+            String templatedContent = yaml.dump(secretValues);
+            System.out.println(templatedContent);
+            makisuRegistrySecret.setResourceContent(templatedContent);
+            resources.add(makisuRegistrySecret);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         PipelineResource gitSecret = new PipelineResource();
         gitSecret.setFormat("yaml");
         gitSecret.setResourceType("secret");
@@ -453,6 +478,10 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         args.put("helmValuesConfigMapName", "configmap-helm-values-".concat(releaseResourceId));
         args.put("helmValuesYaml", getHelmValuesYaml(deploymentDetailsDto, releaseResourceId));
 
+        //makisu values config map
+        args.put("makisuValuesSecretName", "secret-makisu-values-".concat(releaseResourceId));
+        args.put("makisuValuesYaml", getMakisuRegistryConfig(deploymentDetailsDto, releaseResourceId));
+
         //task helm
         args.put("helmDeployTaskName", "task-helm-deploy-".concat(releaseResourceId));
         //also has helmValuesConfigMapName which is already added.
@@ -471,14 +500,23 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         String imageTag = getImageTagName(deploymentDetailsDto, releaseResourceId);
         args.put("imageTag", imageTag);
 
-        Map<String, String> registryConfigArgs = new HashMap<>();
-        registryConfigArgs.put("registryUrl", deploymentDetailsDto.getContainerRegistryUrl());
-        registryConfigArgs.put("registryUsername", deploymentDetailsDto.getContainerRegistryUsername());
-        registryConfigArgs.put("registryPassword", deploymentDetailsDto.getContainerRegistryPassword());
-        StrSubstitutor sub = new StrSubstitutor(registryConfigArgs, "${", "}");
-        String makisuImageRegistryConfig = sub.replace(getMakisuRegistryConfigTemplate(deploymentDetailsDto.getContainerRegistryType()));
+        String registryPassword;
+        if ("gcr".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
+            JSONObject gcrRegistryKey = new JSONObject(deploymentDetailsDto.getContainerRegistryPassword());
+            System.out.println("escaped gcr key: " + gcrRegistryKey.toString());
+            registryPassword = gcrRegistryKey.toString();
+        } else {
+            registryPassword = deploymentDetailsDto.getContainerRegistryPassword();
+        }
 
-        args.put("imageRegistryConfig", makisuImageRegistryConfig);
+//        Map<String, String> registryConfigArgs = new HashMap<>();
+//        registryConfigArgs.put("registryUrl", deploymentDetailsDto.getContainerRegistryUrl());
+//        registryConfigArgs.put("registryUsername", deploymentDetailsDto.getContainerRegistryUsername());
+//        registryConfigArgs.put("registryPassword", registryPassword);
+//        StrSubstitutor sub = new StrSubstitutor(registryConfigArgs, "${", "}");
+//        String makisuImageRegistryConfig = sub.replace(getMakisuRegistryConfigTemplate(deploymentDetailsDto.getContainerRegistryType()));
+
+        args.put("imageRegistryConfig", "makisuImageRegistryConfig");
         args.put("devKubernetesNamespace", deploymentDetailsDto.getDevKubernetesNamespace());
         //also has "gitResourceName", "makisuBuildImageTaskName", "helmDeployTaskName"  which are already added.
 
@@ -506,8 +544,8 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         } else if ("docker-hub".equalsIgnoreCase(registryType)) {
             template = "'{\"${registryUrl}\":{\".*\":{\"security\":{\"tls\":{\"client\":{\"disabled\":false}},\"basic\":{\"username\":\"${registryUsername}\",\"password\":\"${registryPassword}\"}}}}}'";
         } else if ("gcr".equalsIgnoreCase(registryType)) {
-            template = "'{\"${registryUrl}\":{\".*\":{\"push_chunk\": -1, \"security\":{\"tls\":{\"client\":{\"disabled\":false}},\"basic\":{\"username\":\"${registryUsername}\",\"password\":\"${registryPassword}\"}}}}}'";
-        }else {
+            template = "'{\"${registryUrl}\":{\"ketchup-test/*\":{\"push_chunk\": -1, \"security\":{\"tls\":{\"client\":{\"disabled\":false}},\"basic\":{\"username\":\"${registryUsername}\",\"password\": {${registryPassword}}}}}}}'";
+        } else {
             throw new RuntimeException("Unknown registry type supported types are local, docker-hub, aws-ecr, gcr and azurecr.");
         }
         return template;
@@ -567,5 +605,90 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         String helmConfigString = helmConfigYaml.dump(helmConfigValues);
         System.out.println(helmConfigString);
         return helmConfigString;
+    }
+
+
+// local:      "'{\"${registryUrl}\":{\".*\":{\"security\":{\"tls\":{\"client\":{\"disabled\":false}}}}}}'"
+// docker-hub: "'{\"${registryUrl}\":{\".*\":{\"security\":{\"tls\":{\"client\":{\"disabled\":false}},\"basic\":{\"username\":\"${registryUsername}\",\"password\":\"${registryPassword}\"}}}}}'"
+// gcr:        "'{\"${registryUrl}\":{\"ketchup-test/*\":{\"push_chunk\": -1, \"security\":{\"tls\":{\"client\":{\"disabled\":false}},\"basic\":{\"username\":\"${registryUsername}\",\"password\": {${registryPassword}}}}}}}'"
+
+    public String getMakisuRegistryConfig(DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId) {
+        if ("local".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
+            LinkedHashMap<String, Object> containerRegistryValues = new LinkedHashMap<>();
+            containerRegistryValues.put("security", new SingletonMap("tls", new SingletonMap("client", new SingletonMap("disabled", false))));
+
+            LinkedHashMap<String, Object> serviceValues = new LinkedHashMap<>();
+            serviceValues.put(".*", containerRegistryValues);
+
+//            String registryUrl = "";
+//            if ("".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryPath())) {
+//                registryUrl = deploymentDetailsDto.getContainerRegistryUrl() + "/" + releaseResourceId;
+//            } else {
+//                registryUrl = deploymentDetailsDto.getContainerRegistryUrl()
+//                        + "/" + deploymentDetailsDto.getContainerRegistryPath() + "/" + releaseResourceId;
+//            }
+            String registryUrl = deploymentDetailsDto.getContainerRegistryUrl();
+            SingletonMap conf = new SingletonMap(registryUrl, serviceValues);
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+
+            Yaml makisuRegistryConfigYaml = new Yaml(options);
+            String makisuRegistryConfigString = makisuRegistryConfigYaml.dump(conf);
+            System.out.println(makisuRegistryConfigString);
+            String encodedConfig = Base64.getEncoder().encodeToString(makisuRegistryConfigString.getBytes());
+            return encodedConfig;
+        } else if ("docker-hub".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
+            //docker hub doesnt have different images in repository, repository name and image name should be same.
+            LinkedHashMap<String, Object> creds = new LinkedHashMap<>();
+            creds.put("username", deploymentDetailsDto.getContainerRegistryUsername());
+            creds.put("password", deploymentDetailsDto.getContainerRegistryPassword());
+
+//            String registryUrl = deploymentDetailsDto.getContainerRegistryUrl();
+            String registryUrl = "index.docker.io";
+            SingletonMap conf = new SingletonMap(registryUrl, new SingletonMap(".*", new SingletonMap("security", new SingletonMap("basic", creds))));
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+
+            Yaml makisuRegistryConfigYaml = new Yaml(options);
+            String makisuRegistryConfigString = makisuRegistryConfigYaml.dump(conf);
+            System.out.println(makisuRegistryConfigString);
+            String encodedConfig = Base64.getEncoder().encodeToString(makisuRegistryConfigString.getBytes());
+            return encodedConfig;
+        } else if ("gcr".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
+            //gcr has project id as mandatory part and no nesting is allowed not even single level.
+            LinkedHashMap<String, Object> creds = new LinkedHashMap<>();
+            creds.put("username", deploymentDetailsDto.getContainerRegistryUsername());
+            creds.put("password", deploymentDetailsDto.getContainerRegistryPassword());
+
+            LinkedHashMap<String, Object> containerRegistryValues = new LinkedHashMap<>();
+            containerRegistryValues.put("push_chunk", -1);
+            containerRegistryValues.put("security", new SingletonMap("basic", creds));
+
+            LinkedHashMap<String, Object> serviceValues = new LinkedHashMap<>();
+//            serviceValues.put("ketchup-test/*", containerRegistryValues);
+            serviceValues.put(".*", containerRegistryValues);
+
+//            String registryUrl = deploymentDetailsDto.getContainerRegistryUrl();
+            String registryUrl = "gcr.io";
+            SingletonMap conf = new SingletonMap(registryUrl, serviceValues);
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+
+            Yaml makisuRegistryConfigYaml = new Yaml(options);
+            String makisuRegistryConfigString = makisuRegistryConfigYaml.dump(conf);
+            System.out.println(makisuRegistryConfigString);
+            String encodedConfig = Base64.getEncoder().encodeToString(makisuRegistryConfigString.getBytes());
+            return encodedConfig;
+        } else {
+            throw new RuntimeException("Unknown registry type supported types are local, docker-hub, aws-ecr, gcr and azurecr.");
+        }
+
+
     }
 }
