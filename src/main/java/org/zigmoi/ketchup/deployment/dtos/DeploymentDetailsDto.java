@@ -24,6 +24,7 @@ public class DeploymentDetailsDto {
     private String containerRegistryUsername;
     private String containerRegistryPassword;
     private String containerRepositoryName;
+    private String containerImageName;
     private String buildTool;
     private String buildToolType;
     private String buildToolSettingsData;

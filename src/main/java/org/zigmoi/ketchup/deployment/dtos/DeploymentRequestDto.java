@@ -18,6 +18,7 @@ public class DeploymentRequestDto {
     private String gitRepoPollingInterval;
     private String platform;
     private String containerRegistrySettingId;
+    private String containerImageName;
     private String buildTool;
     private String baseBuildPath;
     private String buildToolSettingId;

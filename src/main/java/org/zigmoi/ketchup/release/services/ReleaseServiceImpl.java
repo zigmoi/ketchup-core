@@ -552,22 +552,22 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         String imageTag = "";
         if ("local".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
             if ("".equalsIgnoreCase(deploymentDetailsDto.getContainerRepositoryName())) {
-                imageTag = deploymentDetailsDto.getContainerRegistryUrl() + "/" + releaseResourceId;
+                imageTag = deploymentDetailsDto.getContainerRegistryUrl() + "/" + deploymentDetailsDto.getContainerImageName();
             } else {
                 imageTag = deploymentDetailsDto.getContainerRegistryUrl()
-                        + "/" + deploymentDetailsDto.getContainerRepositoryName() + "/" + releaseResourceId;
+                        + "/" + deploymentDetailsDto.getContainerRepositoryName() + "/" + deploymentDetailsDto.getContainerImageName();
             }
         } else if ("docker-hub".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
             //docker hub doesnt have different images in repository, repository name and image name should be same.
             imageTag = deploymentDetailsDto.getContainerRegistryUrl()
                     + "/" + deploymentDetailsDto.getContainerRegistryUsername()
-                    + "/" + releaseResourceId;
+                    + "/" + deploymentDetailsDto.getContainerImageName();
         } else if ("gcr".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
             //gcr has project id as mandatory part and no nesting is allowed not even single level.
             //repositoryName is project id.
             imageTag = deploymentDetailsDto.getContainerRegistryUrl()
                     + "/" + deploymentDetailsDto.getContainerRepositoryName()
-                    + "/" + releaseResourceId;
+                    + "/" + deploymentDetailsDto.getContainerImageName();
         } else {
             throw new RuntimeException("Unknown registry type supported types are local, docker-hub, aws-ecr, gcr and azurecr.");
         }
