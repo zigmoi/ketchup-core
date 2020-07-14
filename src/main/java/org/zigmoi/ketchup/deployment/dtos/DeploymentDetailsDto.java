@@ -23,7 +23,7 @@ public class DeploymentDetailsDto {
     private String containerRegistryUrl;
     private String containerRegistryUsername;
     private String containerRegistryPassword;
-    private String containerRegistryPath;
+    private String containerRepositoryName;
     private String buildTool;
     private String buildToolType;
     private String buildToolSettingsData;

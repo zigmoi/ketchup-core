@@ -17,6 +17,7 @@ public class ContainerRegistrySettingsResponseDto {
 
     private String type;
     private String registryUrl;
+    private String repository; //project id for gcr
     private String registryUsername;
     private String registryPassword;
 

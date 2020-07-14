@@ -128,6 +128,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         settingsDto.setRegistryPassword(jo.getString("registryPassword"));
         settingsDto.setRegistryUsername(jo.getString("registryUsername"));
         settingsDto.setRegistryUrl(jo.getString("registryUrl"));
+        settingsDto.setRepository(jo.getString("repository"));
     }
 
     private void convertToEntity(ContainerRegistrySettingsRequestDto settingsDto, ProjectSettingsEntity settingsEntity) {
@@ -136,6 +137,7 @@ public class ProjectSettingsServiceImpl extends TenantProviderService implements
         jo.put("registryPassword", settingsDto.getRegistryPassword());
         jo.put("registryUsername", settingsDto.getRegistryUsername());
         jo.put("registryUrl", settingsDto.getRegistryUrl());
+        jo.put("repository", settingsDto.getRepository());
         settingsEntity.setData(jo.toString());
     }
     // container-registry api impl ends

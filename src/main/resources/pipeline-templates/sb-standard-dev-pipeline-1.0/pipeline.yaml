@@ -27,8 +27,6 @@ spec:
           value: ${imageTag}
         - name: MAKISU_CONTEXT_PATH
           value: .
-        - name: IMAGE_REGISTRY_CONFIG
-          value: ${imageRegistryConfig}
         - name: MAKISU_CACHE_REDIS_ADDR
           value: redis-1585680551-master.default.svc.cluster.local:6379
         - name: MAKISU_CACHE_REDIS_PASSWORD

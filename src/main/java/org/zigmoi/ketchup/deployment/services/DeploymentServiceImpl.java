@@ -90,6 +90,7 @@ public class DeploymentServiceImpl implements DeploymentService {
             deploymentJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
             deploymentJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
             deploymentJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
+            deploymentJson.put("containerRepositoryName", containerRegistry.getRepository());
             deploymentJson.put("buildToolType", buildTool.getType());
             deploymentJson.put("buildToolSettingsData", buildTool.getFileData());
 

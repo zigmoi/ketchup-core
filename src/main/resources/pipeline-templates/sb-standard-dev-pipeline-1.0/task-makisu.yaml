@@ -23,9 +23,6 @@ spec:
     - name: MAKISU_CONTEXT_PATH
       description: Path where makisu will execute build.
       default: .
-    - name: IMAGE_REGISTRY_CONFIG
-      description: Config for image registry to push and pull images.
-      default: ""
     - name: MAKISU_CACHE_REDIS_ADDR
       description: Address for redis cache to use for makisu image id kv pairs.
       default: redis-1583955302-master.default.svc.cluster.local:6379
