@@ -39,6 +39,7 @@ public class Release {
     private String projectResourceId;
     private String deploymentResourceId;
 
+    private String version;
     private String status; //IN-PROGRESS|SUCCESS|FAILED
     private String errorMessage;
     private String pipelineStatusJson;

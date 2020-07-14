@@ -66,6 +66,8 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         //get projectId from deployment.
         //handle duplicate pipeline resources error in k8s.
         DeploymentDetailsDto deploymentDetailsDto = deploymentService.getDeployment(deploymentResourceId);
+        long noOfReleases = releaseRepository.countAllByDeploymentResourceId(deploymentResourceId);
+        String releaseVersion = "v".concat(String.valueOf(noOfReleases + 1));
 
         String tenantId = AuthUtils.getCurrentTenantId();
         String projectResourceId = deploymentDetailsDto.getDeploymentId().getProjectResourceId();
@@ -79,6 +81,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         r.setDeploymentResourceId(deploymentResourceId);
         r.setProjectResourceId(projectResourceId);
         r.setHelmReleaseId(getHelmReleaseId(deploymentResourceId));
+        r.setVersion(releaseVersion);
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -89,7 +92,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
         //generate pipeline all resources and save them, name can be parsed from them directly.
         List<PipelineResource> pipelineResources = generatePipelineResources("sb-standard-dev-1.0",
-                deploymentDetailsDto, releaseResourceId);
+                deploymentDetailsDto, releaseResourceId, releaseVersion);
         pipelineResources.forEach(pipelineResource ->
         {
             PipelineResourceId pipelineResourceId = new PipelineResourceId();
@@ -289,10 +292,10 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
     }
 
-    private List<PipelineResource> generatePipelineResources(String pipelineType, DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId) {
+    private List<PipelineResource> generatePipelineResources(String pipelineType, DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId, String releaseVersion) {
         String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0/";
 
-        Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(deploymentDetailsDto, releaseResourceId);
+        Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(deploymentDetailsDto, releaseResourceId, releaseVersion);
 
         List<PipelineResource> resources = new ArrayList<>();
 
@@ -448,7 +451,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         return FileUtils.readFileToString(resource.getFile(), StandardCharsets.UTF_8);
     }
 
-    public Map<String, String> preparePipelineTemplatingVariables(DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId) {
+    public Map<String, String> preparePipelineTemplatingVariables(DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId, String releaseVersion) {
         String deploymentResourceId = deploymentDetailsDto.getDeploymentId().getDeploymentResourceId();
         Map<String, String> args = new HashMap<>();
 
@@ -474,7 +477,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
         //helm values config map
         args.put("helmValuesConfigMapName", "configmap-helm-values-".concat(releaseResourceId));
-        args.put("helmValuesYaml", getHelmValuesYaml(deploymentDetailsDto, releaseResourceId));
+        args.put("helmValuesYaml", getHelmValuesYaml(deploymentDetailsDto, releaseVersion));
 
         //makisu values config map
         args.put("makisuValuesSecretName", "secret-makisu-values-".concat(releaseResourceId));
@@ -491,11 +494,11 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         //pipeline
         args.put("pipelineName", "pipeline-".concat(releaseResourceId));
         args.put("helmReleaseName", getHelmReleaseId(deploymentResourceId));
-        args.put("helmCommand", getHelmCommand(deploymentResourceId));
+        args.put("helmCommand", getHelmCommand(releaseVersion));
         args.put("helmChartUrl", "https://ashimusmani.github.io/helm-charts/basic-springboot-demo-ketchup-0.1.0.tgz");
         args.put("containerRegistryUrl", deploymentDetailsDto.getContainerRegistryUrl());
 
-        String imageTag = getImageTagName(deploymentDetailsDto, releaseResourceId);
+        String imageTag = getImageTagName(deploymentDetailsDto, releaseVersion);
         args.put("imageTag", imageTag);
 
         args.put("devKubernetesNamespace", deploymentDetailsDto.getDevKubernetesNamespace());
@@ -508,12 +511,11 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         return args;
     }
 
-    public String getHelmCommand(String deploymentResourceId) {
-        long noOfReleases = releaseRepository.countAllByDeploymentResourceId(deploymentResourceId);
-        if (noOfReleases > 0) {
-            return "upgrade";
-        } else {
+    public String getHelmCommand(String releaseVersion) {
+        if ("v1".equalsIgnoreCase(releaseVersion)) {
             return "install";
+        } else {
+            return "upgrade";
         }
     }
 
@@ -524,9 +526,9 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         return templatedContent;
     }
 
-    public String getHelmValuesYaml(DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId) {
+    public String getHelmValuesYaml(DeploymentDetailsDto deploymentDetailsDto, String releaseVersion) {
         LinkedHashMap<String, Object> containerRegistryValues = new LinkedHashMap<>();
-        containerRegistryValues.put("repository", getImageTagName(deploymentDetailsDto, releaseResourceId));
+        containerRegistryValues.put("repository", getImageTagName(deploymentDetailsDto, releaseVersion));
 
         LinkedHashMap<String, Object> serviceValues = new LinkedHashMap<>();
         serviceValues.put("type", "ClusterIP");
@@ -548,26 +550,32 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         return helmConfigString;
     }
 
-    public String getImageTagName(DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId) {
+    public String getImageTagName(DeploymentDetailsDto deploymentDetailsDto, String releaseVersion) {
         String imageTag = "";
         if ("local".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
             if ("".equalsIgnoreCase(deploymentDetailsDto.getContainerRepositoryName())) {
-                imageTag = deploymentDetailsDto.getContainerRegistryUrl() + "/" + deploymentDetailsDto.getContainerImageName();
+                imageTag = deploymentDetailsDto.getContainerRegistryUrl()
+                        + "/" + deploymentDetailsDto.getContainerImageName()
+                        + ":" + releaseVersion;
             } else {
                 imageTag = deploymentDetailsDto.getContainerRegistryUrl()
-                        + "/" + deploymentDetailsDto.getContainerRepositoryName() + "/" + deploymentDetailsDto.getContainerImageName();
+                        + "/" + deploymentDetailsDto.getContainerRepositoryName()
+                        + "/" + deploymentDetailsDto.getContainerImageName()
+                        + ":" + releaseVersion;
             }
         } else if ("docker-hub".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
             //docker hub doesnt have different images in repository, repository name and image name should be same.
             imageTag = deploymentDetailsDto.getContainerRegistryUrl()
                     + "/" + deploymentDetailsDto.getContainerRegistryUsername()
-                    + "/" + deploymentDetailsDto.getContainerImageName();
+                    + "/" + deploymentDetailsDto.getContainerImageName()
+                    + ":"+ releaseVersion;
         } else if ("gcr".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
             //gcr has project id as mandatory part and no nesting is allowed not even single level.
             //repositoryName is project id.
             imageTag = deploymentDetailsDto.getContainerRegistryUrl()
                     + "/" + deploymentDetailsDto.getContainerRepositoryName()
-                    + "/" + deploymentDetailsDto.getContainerImageName();
+                    + "/" + deploymentDetailsDto.getContainerImageName()
+                    + ":"+ releaseVersion;
         } else {
             throw new RuntimeException("Unknown registry type supported types are local, docker-hub, aws-ecr, gcr and azurecr.");
         }
@@ -587,13 +595,6 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             LinkedHashMap<String, Object> serviceValues = new LinkedHashMap<>();
             serviceValues.put(".*", containerRegistryValues);
 
-//            String registryUrl = "";
-//            if ("".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryPath())) {
-//                registryUrl = deploymentDetailsDto.getContainerRegistryUrl() + "/" + releaseResourceId;
-//            } else {
-//                registryUrl = deploymentDetailsDto.getContainerRegistryUrl()
-//                        + "/" + deploymentDetailsDto.getContainerRegistryPath() + "/" + releaseResourceId;
-//            }
             String registryUrl = deploymentDetailsDto.getContainerRegistryUrl();
             SingletonMap conf = new SingletonMap(registryUrl, serviceValues);
 
@@ -612,7 +613,6 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             creds.put("username", deploymentDetailsDto.getContainerRegistryUsername());
             creds.put("password", deploymentDetailsDto.getContainerRegistryPassword());
 
-//            String registryUrl = deploymentDetailsDto.getContainerRegistryUrl();
             String registryUrl = "index.docker.io";
             SingletonMap conf = new SingletonMap(registryUrl, new SingletonMap(".*", new SingletonMap("security", new SingletonMap("basic", creds))));
 
@@ -636,10 +636,8 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             containerRegistryValues.put("security", new SingletonMap("basic", creds));
 
             LinkedHashMap<String, Object> serviceValues = new LinkedHashMap<>();
-//            serviceValues.put("ketchup-test/*", containerRegistryValues);
             serviceValues.put(".*", containerRegistryValues);
 
-//            String registryUrl = deploymentDetailsDto.getContainerRegistryUrl();
             String registryUrl = "gcr.io";
             SingletonMap conf = new SingletonMap(registryUrl, serviceValues);
 

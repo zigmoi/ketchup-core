@@ -17,6 +17,7 @@ import java.util.Date;
 public class ReleaseDto {
 
     private ReleaseId id;
+    private String version;
     private String statusJson;
     private String commitId;
     private String helmChartId;
