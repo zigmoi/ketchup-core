@@ -21,6 +21,7 @@ import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
 import org.zigmoi.ketchup.deployment.services.DeploymentService;
+import org.zigmoi.ketchup.exception.UnexpectedException;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.services.TenantProviderService;
 import org.zigmoi.ketchup.project.services.PermissionUtilsService;
@@ -42,12 +43,9 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     private final ReleaseRepository releaseRepository;
 
     private final PipelineResourceRepository pipelineResourceRepository;
-
-    private PermissionUtilsService permissionUtilsService;
-
-    private DeploymentService deploymentService;
-
     ResourceLoader resourceLoader;
+    private final PermissionUtilsService permissionUtilsService;
+    private final DeploymentService deploymentService;
 
     @Autowired
     public ReleaseServiceImpl(ReleaseRepository releaseRepository, PipelineResourceRepository pipelineResourceRepository, PermissionUtilsService permissionUtilsService, DeploymentService deploymentService, ResourceLoader resourceLoader) {
@@ -568,14 +566,14 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             imageTag = deploymentDetailsDto.getContainerRegistryUrl()
                     + "/" + deploymentDetailsDto.getContainerRegistryUsername()
                     + "/" + deploymentDetailsDto.getContainerImageName()
-                    + ":"+ releaseVersion;
+                    + ":" + releaseVersion;
         } else if ("gcr".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
             //gcr has project id as mandatory part and no nesting is allowed not even single level.
             //repositoryName is project id.
             imageTag = deploymentDetailsDto.getContainerRegistryUrl()
                     + "/" + deploymentDetailsDto.getContainerRepositoryName()
                     + "/" + deploymentDetailsDto.getContainerImageName()
-                    + ":"+ releaseVersion;
+                    + ":" + releaseVersion;
         } else {
             throw new RuntimeException("Unknown registry type supported types are local, docker-hub, aws-ecr, gcr and azurecr.");
         }
@@ -653,7 +651,15 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         } else {
             throw new RuntimeException("Unknown registry type supported types are local, docker-hub, aws-ecr, gcr and azurecr.");
         }
+    }
 
-
+    @Override
+    public DeploymentDetailsDto extractDeployment(Release release) {
+        String deploymentDetailsJSON = release.getDeploymentDataJson();
+        try {
+            return new ObjectMapper().readValue(deploymentDetailsJSON, DeploymentDetailsDto.class);
+        } catch (IOException e) {
+            throw new UnexpectedException("Failed while parsing deployment details for release : " + release.getId().getReleaseResourceId());
+        }
     }
 }
