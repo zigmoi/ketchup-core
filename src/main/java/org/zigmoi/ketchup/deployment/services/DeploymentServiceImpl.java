@@ -71,7 +71,7 @@ public class DeploymentServiceImpl implements DeploymentService {
         DeploymentId deploymentId = new DeploymentId(AuthUtils.getCurrentTenantId(), projectResourceId, getNewDeploymentId());
         DeploymentEntity deploymentEntity = new DeploymentEntity();
         deploymentEntity.setId(deploymentId);
-        deploymentEntity.setType(DeploymentsType.BASIC_SPRING_BOOT.toString());
+        deploymentEntity.setType(deploymentRequestDto.getApplicationType());
         deploymentEntity.setDisplayName(deploymentRequestDto.getDisplayName());
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -149,7 +149,7 @@ public class DeploymentServiceImpl implements DeploymentService {
         DeploymentEntity entity = new DeploymentEntity();
         entity.setId(deploymentId);
 
-        entity.setType(DeploymentsType.BASIC_SPRING_BOOT.toString());
+//        entity.setType(DeploymentsType.BASIC_SPRING_BOOT.toString());
 //        entity.setServiceName(dto.getServiceName());
 //        entity.setCurrentStatus(DeploymentsStatus.INITIALISED.toString());
 
@@ -169,7 +169,7 @@ public class DeploymentServiceImpl implements DeploymentService {
         config.put("tenant-id", AuthUtils.getCurrentTenantId());
         config.put("project-id", projectResourceId);
         config.put("deployment-id", deploymentResourceId);
-        config.put("deployment-flow-type", DeploymentsType.BASIC_SPRING_BOOT.toString());
+//        config.put("deployment-flow-type", DeploymentsType.BASIC_SPRING_BOOT.toString());
         config.put("config-template-version", "v1");
 
         JSONArray stagesJA = new JSONArray();

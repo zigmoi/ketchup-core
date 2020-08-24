@@ -93,25 +93,12 @@
             <artifactId>org.eclipse.jgit</artifactId>
             <version>5.4.0.201906121030-r</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.kubernetes</groupId>-->
-<!--            <artifactId>client-java</artifactId>-->
-<!--            <version>4.0.0</version>-->
-<!--            <exclusions>-->
-<!--                <exclusion>  &lt;!&ndash; declare the exclusion here &ndash;&gt;-->
-<!--                    <groupId>io.sundr</groupId>-->
-<!--                    <artifactId>builder-annotations</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
-<!--        </dependency>-->
         <!-- https://mvnrepository.com/artifact/io.kubernetes/client-java -->
         <dependency>
             <groupId>io.kubernetes</groupId>
             <artifactId>client-java</artifactId>
             <version>7.0.0</version>
         </dependency>
-
-
         <!-- https://mvnrepository.com/artifact/com.jayway.jsonpath/json-path -->
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>
@@ -185,6 +172,12 @@
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
             <version>1.1.7.3</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>29.0-jre</version>
         </dependency>
     </dependencies>
 

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.zigmoi.ketchup.deployment.DeploymentConstants;
 import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentResponseDto;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentRequestDto;
 import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
@@ -29,6 +30,7 @@ public class DeploymentController {
 
     @PostMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot")
     public void createBasicSpringBootDeployment(@RequestBody DeploymentRequestDto deploymentRequestDto, @PathVariable String projectResourceId) {
+        deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);
         deploymentService.createDeployment(projectResourceId, deploymentRequestDto);
     }
 

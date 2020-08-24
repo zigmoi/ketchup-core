@@ -110,56 +110,38 @@ public class ReleaseController {
                 deploymentDetailsDto.getDevKubernetesNamespace(), podName, containerName, tailLines);
     }
 
-    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/direct")
+//    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/direct")
+    @GetMapping(value = "/v1/release/pipeline/logs/stream/direct")
     public void streamPipelineLogsDirect(HttpServletResponse response,
-                                    @RequestParam("releaseId") String releaseResourceId,
-                                    @RequestParam("podName") String podName,
+                                         @RequestParam("releaseId") String releaseResourceId,
+                                         @RequestParam("podName") String podName,
                                          @RequestParam("containerName") String containerName,
-                                         @RequestParam(value = "tailLines", required = false) int tailLines) throws IOException, ApiException {
+                                         @RequestParam(value = "tailLines", required = false) Integer tailLines) throws IOException, ApiException {
         try (InputStream logStream = getLogsInputStream(releaseResourceId, podName, containerName, tailLines)) {
             //noinspection UnstableApiUsage
             ByteStreams.copy(logStream, response.getOutputStream());
         }
     }
 
-    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/sse")
+//    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/sse")
+    @GetMapping(value = "/v1/release/pipeline/logs/stream/sse")
     public SseEmitter streamPipelineLogsSSE(@RequestParam("releaseId") String releaseResourceId,
                                             @RequestParam("podName") String podName,
                                             @RequestParam("containerName") String containerName,
-                                            @RequestParam(value = "tailLines", required = false) int tailLines) {
+                                            @RequestParam(value = "tailLines", required = false) Integer tailLines) {
         SseEmitter emitter = new SseEmitter();
         nonBlockingService.execute(() -> {
-            BufferedReader reader = null;
-            try {
-                reader = new BufferedReader(new InputStreamReader(getLogsInputStream(releaseResourceId, podName, containerName, tailLines)));
-                while (true) {
-                    String s = reader.readLine();
-                    SseEmitter.SseEventBuilder eventBuilderDataStream = SseEmitter.event().data(s, MediaType.TEXT_PLAIN);
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(getLogsInputStream(releaseResourceId, podName, containerName, tailLines)))) {
+                String response;
+                while ((response = reader.readLine()) != null) {
+                    SseEmitter.SseEventBuilder eventBuilderDataStream = SseEmitter.event().data(response, MediaType.TEXT_PLAIN);
                     emitter.send(eventBuilderDataStream);
                 }
             } catch (Exception e) {
                 log.error(e.getLocalizedMessage(), e);
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (IOException ignored) {}
-                }
                 emitter.complete();
             }
         });
         return emitter;
     }
-
-//    @RequestMapping(value = "/public/helm-chart-template", method = RequestMethod.GET)
-//    public void downloadHelmChartTemplate(@RequestParam("templateName") String templateName, HttpServletResponse response) throws IOException {
-//        String baseResourcePath = "classpath:/helm-charts/";
-//        String chartName = "basic-springboot-demo-ketchup-0.1.0.tgz";
-//        Resource resource = resourceLoader.getResource(baseResourcePath.concat(chartName));
-//        String fileName = chartName;
-//        response.setContentType("application/octet-stream");
-//        response.setHeader("Content-disposition", "attachment; filename=" + fileName);
-//        org.apache.commons.io.IOUtils.copy(resource.getInputStream(), response.getOutputStream());
-//        response.flushBuffer();
-//    }
-
 }

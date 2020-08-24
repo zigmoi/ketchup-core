@@ -4,9 +4,9 @@ import lombok.Data;
 
 @Data
 public class DeploymentRequestDto {
-
     private String displayName;
     private String description;
+    private String applicationType;
     private String serviceName;
     private String appServerPort;
     private String replicas;

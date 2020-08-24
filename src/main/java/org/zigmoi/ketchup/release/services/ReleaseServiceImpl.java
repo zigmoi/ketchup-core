@@ -36,6 +36,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static org.zigmoi.ketchup.deployment.DeploymentConstants.*;
+
 @Service
 public class ReleaseServiceImpl extends TenantProviderService implements ReleaseService {
     private static final Logger logger = LoggerFactory.getLogger(ReleaseServiceImpl.class);
@@ -43,9 +46,9 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     private final ReleaseRepository releaseRepository;
 
     private final PipelineResourceRepository pipelineResourceRepository;
-    ResourceLoader resourceLoader;
     private final PermissionUtilsService permissionUtilsService;
     private final DeploymentService deploymentService;
+    ResourceLoader resourceLoader;
 
     @Autowired
     public ReleaseServiceImpl(ReleaseRepository releaseRepository, PipelineResourceRepository pipelineResourceRepository, PermissionUtilsService permissionUtilsService, DeploymentService deploymentService, ResourceLoader resourceLoader) {
@@ -55,7 +58,6 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         this.deploymentService = deploymentService;
         this.resourceLoader = resourceLoader;
     }
-
 
     @Override
     @Transactional
@@ -91,8 +93,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         //generate pipeline all resources and save them, name can be parsed from them directly.
         List<PipelineResource> pipelineResources = generatePipelineResources("sb-standard-dev-1.0",
                 deploymentDetailsDto, releaseResourceId, releaseVersion);
-        pipelineResources.forEach(pipelineResource ->
-        {
+        pipelineResources.forEach(pipelineResource -> {
             PipelineResourceId pipelineResourceId = new PipelineResourceId();
             pipelineResourceId.setTenantId(tenantId);
             pipelineResourceId.setGuid(UUID.randomUUID().toString());
@@ -267,9 +268,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .forEach(pipeline -> {
                     try {
                         KubernetesUtility.createCRDUsingYamlContent(pipeline.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelines", "false", kubeConfig);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (ApiException e) {
+                    } catch (IOException | ApiException e) {
                         e.printStackTrace();
                     }
                 });
@@ -280,18 +279,15 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .forEach(pipelineRun -> {
                     try {
                         KubernetesUtility.createCRDUsingYamlContent(pipelineRun.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelineruns", "false", kubeConfig);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (ApiException e) {
+                    } catch (IOException | ApiException e) {
                         e.printStackTrace();
                     }
                 });
-
-
     }
 
     private List<PipelineResource> generatePipelineResources(String pipelineType, DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId, String releaseVersion) {
         String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0/";
+        String deploymentAppResourceBasePath = "classpath:/application-templates/spring-boot/";
 
         Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(deploymentDetailsDto, releaseResourceId, releaseVersion);
 
@@ -440,7 +436,30 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             e.printStackTrace();
         }
 
+        try {
+            PipelineResource dockerFileConfigMap = new PipelineResource();
+            dockerFileConfigMap.setFormat("yaml");
+            dockerFileConfigMap.setResourceType("configmap");
 
+            Map<String, Object> configMapValues = new HashMap<>();
+            configMapValues.put("kind", "ConfigMap");
+            configMapValues.put("apiVersion", "v1");
+            configMapValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("appDockerFileConfigMapName")));
+            String content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-mvn-template-1"));
+            configMapValues.put("data", new SingletonMap("Dockerfile",
+                    getTemplatedPipelineResource(content, pipelineTemplatingVariables)));
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+            Yaml yaml = new Yaml(options);
+            String templatedContent = yaml.dump(configMapValues);
+            dockerFileConfigMap.setResourceContent(templatedContent);
+            System.out.println(templatedContent);
+            resources.add(dockerFileConfigMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return resources;
     }
 
@@ -467,7 +486,6 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         //kubeconfig secret
         args.put("kubeConfigSecretName", "kubeconfig-secret-".concat(releaseResourceId));
         args.put("kubeConfigBase64", deploymentDetailsDto.getDevKubeconfig());
-
 
         //service account
         args.put("serviceAccountName", "service-account-".concat(releaseResourceId));
@@ -506,7 +524,50 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         args.put("pipelineRunName", "pipeline-run-".concat(releaseResourceId));
         //also has "serviceAccountName", "pipelineName", "gitResourceName" which are already added.
 
+        if (APP_TYPE_BASIC_SPRING_BOOT.equals(deploymentDetailsDto.getApplicationType())) {
+            if (BUILD_TOOL_MAVEN_3.equals(deploymentDetailsDto.getBuildTool())) {
+                args.putAll(getMaven3BuildToolDockerFileContent(deploymentDetailsDto));
+            } else {
+                throw new UnsupportedOperationException("Build tool not supported : " + deploymentDetailsDto.getBuildTool());
+            }
+        } else {
+            throw new UnsupportedOperationException("App type not supported : " + deploymentDetailsDto.getApplicationType());
+        }
+        //helm values config map
+        args.put("appDockerFileConfigMapName", "configmap-app-dockerfile-content-".concat(releaseResourceId));
+
         return args;
+    }
+
+    private Map<String, String> getMaven3BuildToolDockerFileContent(DeploymentDetailsDto deploymentDetails) {
+        Map<String, String> args = new HashMap<>();
+        args.put("maven.image.name", getMaven3ImageNameForJavaPlatform(deploymentDetails));
+        args.put("jre.image.name", getJREImageNameForJavaPlatform(deploymentDetails));
+        args.put("app.jar.name", "ketchup-demo-basicspringboot-0.0.1-SNAPSHOT.jar"); // TODO: 23/08/20 hardcoded
+        args.put("app.port", deploymentDetails.getAppServerPort());
+        return args;
+    }
+
+    private String getJREImageNameForJavaPlatform(DeploymentDetailsDto deploymentDetails) {
+        if (isNullOrEmpty(deploymentDetails.getPlatform())) {
+            throw new UnexpectedException("Platform cannot be null");
+        }
+        switch (deploymentDetails.getPlatform()) {
+            case PLATFORM_JAVA_8:
+                return IMAGE_JRE_JAVA_8;
+        }
+        throw new UnsupportedOperationException("Platform : " + deploymentDetails.getPlatform() + "not supported");
+    }
+
+    private String getMaven3ImageNameForJavaPlatform(DeploymentDetailsDto deploymentDetails) {
+        if (isNullOrEmpty(deploymentDetails.getPlatform())) {
+            throw new UnexpectedException("Platform cannot be null");
+        }
+        switch (deploymentDetails.getPlatform()) {
+            case PLATFORM_JAVA_8:
+                return IMAGE_MAVEN_3_JAVA_8;
+        }
+        throw new UnsupportedOperationException("Platform : " + deploymentDetails.getPlatform() + "not supported");
     }
 
     public String getHelmCommand(String releaseVersion) {

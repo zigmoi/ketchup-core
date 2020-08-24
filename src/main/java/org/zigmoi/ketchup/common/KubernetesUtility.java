@@ -98,7 +98,6 @@ public class KubernetesUtility {
         CoreV1Api api = new CoreV1Api();
 
         Object result = api.createNamespacedConfigMap(namespace, resource, pretty, null, null);
-        System.out.println(result);
     }
 
     public static String createSecret(String resourceFilePath) throws IOException, ApiException {
@@ -111,18 +110,9 @@ public class KubernetesUtility {
         V1Secret resource = (V1Secret) Yaml.load(new File(resourceFilePath));
         CoreV1Api api = new CoreV1Api();
 
-//        try {
         Object result = api.createNamespacedSecret(namespace, resource, pretty, null, null);
-        System.out.println(result);
         String responseJson = new Gson().toJson(result);
         return getData(responseJson, "$.metadata.name");
-//        } catch (ApiException e) {
-//            System.err.println("Exception when calling create secret.");
-//            System.err.println("Status code: " + e.getCode());
-//            System.err.println("Reason: " + e.getResponseBody());
-//            System.err.println("Response headers: " + e.getResponseHeaders());
-//            e.printStackTrace();
-//        }
     }
 
     public static String createServiceAccount(String resourceFilePath) throws IOException, ApiException {

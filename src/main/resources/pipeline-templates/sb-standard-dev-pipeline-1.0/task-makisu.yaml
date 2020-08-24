@@ -42,6 +42,7 @@ spec:
     - --push=$(inputs.params.IMAGE_REGISTRY_URL)
     - --modifyfs=$(inputs.params.MAKISU_ARG_MODIFY_FS)
     - -t=$(inputs.params.IMAGE_TAG)
+    - --file=/var/configmap/Dockerfile
     - --registry-config=/var/makisu-registry-secret/makisuConfig
     - --redis-cache-addr=$(inputs.params.MAKISU_CACHE_REDIS_ADDR)
     - --redis-cache-password=$(inputs.params.MAKISU_CACHE_REDIS_PASSWORD)
@@ -49,9 +50,14 @@ spec:
     volumeMounts:
       - name: secret-volume-makisu
         mountPath: /var/makisu-registry-secret
+      - name: config-volume
+        mountPath: /var/configmap
     securityContext:
       runAsUser: 0
   volumes:
     - name: secret-volume-makisu
       secret:
         secretName: ${makisuValuesSecretName}
+    - name: config-volume
+      configMap:
+        name: ${appDockerFileConfigMapName}
