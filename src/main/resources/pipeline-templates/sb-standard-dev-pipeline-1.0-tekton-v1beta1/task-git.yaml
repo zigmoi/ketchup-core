@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: git-clone
+  name: ${gitCloneTaskName}
 spec:
   workspaces:
     - name: output
@@ -36,7 +36,7 @@ spec:
     - name: deleteExisting
       description: clean out the contents of the repo's destination directory (if it already exists) before trying to clone the repo there
       type: string
-      default: "false"
+      default: "true"
     - name: httpProxy
       description: git HTTP proxy server for non-SSL requests
       type: string

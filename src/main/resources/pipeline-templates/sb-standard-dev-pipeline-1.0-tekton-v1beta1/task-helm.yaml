@@ -1,44 +1,42 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: ${helmDeployTaskName}
 spec:
-  inputs:
-    params:
-    - name: HELM_IMAGE
-      description: The image used to run helm cmd.
-      default: alpine/helm:latest
-    - name: WORKSPACE
-      description: Current tekton execution dir.
-      default: /workspace/source
-    - name: KUBECONFIG_FILE_NAME
-      description: Name of kubeconfig file.
-      default: kubeconfig
-    - name: HELM_CHART_URL
-      description: URL path of helm chart to deploy.
-      default: http://192.168.0.101:8000/basic-springboot-demo-ketchup-0.1.0.tgz
-    - name: HELM_CHART_RELEASE_NAME
-      description: Helm chart release name for this deployment.
-      default: ketchup-sb-demo
-    - name: KUBERNETES_NAMESPACE
-      description: Namespace to deploy helm chart.
-      default: default
-    - name: HELM_COMMAND
-      description: Helm command to run install or upgrade
-      default: install
+  workspaces:
+    - name: output
+      description: The git repo will be cloned onto the volume backing this workspace
+  params:
+  - name: HELM_IMAGE
+    description: The image used to run helm cmd.
+    default: alpine/helm:latest
+  - name: KUBECONFIG_FILE_NAME
+    description: Name of kubeconfig file.
+    default: kubeconfig
+  - name: HELM_CHART_URL
+    description: URL path of helm chart to deploy.
+    default: http://192.168.0.101:8000/basic-springboot-demo-ketchup-0.1.0.tgz
+  - name: HELM_CHART_RELEASE_NAME
+    description: Helm chart release name for this deployment.
+    default: ketchup-sb-demo
+  - name: KUBERNETES_NAMESPACE
+    description: Namespace to deploy helm chart.
+    default: default
+  - name: HELM_COMMAND
+    description: Helm command to run install or upgrade
+    default: install
 
   steps:
   - name: install-app-in-cluster
-    workingdir: $(inputs.params.WORKSPACE)
-    image: $(inputs.params.HELM_IMAGE)
+    image: $(params.HELM_IMAGE)
     args:
-    - $(inputs.params.HELM_COMMAND)
-    - $(inputs.params.HELM_CHART_RELEASE_NAME)
-    - $(inputs.params.HELM_CHART_URL)
+    - $(params.HELM_COMMAND)
+    - $(params.HELM_CHART_RELEASE_NAME)
+    - $(params.HELM_CHART_URL)
     - -f
     - /var/configmap/helmConfig
     - -n
-    - $(inputs.params.KUBERNETES_NAMESPACE)
+    - $(params.KUBERNETES_NAMESPACE)
     - --create-namespace
     - --wait
     - --timeout

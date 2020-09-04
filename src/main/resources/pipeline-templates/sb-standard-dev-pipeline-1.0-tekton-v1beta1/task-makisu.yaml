@@ -1,52 +1,48 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: ${makisuBuildImageTaskName}
 spec:
-  inputs:
-    params:
-    - name: MAKISU_IMAGE
-      description: The image on which builds will run
-      default: gcr.io/uber-container-tools/makisu:v0.1.14
-    - name: WORKSPACE
-      description: Code source dir where image should be built.
-      default: /workspace/source
-    - name: IMAGE_REGISTRY_URL
-      description: Docker (any) registry url to store built image.
-      default: kubernetes.docker.internal:5000
-    - name: MAKISU_ARG_MODIFY_FS
-      description: Makisu flag to toggle modifyfs.
-      default: "true"
-    - name: IMAGE_TAG
-      description: Tag name for built image.
-      default: kubernetes.docker.internal:5000/ketchup-demo-basicspringboot
-    - name: MAKISU_CONTEXT_PATH
-      description: Path where makisu will execute build.
-      default: .
-    - name: MAKISU_CACHE_REDIS_ADDR
-      description: Address for redis cache to use for makisu image id kv pairs.
-      default: redis-1583955302-master.default.svc.cluster.local:6379
-    - name: MAKISU_CACHE_REDIS_PASSWORD
-      description: makisu cache redis password.
-      default: egQHM4ogxM
-    resources:
-    - name: ${gitResourceName}
-      type: git
+  workspaces:
+    - name: output
+      description: The git repo will be cloned onto the volume backing this workspace
+  params:
+  - name: MAKISU_IMAGE
+    description: The image on which builds will run
+    default: gcr.io/uber-container-tools/makisu:v0.1.14
+  - name: IMAGE_REGISTRY_URL
+    description: Docker (any) registry url to store built image.
+    default: kubernetes.docker.internal:5000
+  - name: MAKISU_ARG_MODIFY_FS
+    description: Makisu flag to toggle modifyfs.
+    default: "true"
+  - name: IMAGE_TAG
+    description: Tag name for built image.
+    default: kubernetes.docker.internal:5000/ketchup-demo-basicspringboot
+  - name: MAKISU_CONTEXT_PATH
+    description: Path where makisu will execute build.
+    default: .
+  - name: MAKISU_CACHE_REDIS_ADDR
+    description: Address for redis cache to use for makisu image id kv pairs.
+    default: redis-1583955302-master.default.svc.cluster.local:6379
+  - name: MAKISU_CACHE_REDIS_PASSWORD
+    description: makisu cache redis password.
+    default: egQHM4ogxM
 
   steps:
   - name: build-and-push
-    workingdir: $(inputs.params.WORKSPACE)
-    image: $(inputs.params.MAKISU_IMAGE)
+    workingdir: $(workspaces.output.path)
+    image: $(params.MAKISU_IMAGE)
     args:
     - build
-    - --push=$(inputs.params.IMAGE_REGISTRY_URL)
-    - --modifyfs=$(inputs.params.MAKISU_ARG_MODIFY_FS)
-    - -t=$(inputs.params.IMAGE_TAG)
+    - --push=$(params.IMAGE_REGISTRY_URL)
+    - --modifyfs=$(params.MAKISU_ARG_MODIFY_FS)
+    - -t=$(params.IMAGE_TAG)
     - --file=/var/configmap/Dockerfile
     - --registry-config=/var/makisu-registry-secret/makisuConfig
-    - --redis-cache-addr=$(inputs.params.MAKISU_CACHE_REDIS_ADDR)
-    - --redis-cache-password=$(inputs.params.MAKISU_CACHE_REDIS_PASSWORD)
-    - $(inputs.params.MAKISU_CONTEXT_PATH)
+    - --redis-cache-addr=$(params.MAKISU_CACHE_REDIS_ADDR)
+    - --redis-cache-password=$(params.MAKISU_CACHE_REDIS_PASSWORD)
+    - $(params.MAKISU_CONTEXT_PATH)
     volumeMounts:
       - name: secret-volume-makisu
         mountPath: /var/makisu-registry-secret

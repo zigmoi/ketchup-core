@@ -92,7 +92,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         }
 
         //generate pipeline all resources and save them, name can be parsed from them directly.
-        List<PipelineResource> pipelineResources = generatePipelineResources_tekton_v1alpha1("sb-standard-dev-1.0",
+        List<PipelineResource> pipelineResources = generatePipelineResources_tekton_v1beta1("sb-standard-dev-1.0",
                 deploymentDetailsDto, releaseResourceId, releaseVersion);
         pipelineResources.forEach(pipelineResource -> {
             PipelineResourceId pipelineResourceId = new PipelineResourceId();
@@ -244,7 +244,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "pipeline-resource".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipelineResource -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipelineResource.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelineresources", "false", kubeConfig);
+                        KubernetesUtility.createCRDUsingYamlContent(pipelineResource.getResourceContent(), "default", "tekton.dev", "v1beta1", "pipelineresources", "false", kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -256,7 +256,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "task".equalsIgnoreCase(r.getResourceType()))
                 .forEach(task -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(task.getResourceContent(), "default", "tekton.dev", "v1alpha1", "tasks", "false", kubeConfig);
+                        KubernetesUtility.createCRDUsingYamlContent(task.getResourceContent(), "default", "tekton.dev", "v1beta1", "tasks", "false", kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -268,7 +268,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "pipeline".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipeline -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipeline.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelines", "false", kubeConfig);
+                        KubernetesUtility.createCRDUsingYamlContent(pipeline.getResourceContent(), "default", "tekton.dev", "v1beta1", "pipelines", "false", kubeConfig);
                     } catch (IOException | ApiException e) {
                         e.printStackTrace();
                     }
@@ -279,7 +279,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "pipeline-run".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipelineRun -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipelineRun.getResourceContent(), "default", "tekton.dev", "v1alpha1", "pipelineruns", "false", kubeConfig);
+                        KubernetesUtility.createCRDUsingYamlContent(pipelineRun.getResourceContent(), "default", "tekton.dev", "v1beta1", "pipelineruns", "false", kubeConfig);
                     } catch (IOException | ApiException e) {
                         e.printStackTrace();
                     }
@@ -582,17 +582,18 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             e.printStackTrace();
         }
 
-        PipelineResource tknPipelineResource = new PipelineResource();
-        tknPipelineResource.setFormat("yaml");
-        tknPipelineResource.setResourceType("pipeline-resource");
+        PipelineResource gitCloneTask = new PipelineResource();
+        gitCloneTask.setFormat("yaml");
+        gitCloneTask.setResourceType("task");
         try {
-            String content = getPipelineTemplateContent(baseResourcePath.concat("git-resource.yaml"));
+            String content = getPipelineTemplateContent(baseResourcePath.concat("task-git.yaml"));
             String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
-            tknPipelineResource.setResourceContent(templatedContent);
-            resources.add(tknPipelineResource);
+            gitCloneTask.setResourceContent(templatedContent);
+            resources.add(gitCloneTask);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
 
         PipelineResource makisuBuildTask = new PipelineResource();
         makisuBuildTask.setFormat("yaml");
@@ -713,6 +714,9 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         args.put("makisuValuesYaml", getMakisuRegistryConfig(deploymentDetailsDto));
 
 
+        //task git
+        args.put("gitCloneTaskName", "task-git-clone-".concat(releaseResourceId));
+        //also has "gitRepoUrl", "gitRepoBranchName" which is already added.
 
         //task helm
         args.put("helmDeployTaskName", "task-helm-deploy-".concat(releaseResourceId));

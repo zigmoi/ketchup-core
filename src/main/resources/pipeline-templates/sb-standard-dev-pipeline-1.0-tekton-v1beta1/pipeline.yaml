@@ -1,53 +1,76 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
   name: ${pipelineName}
 spec:
-  resources:
-    - name: ${gitResourceName}
-      type: git
+  params:
+    - name: git-url
+    - name: git-revision
+    - name: makisu-image-name
+    - name: image-registry-url
+    - name: image-tag
+    - name: makisu-cache-redis-addr
+    - name: makisu-cache-redis-password
+    - name: helm-image-name
+    - name: helm-chart-url
+    - name: helm-chart-release-name
+    - name: kubernetes-namespace
+    - name: helm-command
+  workspaces:
+    - name: git-source
   tasks:
+    - name: fetch-source-code
+      taskRef:
+        name: ${gitCloneTaskName}
+      workspaces:
+        - name: output
+          workspace: git-source
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
     - name: build-image
       taskRef:
         name: ${makisuBuildImageTaskName}
-      resources:
-        inputs:
-          - name: ${gitResourceName}
-            resource: ${gitResourceName}
+      workspaces:
+        - name: output
+          workspace: git-source
       params:
         - name: MAKISU_IMAGE
-          value: gcr.io/uber-container-tools/makisu:v0.1.14
-        - name: WORKSPACE
-          value: /workspace/${gitResourceName}
+          value: $(params.makisu-image-name)
         - name: IMAGE_REGISTRY_URL
-          value: ${containerRegistryUrl}
+          value: $(params.image-registry-url)
         - name: MAKISU_ARG_MODIFY_FS
           value: "true"
         - name: IMAGE_TAG
-          value: ${imageTag}
+          value: $(params.image-tag)
         - name: MAKISU_CONTEXT_PATH
           value: .
         - name: MAKISU_CACHE_REDIS_ADDR
-          value: redis-1585680551-master.default.svc.cluster.local:6379
+          value: $(params.makisu-cache-redis-addr)
         - name: MAKISU_CACHE_REDIS_PASSWORD
-          value: Oi25VLvMZF
+          value: $(params.makisu-cache-redis-password)
+      runAfter:
+        - fetch-source-code
     - name: deploy-chart-in-cluster
       taskRef:
         name: ${helmDeployTaskName}
+      workspaces:
+        - name: output
+          workspace: git-source
       params:
         - name: HELM_IMAGE
-          value: alpine/helm:latest
-        - name: WORKSPACE
-          value: /workspace/${gitResourceName}
+          value: $(params.helm-image-name)
         - name: KUBECONFIG_FILE_NAME
           value: kubeconfig
         - name: HELM_CHART_URL
-          value: ${helmChartUrl}
+          value: $(params.helm-chart-url)
         - name: HELM_CHART_RELEASE_NAME
-          value: ${helmReleaseName}
+          value: $(params.helm-chart-release-name)
         - name: KUBERNETES_NAMESPACE
-          value: ${devKubernetesNamespace}
+          value: $(params.kubernetes-namespace)
         - name: HELM_COMMAND
-          value: ${helmCommand}
+          value: $(params.helm-command)
       runAfter:
         - build-image

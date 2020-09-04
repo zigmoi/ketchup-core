@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   name: ${pipelineRunName}
@@ -6,7 +6,39 @@ spec:
   serviceAccountName: ${serviceAccountName}
   pipelineRef:
     name: ${pipelineName}
-  resources:
-    - name: ${gitResourceName}
-      resourceRef:
-        name: ${gitResourceName}
+  workspaces:
+    - name: git-source
+      persistentVolumeClaim:
+        claimName: pipeline-pvc
+#      volumeClaimTemplate:
+#        spec:
+#          accessModes:
+#            - ReadWriteOnce
+#          resources:
+#            requests:
+#              storage: 1Gi
+  params:
+    - name: "git-url"
+      value: "${gitRepoUrl}"
+    - name: "git-revision"
+      value: "${gitRepoBranchName}"
+    - name: "makisu-image-name"
+      value: "gcr.io/uber-container-tools/makisu:v0.1.14"
+    - name: "image-registry-url"
+      value: "${containerRegistryUrl}"
+    - name: "image-tag"
+      value: "${imageTag}"
+    - name: "makisu-cache-redis-addr"
+      value: "redis-1585680551-master.default.svc.cluster.local:6379"
+    - name: "makisu-cache-redis-password"
+      value: "Oi25VLvMZF"
+    - name: "helm-image-name"
+      value: "alpine/helm:latest"
+    - name: "helm-chart-url"
+      value: "${helmChartUrl}"
+    - name: "helm-chart-release-name"
+      value: "${helmReleaseName}"
+    - name: "kubernetes-namespace"
+      value: "${devKubernetesNamespace}"
+    - name: "helm-command"
+      value: "${helmCommand}"
