@@ -71,7 +71,6 @@ public class KubernetesUtility {
 
         V1Secret resource = (V1Secret) Yaml.load(resourceContent);
         CoreV1Api api = new CoreV1Api();
-
         Object result = api.createNamespacedSecret(namespace, resource, pretty, null, null);
         System.out.println(result);
     }
