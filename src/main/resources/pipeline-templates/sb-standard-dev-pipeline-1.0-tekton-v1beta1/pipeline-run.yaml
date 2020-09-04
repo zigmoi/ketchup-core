@@ -1,0 +1,12 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineRun
+metadata:
+  name: ${pipelineRunName}
+spec:
+  serviceAccountName: ${serviceAccountName}
+  pipelineRef:
+    name: ${pipelineName}
+  resources:
+    - name: ${gitResourceName}
+      resourceRef:
+        name: ${gitResourceName}

@@ -91,7 +91,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         }
 
         //generate pipeline all resources and save them, name can be parsed from them directly.
-        List<PipelineResource> pipelineResources = generatePipelineResources("sb-standard-dev-1.0",
+        List<PipelineResource> pipelineResources = generatePipelineResources_tekton_v1alpha1("sb-standard-dev-1.0",
                 deploymentDetailsDto, releaseResourceId, releaseVersion);
         pipelineResources.forEach(pipelineResource -> {
             PipelineResourceId pipelineResourceId = new PipelineResourceId();
@@ -285,8 +285,187 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 });
     }
 
-    private List<PipelineResource> generatePipelineResources(String pipelineType, DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId, String releaseVersion) {
-        String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0/";
+    private List<PipelineResource> generatePipelineResources_tekton_v1alpha1(String pipelineType, DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId, String releaseVersion) {
+        String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0-tekton-v1alpha1/";
+//        String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0-tekton-v1beta1/";
+        String deploymentAppResourceBasePath = "classpath:/application-templates/spring-boot/";
+
+        Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(deploymentDetailsDto, releaseResourceId, releaseVersion);
+
+        List<PipelineResource> resources = new ArrayList<>();
+
+        try {
+            PipelineResource helmValuesConfigMap = new PipelineResource();
+            helmValuesConfigMap.setFormat("yaml");
+            helmValuesConfigMap.setResourceType("configmap");
+
+            Map<String, Object> configMapValues = new HashMap<>();
+            configMapValues.put("kind", "ConfigMap");
+            configMapValues.put("apiVersion", "v1");
+            configMapValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("helmValuesConfigMapName")));
+            configMapValues.put("data", new SingletonMap("helmConfig", pipelineTemplatingVariables.get("helmValuesYaml")));
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+            Yaml yaml = new Yaml(options);
+            String templatedContent = yaml.dump(configMapValues);
+            System.out.println(templatedContent);
+            helmValuesConfigMap.setResourceContent(templatedContent);
+            resources.add(helmValuesConfigMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            PipelineResource makisuRegistrySecret = new PipelineResource();
+            makisuRegistrySecret.setFormat("yaml");
+            makisuRegistrySecret.setResourceType("secret");
+
+            Map<String, Object> secretValues = new HashMap<>();
+            secretValues.put("kind", "Secret");
+            secretValues.put("apiVersion", "v1");
+            secretValues.put("type", "Opaque");
+            secretValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("makisuValuesSecretName")));
+            secretValues.put("data", new SingletonMap("makisuConfig", pipelineTemplatingVariables.get("makisuValuesYaml")));
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+            Yaml yaml = new Yaml(options);
+            String templatedContent = yaml.dump(secretValues);
+            System.out.println(templatedContent);
+            makisuRegistrySecret.setResourceContent(templatedContent);
+            resources.add(makisuRegistrySecret);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        PipelineResource gitSecret = new PipelineResource();
+        gitSecret.setFormat("yaml");
+        gitSecret.setResourceType("secret");
+        try {
+            String content = getPipelineTemplateContent(baseResourcePath.concat("git-secret.yaml"));
+            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
+            gitSecret.setResourceContent(templatedContent);
+            resources.add(gitSecret);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        PipelineResource serviceAccount = new PipelineResource();
+        serviceAccount.setFormat("yaml");
+        serviceAccount.setResourceType("service-account");
+        try {
+            String content = getPipelineTemplateContent(baseResourcePath.concat("service-account.yaml"));
+            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
+            serviceAccount.setResourceContent(templatedContent);
+            resources.add(serviceAccount);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        PipelineResource kubeconfigSecret = new PipelineResource();
+        kubeconfigSecret.setFormat("yaml");
+        kubeconfigSecret.setResourceType("secret");
+        try {
+            String content = getPipelineTemplateContent(baseResourcePath.concat("kubeconfig-secret.yaml"));
+            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
+            kubeconfigSecret.setResourceContent(templatedContent);
+            resources.add(kubeconfigSecret);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        PipelineResource tknPipelineResource = new PipelineResource();
+        tknPipelineResource.setFormat("yaml");
+        tknPipelineResource.setResourceType("pipeline-resource");
+        try {
+            String content = getPipelineTemplateContent(baseResourcePath.concat("git-resource.yaml"));
+            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
+            tknPipelineResource.setResourceContent(templatedContent);
+            resources.add(tknPipelineResource);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        PipelineResource makisuBuildTask = new PipelineResource();
+        makisuBuildTask.setFormat("yaml");
+        makisuBuildTask.setResourceType("task");
+        try {
+            String content = getPipelineTemplateContent(baseResourcePath.concat("task-makisu.yaml"));
+            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
+            makisuBuildTask.setResourceContent(templatedContent);
+            resources.add(makisuBuildTask);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        PipelineResource helmDeployTask = new PipelineResource();
+        helmDeployTask.setFormat("yaml");
+        helmDeployTask.setResourceType("task");
+        try {
+            String content = getPipelineTemplateContent(baseResourcePath.concat("task-helm.yaml"));
+            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
+            helmDeployTask.setResourceContent(templatedContent);
+            resources.add(helmDeployTask);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        PipelineResource tknPipeline = new PipelineResource();
+        tknPipeline.setFormat("yaml");
+        tknPipeline.setResourceType("pipeline");
+        try {
+            String content = getPipelineTemplateContent(baseResourcePath.concat("pipeline.yaml"));
+            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
+            tknPipeline.setResourceContent(templatedContent);
+            resources.add(tknPipeline);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        PipelineResource tknPipelineRun = new PipelineResource();
+        tknPipelineRun.setFormat("yaml");
+        tknPipelineRun.setResourceType("pipeline-run");
+        try {
+            String content = getPipelineTemplateContent(baseResourcePath.concat("pipeline-run.yaml"));
+            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
+            tknPipelineRun.setResourceContent(templatedContent);
+            resources.add(tknPipelineRun);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            PipelineResource dockerFileConfigMap = new PipelineResource();
+            dockerFileConfigMap.setFormat("yaml");
+            dockerFileConfigMap.setResourceType("configmap");
+
+            Map<String, Object> configMapValues = new HashMap<>();
+            configMapValues.put("kind", "ConfigMap");
+            configMapValues.put("apiVersion", "v1");
+            configMapValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("appDockerFileConfigMapName")));
+            String content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-mvn-template-1"));
+            configMapValues.put("data", new SingletonMap("Dockerfile",
+                    getTemplatedPipelineResource(content, pipelineTemplatingVariables)));
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+            Yaml yaml = new Yaml(options);
+            String templatedContent = yaml.dump(configMapValues);
+            dockerFileConfigMap.setResourceContent(templatedContent);
+            System.out.println(templatedContent);
+            resources.add(dockerFileConfigMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return resources;
+    }
+
+    private List<PipelineResource> generatePipelineResources_tekton_v1beta1(String pipelineType, DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId, String releaseVersion) {
+        String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0-tekton-v1beta1/";
         String deploymentAppResourceBasePath = "classpath:/application-templates/spring-boot/";
 
         Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(deploymentDetailsDto, releaseResourceId, releaseVersion);
