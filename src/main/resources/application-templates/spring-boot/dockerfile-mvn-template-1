@@ -7,6 +7,6 @@ RUN mvn -B -o -Dmaven.test.skip -Dmaven.repo.local=/tmp/m2 -T1.5C package
 
 FROM ${jre.image.name}
 WORKDIR /app
-COPY --from=builder /app/target/${app.jar.name} /app/app.jar
+COPY --from=builder /app/target /app/target
 EXPOSE ${app.port}
-ENTRYPOINT java -Djava.security.egd=file:/dev/./urandom -jar app.jar
+CMD ["/bin/sh", "-c", "java -Djava.security.egd=file:/dev/./urandom -jar /app/target/*.jar"]

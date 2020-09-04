@@ -6,6 +6,7 @@ import io.kubernetes.client.openapi.ApiException;
 import org.apache.commons.collections.map.SingletonMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -519,6 +520,32 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             e.printStackTrace();
         }
 
+        try {
+            if (!"local".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
+                PipelineResource appImagePullSecret = new PipelineResource();
+                appImagePullSecret.setFormat("yaml");
+                appImagePullSecret.setResourceType("secret");
+
+                Map<String, Object> secretValues = new HashMap<>();
+                secretValues.put("kind", "Secret");
+                secretValues.put("apiVersion", "v1");
+                secretValues.put("type", "kubernetes.io/dockerconfigjson");
+                secretValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("appImagePullSecretName")));
+                secretValues.put("data", new SingletonMap(".dockerconfigjson", pipelineTemplatingVariables.get("dockerConfigJson")));
+
+                DumperOptions options = new DumperOptions();
+                options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+                options.setPrettyFlow(true);
+                Yaml yaml = new Yaml(options);
+                String templatedContent = yaml.dump(secretValues);
+                System.out.println(templatedContent);
+                appImagePullSecret.setResourceContent(templatedContent);
+                resources.add(appImagePullSecret);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         PipelineResource gitSecret = new PipelineResource();
         gitSecret.setFormat("yaml");
         gitSecret.setResourceType("secret");
@@ -670,13 +697,22 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         args.put("serviceAccountName", "service-account-".concat(releaseResourceId));
         //also has "gitRepoSecretName" which is already added.
 
+        //App Image Pull Secret , secured local docker registries are not supported, requires certs.
+        String imagePullSecretName = "secret-app-image-pull-".concat(releaseResourceId);
+        if (!"local".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
+            args.put("appImagePullSecretName", imagePullSecretName);
+            args.put("dockerConfigJson", getImagePullSecretConfig(deploymentDetailsDto));
+        }
+
         //helm values config map
         args.put("helmValuesConfigMapName", "configmap-helm-values-".concat(releaseResourceId));
-        args.put("helmValuesYaml", getHelmValuesYaml(deploymentDetailsDto, releaseVersion));
+        args.put("helmValuesYaml", getHelmValuesYaml(deploymentDetailsDto, releaseVersion, imagePullSecretName));
 
         //makisu values config map
         args.put("makisuValuesSecretName", "secret-makisu-values-".concat(releaseResourceId));
         args.put("makisuValuesYaml", getMakisuRegistryConfig(deploymentDetailsDto));
+
+
 
         //task helm
         args.put("helmDeployTaskName", "task-helm-deploy-".concat(releaseResourceId));
@@ -764,7 +800,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         return templatedContent;
     }
 
-    public String getHelmValuesYaml(DeploymentDetailsDto deploymentDetailsDto, String releaseVersion) {
+    public String getHelmValuesYaml(DeploymentDetailsDto deploymentDetailsDto, String releaseVersion, String imagePullSecretName) {
         LinkedHashMap<String, Object> containerRegistryValues = new LinkedHashMap<>();
         containerRegistryValues.put("repository", getImageTagName(deploymentDetailsDto, releaseVersion));
 
@@ -777,6 +813,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         helmConfigValues.put("replicaCount", Long.valueOf(deploymentDetailsDto.getReplicas()));
         helmConfigValues.put("image", containerRegistryValues);
         helmConfigValues.put("service", serviceValues);
+        helmConfigValues.put("imagePullSecrets", new SingletonMap[]{new SingletonMap("name", imagePullSecretName)});
 
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
@@ -887,6 +924,34 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             String makisuRegistryConfigString = makisuRegistryConfigYaml.dump(conf);
             System.out.println(makisuRegistryConfigString);
             String encodedConfig = Base64.getEncoder().encodeToString(makisuRegistryConfigString.getBytes());
+            return encodedConfig;
+        } else {
+            throw new RuntimeException("Unknown registry type supported types are local, docker-hub, aws-ecr, gcr and azurecr.");
+        }
+    }
+
+    public String getImagePullSecretConfig(DeploymentDetailsDto deploymentDetailsDto) {
+        if ("local".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
+            throw new RuntimeException("UnSupported secured local docker registry, only docker-hub and gcr are currently supported.");
+        } else if ("docker-hub".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
+            String registryUrl = "https://index.docker.io/v1/";
+            String userName= deploymentDetailsDto.getContainerRegistryUsername();
+            String password = deploymentDetailsDto.getContainerRegistryPassword();
+            String auth = Base64.getEncoder().encodeToString((userName +":" + password).getBytes());
+
+            JSONObject jsonRequest = new JSONObject();
+            jsonRequest.put("auths", new JSONObject().put(registryUrl, new JSONObject().put("auth", auth)));
+            String encodedConfig = Base64.getEncoder().encodeToString(jsonRequest.toString().getBytes());
+            return encodedConfig;
+        } else if ("gcr".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
+            String registryUrl = "https://gcr.io";
+            String userName= deploymentDetailsDto.getContainerRegistryUsername();
+            String password = deploymentDetailsDto.getContainerRegistryPassword();
+            String auth = Base64.getEncoder().encodeToString((userName +":" + password).getBytes());
+
+            JSONObject jsonRequest = new JSONObject();
+            jsonRequest.put("auths", new JSONObject().put(registryUrl, new JSONObject().put("auth", auth)));
+            String encodedConfig = Base64.getEncoder().encodeToString(jsonRequest.toString().getBytes());
             return encodedConfig;
         } else {
             throw new RuntimeException("Unknown registry type supported types are local, docker-hub, aws-ecr, gcr and azurecr.");
