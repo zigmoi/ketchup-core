@@ -146,7 +146,7 @@ public class KubernetesUtility {
 
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
         String group = "tekton.dev"; // String | the custom resource's group
-        String version = "v1alpha1"; // String | the custom resource's version
+        String version = "v1beta1"; // String | the custom resource's version
         String plural = "pipelineruns"; // String | the custom object's plural name. For TPRs this would be lowercase plural kind.
         String fieldSelector = "metadata.name=".concat(pipelineRunName);
 
@@ -451,6 +451,7 @@ public class KubernetesUtility {
         }
 
         for (Map.Entry<String, Object> tr : taskRuns.entrySet()) {
+            System.out.println("Raw Task Details: " + tr.toString());
             String taskName = tr.getKey();
             String taskRunJson = new Gson().toJson(tr.getValue());
             String taskBaseName = getData(taskRunJson, "$.pipelineTaskName");
@@ -471,7 +472,6 @@ public class KubernetesUtility {
             taskJson.put("reason", taskReason);
             taskJson.put("message", taskMessage);
 
-
             JSONArray steps;
             try {
                 steps = new JSONArray(JsonPath.read(taskRunJson, "$.status.steps").toString());
@@ -482,39 +482,37 @@ public class KubernetesUtility {
             }
 
             System.out.println(steps.length());
-            if ("build-image".equalsIgnoreCase(taskBaseName)) {
+            if ("fetch-source-code".equalsIgnoreCase(taskBaseName)) {
+                taskJson.put("order", 1);
                 JSONArray stepDetails = new JSONArray();
                 for (Object stepEntry : steps) {
                     JSONObject step = (JSONObject) stepEntry;
                     String stepName = step.getString("name");
-//                    if ("get-image-registry-config".equalsIgnoreCase(stepName)) {
-//                        int order = 1;
-//                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
-//                    } else
-                    if (stepName.startsWith("git-source-")) {
-                        //git pull image name is dynamic, hence using prefix to match it.
+                    if ("clone".equalsIgnoreCase(stepName)) {
                         int order = 1;
                         stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
-                    } else if ("build-and-push".equalsIgnoreCase(stepName)) {
-                        int order = 2;
+                    }
+                }
+                taskJson.put("steps", stepDetails);
+            }
+            else if ("build-image".equalsIgnoreCase(taskBaseName)) {
+                taskJson.put("order", 2);
+                JSONArray stepDetails = new JSONArray();
+                for (Object stepEntry : steps) {
+                    JSONObject step = (JSONObject) stepEntry;
+                    String stepName = step.getString("name");
+                    if ("build-and-push".equalsIgnoreCase(stepName)) {
+                        int order = 1;
                         stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
                     }
                 }
                 taskJson.put("steps", stepDetails);
             } else if ("deploy-chart-in-cluster".equalsIgnoreCase(taskBaseName)) {
+                taskJson.put("order", 3);
                 JSONArray stepDetails = new JSONArray();
                 for (Object stepEntry : steps) {
                     JSONObject step = (JSONObject) stepEntry;
                     String stepName = step.getString("name");
-//                    if ("get-kubeconfig".equalsIgnoreCase(stepName)) {
-//                        int order = 1;
-//                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
-//                    }
-//                    else if ("get-helm-chart".equalsIgnoreCase(stepName)) {
-//                        int order = 2;
-//                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
-//                    }
-
                     if ("install-app-in-cluster".equalsIgnoreCase(stepName)) {
                         int order = 1;
                         stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
@@ -523,6 +521,7 @@ public class KubernetesUtility {
                 taskJson.put("steps", stepDetails);
             }
             taskDetails.put(taskJson);
+            System.out.println("Parsed Task Details: " + taskDetails.toString());
         }
         //details.put("steps", stepDetails);
         details.put("tasks", taskDetails);
@@ -543,6 +542,7 @@ public class KubernetesUtility {
 
     private static JSONObject parseStepDetails(Map.Entry<String, Object> tr, String taskBaseName, String podName, JSONObject step, String stepName, int order) {
         JSONObject stepJson = new JSONObject();
+        System.out.println(stepJson);
         stepJson.put("order", order);
         stepJson.put("podName", podName);
         stepJson.put("taskName", tr.getKey());
@@ -562,14 +562,22 @@ public class KubernetesUtility {
             stepJson.put("state", "Terminated");
             String stepTerminationReason = step.getJSONObject("terminated").getString("reason");
             stepJson.put("reason", stepTerminationReason);
+            try{
+            String stepTerminationMessage = step.getJSONObject("terminated").getString("message");
+            stepJson.put("message", stepTerminationMessage);
+            }catch (Exception e){
+                stepJson.put("message", "");
+            }
+            String stepStartTime = step.getJSONObject("terminated").getString("startedAt");
+            stepJson.put("startTime", stepStartTime);
             String stepCompletionTime = step.getJSONObject("terminated").getString("finishedAt");
             stepJson.put("completionTime", stepCompletionTime);
             int stepExitCode = step.getJSONObject("terminated").getInt("exitCode");
             stepJson.put("exitCode", stepExitCode);
             if (stepExitCode == 0) {
-                stepJson.put("status", true);
+                stepJson.put("status", "True");
             } else {
-                stepJson.put("status", false);
+                stepJson.put("status", "False");
             }
         }
         return stepJson;

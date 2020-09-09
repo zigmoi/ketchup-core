@@ -10,13 +10,6 @@ spec:
     - name: git-source
       persistentVolumeClaim:
         claimName: pipeline-pvc
-#      volumeClaimTemplate:
-#        spec:
-#          accessModes:
-#            - ReadWriteOnce
-#          resources:
-#            requests:
-#              storage: 1Gi
   params:
     - name: "git-url"
       value: "${gitRepoUrl}"
