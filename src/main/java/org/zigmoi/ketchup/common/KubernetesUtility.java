@@ -423,6 +423,7 @@ public class KubernetesUtility {
     }
 
     private static JSONObject parsePipelineRunResponse(String responseJson) {
+        System.out.println("Raw Status Details: " + responseJson);
         JSONObject details = new JSONObject();
         String startTime = getData(responseJson, "$.status.startTime");
         details.put("startTime", startTime);
@@ -451,16 +452,21 @@ public class KubernetesUtility {
         }
 
         for (Map.Entry<String, Object> tr : taskRuns.entrySet()) {
-            System.out.println("Raw Task Details: " + tr.toString());
             String taskName = tr.getKey();
+            System.out.println("Setting values for task: " + taskName);
+            System.out.println("Raw Task Details: " + tr.toString());
             String taskRunJson = new Gson().toJson(tr.getValue());
             String taskBaseName = getData(taskRunJson, "$.pipelineTaskName");
             String podName = getData(taskRunJson, "$.status.podName");
             String taskStartTime = getData(taskRunJson, "$.status.startTime");
             String taskCompletionTime = getData(taskRunJson, "$.status.completionTime");
-            String taskStatus = getData(responseJson, "$.status.conditions[0].status");
-            String taskReason = getData(responseJson, "$.status.conditions[0].reason");
-            String taskMessage = getData(responseJson, "$.status.conditions[0].message");
+            System.out.println("Setting completionTime: " + taskCompletionTime);
+            String taskStatus = getData(taskRunJson, "$.status.conditions[0].status");
+            System.out.println("Setting status: " + taskStatus);
+            String taskReason = getData(taskRunJson, "$.status.conditions[0].reason");
+            System.out.println("Setting reason: " + taskReason);
+            String taskMessage = getData(taskRunJson, "$.status.conditions[0].message");
+            System.out.println("Setting message: " + taskMessage);
 
             JSONObject taskJson = new JSONObject();
             taskJson.put("name", taskName);
