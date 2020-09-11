@@ -3,6 +3,7 @@ kind: PipelineRun
 metadata:
   name: ${pipelineRunName}
 spec:
+  timeout: "3h"
   serviceAccountName: ${serviceAccountName}
   pipelineRef:
     name: ${pipelineName}

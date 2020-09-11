@@ -20,6 +20,7 @@ spec:
     - name: git-source
   tasks:
     - name: fetch-source-code
+      Timeout: "30m"
       taskRef:
         name: ${gitCloneTaskName}
       workspaces:
@@ -31,6 +32,7 @@ spec:
         - name: revision
           value: $(params.git-revision)
     - name: build-image
+      Timeout: "1h"
       taskRef:
         name: ${makisuBuildImageTaskName}
       workspaces:
@@ -54,6 +56,7 @@ spec:
       runAfter:
         - fetch-source-code
     - name: deploy-chart-in-cluster
+      Timeout: "1h"
       taskRef:
         name: ${helmDeployTaskName}
       workspaces:
