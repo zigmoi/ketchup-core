@@ -1,12 +1,11 @@
 package org.zigmoi.ketchup.deployment.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.deployment.DeploymentConstants;
-import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentResponseDto;
+import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentRequestDto;
+import org.zigmoi.ketchup.deployment.dtos.DeploymentResponseDto;
 import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.services.DeploymentService;
 
@@ -35,10 +34,8 @@ public class DeploymentController {
     }
 
     @GetMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot/{deploymentResourceId}")
-    public BasicSpringBootDeploymentResponseDto getBasicSpringBootDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
-        return deploymentService.getBasicSpringBootDeployment(projectResourceId, deploymentResourceId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        String.format("Deployment with id %s not found.", deploymentResourceId)));
+    public DeploymentResponseDto getBasicSpringBootDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
+        return deploymentService.getDeploymentDetails(deploymentResourceId);
     }
 
     @DeleteMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")

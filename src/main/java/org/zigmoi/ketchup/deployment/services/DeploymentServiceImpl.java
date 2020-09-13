@@ -1,6 +1,7 @@
 package org.zigmoi.ketchup.deployment.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -14,10 +15,7 @@ import org.zigmoi.ketchup.common.FileUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.deployment.basicSpringBoot.BasicSpringBootDeploymentFlow;
 import org.zigmoi.ketchup.deployment.basicSpringBoot.BasicSpringBootDeploymentFlowConstants;
-import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentRequestDto;
-import org.zigmoi.ketchup.deployment.dtos.BasicSpringBootDeploymentResponseDto;
-import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
-import org.zigmoi.ketchup.deployment.dtos.DeploymentRequestDto;
+import org.zigmoi.ketchup.deployment.dtos.*;
 import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.entities.DeploymentId;
 import org.zigmoi.ketchup.deployment.repositories.DeploymentRepository;
@@ -115,6 +113,21 @@ public class DeploymentServiceImpl implements DeploymentService {
             e.printStackTrace();
         }
         return deploymentDetailsDto;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DeploymentResponseDto getDeploymentDetails(String deploymentResourceId) {
+        DeploymentEntity deploymentEntity = deploymentRepository.getByDeploymentResourceId(deploymentResourceId);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        DeploymentResponseDto deploymentResponseDto = null;
+        try {
+            deploymentResponseDto = objectMapper.readValue(deploymentEntity.getData(), DeploymentResponseDto.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return deploymentResponseDto;
     }
 
     @Override
