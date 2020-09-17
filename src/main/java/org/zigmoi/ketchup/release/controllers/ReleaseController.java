@@ -49,6 +49,11 @@ public class ReleaseController {
         return releaseService.findById(releaseResourceId);
     }
 
+    @GetMapping("/v1/release/stop")
+    public void stopRelease(@RequestParam("releaseResourceId") String releaseResourceId) {
+        releaseService.stop(releaseResourceId);
+    }
+
     @GetMapping("/v1/releases")
     public Set<Release> listAllReleasesInDeployment(@RequestParam("deploymentId") String deploymentResourceId) {
         return releaseService.listAllInDeployment(deploymentResourceId);
@@ -110,7 +115,7 @@ public class ReleaseController {
                 deploymentDetailsDto.getDevKubernetesNamespace(), podName, containerName, tailLines);
     }
 
-//    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/direct")
+    //    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/direct")
     @GetMapping(value = "/v1/release/pipeline/logs/stream/direct")
     public void streamPipelineLogsDirect(HttpServletResponse response,
                                          @RequestParam("releaseId") String releaseResourceId,
@@ -123,7 +128,7 @@ public class ReleaseController {
         }
     }
 
-//    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/sse")
+    //    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/sse")
     @GetMapping(value = "/v1/release/pipeline/logs/stream/sse")
     public SseEmitter streamPipelineLogsSSE(@RequestParam("releaseId") String releaseResourceId,
                                             @RequestParam("podName") String podName,

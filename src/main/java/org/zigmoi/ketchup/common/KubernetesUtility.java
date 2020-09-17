@@ -2,6 +2,7 @@ package org.zigmoi.ketchup.common;
 
 
 import com.google.gson.Gson;
+import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.jayway.jsonpath.JsonPath;
 import io.kubernetes.client.PodLogs;
@@ -60,6 +61,19 @@ public class KubernetesUtility {
         //  watchPipelineRunStatus();
         //  watchListPods();
         // getPodLogs("default", "demo-pipeline-run-1-build-image-lfkqj-pod-zfrfg", "step-build-and-push");
+    }
+
+    public static void createPvcUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+//        client.setWriteTimeout(15000);
+//        client.setConnectTimeout(15000);
+//        client.setReadTimeout(15000);
+        Configuration.setDefaultApiClient(client);
+
+        V1PersistentVolumeClaim resource = (V1PersistentVolumeClaim) Yaml.load(resourceContent);
+        CoreV1Api api = new CoreV1Api();
+        Object result = api.createNamespacedPersistentVolumeClaim(namespace, resource, pretty, null, null);
+        System.out.println(result);
     }
 
     public static void createSecretUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfig) throws IOException, ApiException {
@@ -227,6 +241,31 @@ public class KubernetesUtility {
         LinkedHashMap<String, Object> resource = (LinkedHashMap<String, Object>) Yaml.loadAs(resourceYaml, Map.class);
         Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
         System.out.println(result);
+    }
+
+    public static void updateCRDUsingYamlContent(String resourceName, String resourceYaml, String namespace, String group, String version, String plural, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+//        client.setWriteTimeout(15000);
+//        client.setConnectTimeout(15000);
+//        client.setReadTimeout(15000);
+        Configuration.setDefaultApiClient(client);
+        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+
+        Object result = apiInstance.replaceNamespacedCustomObject(group, version, namespace, plural, resourceName, resourceYaml);
+        System.out.println(result);
+    }
+
+    public static LinkedTreeMap<String, Object> getCRD(String resourceName, String namespace, String group, String version, String plural, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+//        client.setWriteTimeout(15000);
+//        client.setConnectTimeout(15000);
+//        client.setReadTimeout(15000);
+        Configuration.setDefaultApiClient(client);
+        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+
+        LinkedTreeMap<String, Object> resource = (LinkedTreeMap<String, Object>) apiInstance.getNamespacedCustomObjectStatus(group, version, namespace, plural, resourceName);
+        System.out.println(resource);
+        return resource;
     }
 
     public static String createPipelineResource(String resourceFilePath) throws IOException, ApiException {

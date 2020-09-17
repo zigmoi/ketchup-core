@@ -10,7 +10,7 @@ spec:
   workspaces:
     - name: git-source
       persistentVolumeClaim:
-        claimName: pipeline-pvc
+        claimName: ${pipelinePvcName}
   params:
     - name: "git-url"
       value: "${gitRepoUrl}"

@@ -2,6 +2,7 @@ package org.zigmoi.ketchup.release.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.internal.LinkedTreeMap;
 import io.kubernetes.client.openapi.ApiException;
 import org.apache.commons.collections.map.SingletonMap;
 import org.apache.commons.io.FileUtils;
@@ -129,6 +130,40 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         Release release = releaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         String.format("Release with id %s not found.", releaseResourceId)));
+        //check if release is not failed/success than cancel the pipeline.
+        PipelineResource resource = pipelineResourceRepository.findByReleaseResourceIdAndResourceType(releaseResourceId, "pipeline-run").orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                String.format("Pipeline run for release with id %s not found.", releaseResourceId)));
+
+        Yaml yaml = new Yaml();
+        LinkedHashMap<String, Object> pipelineRun = (LinkedHashMap<String, Object>) yaml.loadAs(resource.getResourceContent(), Map.class);
+        LinkedHashMap<String, Object> metadata = (LinkedHashMap<String, Object>) pipelineRun.get("metadata");
+        String resourceName = (String) metadata.get("name");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        DeploymentDetailsDto deploymentDetailsDto = null;
+        try {
+            deploymentDetailsDto = objectMapper.readValue(release.getDeploymentDataJson(), DeploymentDetailsDto.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
+        try {
+            LinkedTreeMap<String, Object> latestPipelineRun = KubernetesUtility.getCRD(resourceName, "default", "tekton.dev", "v1beta1", "pipelineruns", kubeConfig);
+            ((LinkedTreeMap<String, Object>) latestPipelineRun.get("spec")).put("status", "PipelineRunCancelled");
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+            Yaml updatedYaml = new Yaml(options);
+            String cancelledPipelineRun = updatedYaml.dump(latestPipelineRun);
+            System.out.println(cancelledPipelineRun);
+
+            KubernetesUtility.updateCRDUsingYamlContent(resourceName, cancelledPipelineRun, "default", "tekton.dev", "v1beta1", "pipelineruns", kubeConfig);
+        } catch (IOException | ApiException e) {
+            logger.error("Failed to cancel pipeline, ", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to cancel pipeline.");
+        }
+
     }
 
     @Override
@@ -204,6 +239,18 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
     private void deployPipelineResources(List<PipelineResource> pipelineResources, String kubeConfig) {
         pipelineResources.stream()
+                .filter(r -> "pipeline-pvc".equalsIgnoreCase(r.getResourceType()))
+                .forEach(pipelineResource -> {
+                    try {
+                        KubernetesUtility.createPvcUsingYamlContent(pipelineResource.getResourceContent(), "default", "false", kubeConfig);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ApiException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+        pipelineResources.stream()
                 .filter(r -> "secret".equalsIgnoreCase(r.getResourceType()))
                 .forEach(secret -> {
                     try {
@@ -233,18 +280,6 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .forEach(pipelineResource -> {
                     try {
                         KubernetesUtility.createConfigmapUsingYamlContent(pipelineResource.getResourceContent(), "default", "false", kubeConfig);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (ApiException e) {
-                        e.printStackTrace();
-                    }
-                });
-
-        pipelineResources.stream()
-                .filter(r -> "pipeline-resource".equalsIgnoreCase(r.getResourceType()))
-                .forEach(pipelineResource -> {
-                    try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipelineResource.getResourceContent(), "default", "tekton.dev", "v1beta1", "pipelineresources", "false", kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -286,185 +321,6 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 });
     }
 
-    private List<PipelineResource> generatePipelineResources_tekton_v1alpha1(String pipelineType, DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId, String releaseVersion) {
-        String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0-tekton-v1alpha1/";
-//        String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0-tekton-v1beta1/";
-        String deploymentAppResourceBasePath = "classpath:/application-templates/spring-boot/";
-
-        Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(deploymentDetailsDto, releaseResourceId, releaseVersion);
-
-        List<PipelineResource> resources = new ArrayList<>();
-
-        try {
-            PipelineResource helmValuesConfigMap = new PipelineResource();
-            helmValuesConfigMap.setFormat("yaml");
-            helmValuesConfigMap.setResourceType("configmap");
-
-            Map<String, Object> configMapValues = new HashMap<>();
-            configMapValues.put("kind", "ConfigMap");
-            configMapValues.put("apiVersion", "v1");
-            configMapValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("helmValuesConfigMapName")));
-            configMapValues.put("data", new SingletonMap("helmConfig", pipelineTemplatingVariables.get("helmValuesYaml")));
-
-            DumperOptions options = new DumperOptions();
-            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-            options.setPrettyFlow(true);
-            Yaml yaml = new Yaml(options);
-            String templatedContent = yaml.dump(configMapValues);
-            System.out.println(templatedContent);
-            helmValuesConfigMap.setResourceContent(templatedContent);
-            resources.add(helmValuesConfigMap);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            PipelineResource makisuRegistrySecret = new PipelineResource();
-            makisuRegistrySecret.setFormat("yaml");
-            makisuRegistrySecret.setResourceType("secret");
-
-            Map<String, Object> secretValues = new HashMap<>();
-            secretValues.put("kind", "Secret");
-            secretValues.put("apiVersion", "v1");
-            secretValues.put("type", "Opaque");
-            secretValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("makisuValuesSecretName")));
-            secretValues.put("data", new SingletonMap("makisuConfig", pipelineTemplatingVariables.get("makisuValuesYaml")));
-
-            DumperOptions options = new DumperOptions();
-            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-            options.setPrettyFlow(true);
-            Yaml yaml = new Yaml(options);
-            String templatedContent = yaml.dump(secretValues);
-            System.out.println(templatedContent);
-            makisuRegistrySecret.setResourceContent(templatedContent);
-            resources.add(makisuRegistrySecret);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        PipelineResource gitSecret = new PipelineResource();
-        gitSecret.setFormat("yaml");
-        gitSecret.setResourceType("secret");
-        try {
-            String content = getPipelineTemplateContent(baseResourcePath.concat("git-secret.yaml"));
-            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
-            gitSecret.setResourceContent(templatedContent);
-            resources.add(gitSecret);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        PipelineResource serviceAccount = new PipelineResource();
-        serviceAccount.setFormat("yaml");
-        serviceAccount.setResourceType("service-account");
-        try {
-            String content = getPipelineTemplateContent(baseResourcePath.concat("service-account.yaml"));
-            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
-            serviceAccount.setResourceContent(templatedContent);
-            resources.add(serviceAccount);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        PipelineResource kubeconfigSecret = new PipelineResource();
-        kubeconfigSecret.setFormat("yaml");
-        kubeconfigSecret.setResourceType("secret");
-        try {
-            String content = getPipelineTemplateContent(baseResourcePath.concat("kubeconfig-secret.yaml"));
-            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
-            kubeconfigSecret.setResourceContent(templatedContent);
-            resources.add(kubeconfigSecret);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        PipelineResource tknPipelineResource = new PipelineResource();
-        tknPipelineResource.setFormat("yaml");
-        tknPipelineResource.setResourceType("pipeline-resource");
-        try {
-            String content = getPipelineTemplateContent(baseResourcePath.concat("git-resource.yaml"));
-            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
-            tknPipelineResource.setResourceContent(templatedContent);
-            resources.add(tknPipelineResource);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        PipelineResource makisuBuildTask = new PipelineResource();
-        makisuBuildTask.setFormat("yaml");
-        makisuBuildTask.setResourceType("task");
-        try {
-            String content = getPipelineTemplateContent(baseResourcePath.concat("task-makisu.yaml"));
-            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
-            makisuBuildTask.setResourceContent(templatedContent);
-            resources.add(makisuBuildTask);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        PipelineResource helmDeployTask = new PipelineResource();
-        helmDeployTask.setFormat("yaml");
-        helmDeployTask.setResourceType("task");
-        try {
-            String content = getPipelineTemplateContent(baseResourcePath.concat("task-helm.yaml"));
-            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
-            helmDeployTask.setResourceContent(templatedContent);
-            resources.add(helmDeployTask);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        PipelineResource tknPipeline = new PipelineResource();
-        tknPipeline.setFormat("yaml");
-        tknPipeline.setResourceType("pipeline");
-        try {
-            String content = getPipelineTemplateContent(baseResourcePath.concat("pipeline.yaml"));
-            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
-            tknPipeline.setResourceContent(templatedContent);
-            resources.add(tknPipeline);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        PipelineResource tknPipelineRun = new PipelineResource();
-        tknPipelineRun.setFormat("yaml");
-        tknPipelineRun.setResourceType("pipeline-run");
-        try {
-            String content = getPipelineTemplateContent(baseResourcePath.concat("pipeline-run.yaml"));
-            String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
-            tknPipelineRun.setResourceContent(templatedContent);
-            resources.add(tknPipelineRun);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            PipelineResource dockerFileConfigMap = new PipelineResource();
-            dockerFileConfigMap.setFormat("yaml");
-            dockerFileConfigMap.setResourceType("configmap");
-
-            Map<String, Object> configMapValues = new HashMap<>();
-            configMapValues.put("kind", "ConfigMap");
-            configMapValues.put("apiVersion", "v1");
-            configMapValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("appDockerFileConfigMapName")));
-            String content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-mvn-template-1"));
-            configMapValues.put("data", new SingletonMap("Dockerfile",
-                    getTemplatedPipelineResource(content, pipelineTemplatingVariables)));
-
-            DumperOptions options = new DumperOptions();
-            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-            options.setPrettyFlow(true);
-            Yaml yaml = new Yaml(options);
-            String templatedContent = yaml.dump(configMapValues);
-            dockerFileConfigMap.setResourceContent(templatedContent);
-            System.out.println(templatedContent);
-            resources.add(dockerFileConfigMap);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return resources;
-    }
-
     private List<PipelineResource> generatePipelineResources_tekton_v1beta1(String pipelineType, DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId, String releaseVersion) {
         String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0-tekton-v1beta1/";
         String deploymentAppResourceBasePath = "classpath:/application-templates/spring-boot/";
@@ -472,6 +328,34 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(deploymentDetailsDto, releaseResourceId, releaseVersion);
 
         List<PipelineResource> resources = new ArrayList<>();
+
+        try {
+            PipelineResource pipelinePvc = new PipelineResource();
+            pipelinePvc.setFormat("yaml");
+            pipelinePvc.setResourceType("pipeline-pvc");
+
+            Map<String, Object> spec = new HashMap<>();
+            spec.put("accessModes", new String[]{"ReadWriteOnce"});
+            spec.put("volumeMode", "Filesystem");
+            spec.put("resources", new SingletonMap("requests", new SingletonMap("storage", pipelineTemplatingVariables.get("pipelinePvcSize"))));
+
+            Map<String, Object> pvcValues = new HashMap<>();
+            pvcValues.put("kind", "PersistentVolumeClaim");
+            pvcValues.put("apiVersion", "v1");
+            pvcValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("pipelinePvcName")));
+            pvcValues.put("spec", spec);
+
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setPrettyFlow(true);
+            Yaml yaml = new Yaml(options);
+            String templatedContent = yaml.dump(pvcValues);
+            System.out.println(templatedContent);
+            pipelinePvc.setResourceContent(templatedContent);
+            resources.add(pipelinePvc);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         try {
             PipelineResource helmValuesConfigMap = new PipelineResource();
@@ -679,6 +563,10 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         String deploymentResourceId = deploymentDetailsDto.getDeploymentId().getDeploymentResourceId();
         Map<String, String> args = new HashMap<>();
 
+        //pipeline pvc
+        args.put("pipelinePvcName", "pipeline-pvc-".concat(releaseResourceId));
+        args.put("pipelinePvcSize", "1Gi");
+
         //git resource
         args.put("gitResourceName", "git-resource-".concat(releaseResourceId));
         args.put("gitRepoUrl", deploymentDetailsDto.getGitRepoUrl());
@@ -741,7 +629,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
         //pipeline run
         args.put("pipelineRunName", "pipeline-run-".concat(releaseResourceId));
-        //also has "serviceAccountName", "pipelineName", "gitResourceName" which are already added.
+        //also has "serviceAccountName", "pipelineName", "gitResourceName", "pipelinePvcName" which are already added.
 
         if (APP_TYPE_BASIC_SPRING_BOOT.equals(deploymentDetailsDto.getApplicationType())) {
             if (BUILD_TOOL_MAVEN_3.equals(deploymentDetailsDto.getBuildTool())) {
@@ -939,9 +827,9 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             throw new RuntimeException("UnSupported secured local docker registry, only docker-hub and gcr are currently supported.");
         } else if ("docker-hub".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
             String registryUrl = "https://index.docker.io/v1/";
-            String userName= deploymentDetailsDto.getContainerRegistryUsername();
+            String userName = deploymentDetailsDto.getContainerRegistryUsername();
             String password = deploymentDetailsDto.getContainerRegistryPassword();
-            String auth = Base64.getEncoder().encodeToString((userName +":" + password).getBytes());
+            String auth = Base64.getEncoder().encodeToString((userName + ":" + password).getBytes());
 
             JSONObject jsonRequest = new JSONObject();
             jsonRequest.put("auths", new JSONObject().put(registryUrl, new JSONObject().put("auth", auth)));
@@ -949,9 +837,9 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             return encodedConfig;
         } else if ("gcr".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
             String registryUrl = "https://gcr.io";
-            String userName= deploymentDetailsDto.getContainerRegistryUsername();
+            String userName = deploymentDetailsDto.getContainerRegistryUsername();
             String password = deploymentDetailsDto.getContainerRegistryPassword();
-            String auth = Base64.getEncoder().encodeToString((userName +":" + password).getBytes());
+            String auth = Base64.getEncoder().encodeToString((userName + ":" + password).getBytes());
 
             JSONObject jsonRequest = new JSONObject();
             jsonRequest.put("auths", new JSONObject().put(registryUrl, new JSONObject().put("auth", auth)));
