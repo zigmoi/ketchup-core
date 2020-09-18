@@ -63,6 +63,19 @@ public class KubernetesUtility {
         // getPodLogs("default", "demo-pipeline-run-1-build-image-lfkqj-pod-zfrfg", "step-build-and-push");
     }
 
+    public static V1PodList listPods(String labelSelector, String namespace, String pretty, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+//        client.setWriteTimeout(15000);
+//        client.setConnectTimeout(15000);
+//        client.setReadTimeout(15000);
+        Configuration.setDefaultApiClient(client);
+
+        CoreV1Api api = new CoreV1Api();
+        V1PodList result = api.listNamespacedPod(namespace, pretty, null, null, null, labelSelector, null, null, null, false);
+        System.out.println(result);
+        return result;
+    }
+
     public static void createPvcUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfig) throws IOException, ApiException {
         ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
 //        client.setWriteTimeout(15000);

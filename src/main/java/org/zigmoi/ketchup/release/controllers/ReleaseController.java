@@ -122,11 +122,17 @@ public class ReleaseController {
                                          @RequestParam("podName") String podName,
                                          @RequestParam("containerName") String containerName,
                                          @RequestParam(value = "tailLines", required = false) Integer tailLines) throws IOException, ApiException {
+        if("1".equalsIgnoreCase(containerName)){
+            containerName = null;
+        }
         try (InputStream logStream = getLogsInputStream(releaseResourceId, podName, containerName, tailLines)) {
             //noinspection UnstableApiUsage
             ByteStreams.copy(logStream, response.getOutputStream());
         }
     }
+
+
+
 
     //    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/sse")
     @GetMapping(value = "/v1/release/pipeline/logs/stream/sse")
