@@ -94,11 +94,13 @@
             <version>5.4.0.201906121030-r</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.kubernetes/client-java -->
+        <!-- https://mvnrepository.com/artifact/io.kubernetes/client-java -->
         <dependency>
             <groupId>io.kubernetes</groupId>
             <artifactId>client-java</artifactId>
-            <version>7.0.0</version>
+            <version>10.0.0</version>
         </dependency>
+
         <!-- https://mvnrepository.com/artifact/com.jayway.jsonpath/json-path -->
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>

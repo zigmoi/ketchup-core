@@ -7,15 +7,14 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
+import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.release.entities.Release;
+import org.zigmoi.ketchup.release.entities.ReleaseId;
 import org.zigmoi.ketchup.release.services.ReleaseService;
 
 import javax.servlet.http.HttpServletResponse;
@@ -57,6 +56,11 @@ public class ReleaseController {
     @GetMapping("/v1/releases")
     public Set<Release> listAllReleasesInDeployment(@RequestParam("deploymentId") String deploymentResourceId) {
         return releaseService.listAllInDeployment(deploymentResourceId);
+    }
+
+    @DeleteMapping("/v1/release/pipeline/cleanup")
+    public void deletePipelineResources(@RequestParam("releaseId") String releaseResourceId) {
+        releaseService.cleanPipelineResources(new ReleaseId(AuthUtils.getCurrentTenantId(), releaseResourceId));
     }
 
     @GetMapping("/v1/release/pipeline/status/stream/sse")

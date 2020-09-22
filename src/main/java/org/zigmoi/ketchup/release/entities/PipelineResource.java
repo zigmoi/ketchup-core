@@ -43,7 +43,7 @@ public class PipelineResource {
 
     private String resourceContent;
     private String format; //json|yaml
-    private String resourceType; //secret|service-account|task|pipeline|pipeline-run|pipeline-resource
+    private String resourceType; //secret|service-account|task|pipeline|pipeline-run|pipeline-resource|pipeline-pvc
 
 
 }

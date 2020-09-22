@@ -3,6 +3,7 @@ package org.zigmoi.ketchup.release.services;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
 import org.zigmoi.ketchup.release.entities.PipelineResource;
 import org.zigmoi.ketchup.release.entities.Release;
+import org.zigmoi.ketchup.release.entities.ReleaseId;
 
 import java.util.Set;
 
@@ -20,4 +21,6 @@ public interface ReleaseService {
     PipelineResource getPipelineResourceById(String pipelineResourceId);
 
     DeploymentDetailsDto extractDeployment(Release release);
+
+    void cleanPipelineResources(ReleaseId releaseId);
 }

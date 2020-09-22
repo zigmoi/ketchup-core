@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.internal.LinkedTreeMap;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1PodList;
 import org.apache.commons.collections.map.SingletonMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
@@ -14,7 +13,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -320,6 +326,115 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                         e.printStackTrace();
                     }
                 });
+    }
+
+    private void deletePipelineResources(Collection<PipelineResource> pipelineResources, String kubeConfig) {
+
+        pipelineResources.stream()
+                .filter(r -> Objects.equals("pipeline-run", r.getResourceType().toLowerCase()))
+                .forEach(task -> {
+                    try {
+                        KubernetesUtility.deleteCRD(getPipelineResourceName(task.getResourceContent()),
+                                "default", "tekton.dev", "v1beta1",
+                                getPluralForResourceType(task.getResourceType()), 0, kubeConfig);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ApiException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+        pipelineResources.stream()
+                .filter(r -> Objects.equals("pipeline", r.getResourceType().toLowerCase()))
+                .forEach(task -> {
+                    try {
+                        KubernetesUtility.deleteCRD(getPipelineResourceName(task.getResourceContent()),
+                                "default", "tekton.dev", "v1beta1",
+                                getPluralForResourceType(task.getResourceType()), 0, kubeConfig);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ApiException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+        pipelineResources.stream()
+                .filter(r -> Objects.equals("task", r.getResourceType().toLowerCase()))
+                .forEach(task -> {
+                    try {
+                        KubernetesUtility.deleteCRD(getPipelineResourceName(task.getResourceContent()),
+                                "default", "tekton.dev", "v1beta1",
+                                getPluralForResourceType(task.getResourceType()), 0, kubeConfig);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ApiException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+
+        pipelineResources.stream()
+                .filter(r -> "secret".equalsIgnoreCase(r.getResourceType()))
+                .forEach(secret -> {
+                    try {
+                        KubernetesUtility.deleteSecret(getPipelineResourceName(secret.getResourceContent()),
+                                "default", 10, kubeConfig);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ApiException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+        //check service-account is not more than one.
+        pipelineResources.stream()
+                .filter(r -> "service-account".equalsIgnoreCase(r.getResourceType()))
+                .forEach(serviceAccount -> {
+                    try {
+                        KubernetesUtility.deleteServiceAccount(getPipelineResourceName(serviceAccount.getResourceContent()),
+                                "default", 10, kubeConfig);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ApiException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+        pipelineResources.stream()
+                .filter(r -> "configmap".equalsIgnoreCase(r.getResourceType()))
+                .forEach(pipelineResource -> {
+                    try {
+                        KubernetesUtility.deleteConfigMap(getPipelineResourceName(pipelineResource.getResourceContent()),
+                                "default", 10, kubeConfig);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ApiException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+        pipelineResources.stream()
+                .filter(r -> "pipeline-pvc".equalsIgnoreCase(r.getResourceType()))
+                .forEach(pipelineResource -> {
+                    try {
+                        KubernetesUtility.deletePvc(getPipelineResourceName(pipelineResource.getResourceContent()),
+                                "default", 10, kubeConfig);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    private String getPluralForResourceType(String resourceType) {
+        switch (resourceType.toLowerCase()) {
+            case "task":
+                return "tasks";
+            case "pipeline":
+                return "pipelines";
+            case "pipeline-run":
+                return "pipelineruns";
+        }
+        throw new UnexpectedException("No matching plural found for pipeline resource type : " + resourceType);
     }
 
     private List<PipelineResource> generatePipelineResources_tekton_v1beta1(String pipelineType, DeploymentDetailsDto deploymentDetailsDto, String releaseResourceId, String releaseVersion) {
@@ -859,5 +974,43 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         } catch (IOException e) {
             throw new UnexpectedException("Failed while parsing deployment details for release : " + release.getId().getReleaseResourceId());
         }
+    }
+
+    //    @Scheduled(cron = "${pipeline.cleanup.cron}")
+    public void cleanupPipelineJob() {
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken("user", "doesnotmatter", AuthorityUtils.createAuthorityList("ROLE_USER"));
+        context.setAuthentication(authentication);
+
+        SimpleAsyncTaskExecutor delegateExecutor = new SimpleAsyncTaskExecutor();
+        DelegatingSecurityContextExecutor executor = new DelegatingSecurityContextExecutor(delegateExecutor, context);
+
+        Runnable originalRunnable = new Runnable() {
+            public void run() {
+                cleanPipelineResources(new ReleaseId("", ""));
+            }
+        };
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void cleanPipelineResources(ReleaseId releaseId) {
+        Set<PipelineResource> resources = pipelineResourceRepository.findDistinctByReleaseResourceId(releaseId.getReleaseResourceId());
+        Release release = findById(releaseId.getReleaseResourceId());
+        String kubeConfig = getKubeConfig(release.getDeploymentDataJson());
+        deletePipelineResources(resources, kubeConfig);
+    }
+
+    private String getKubeConfig(String deploymentDataJson) {
+        JSONObject jo = new JSONObject(deploymentDataJson);
+        return StringUtility.decodeBase64((jo.getString("devKubeconfig")));
+    }
+
+    private String getPipelineResourceName(String resourceYaml) {
+        Yaml yaml = new Yaml();
+        LinkedHashMap<String, Object> pipelineResource = (LinkedHashMap<String, Object>) yaml.loadAs(resourceYaml, Map.class);
+        LinkedHashMap<String, Object> metadata = (LinkedHashMap<String, Object>) pipelineResource.get("metadata");
+        return (String) metadata.get("name");
     }
 }

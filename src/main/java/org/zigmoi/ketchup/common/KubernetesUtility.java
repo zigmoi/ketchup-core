@@ -89,6 +89,17 @@ public class KubernetesUtility {
         System.out.println(result);
     }
 
+    public static void deletePvc(String resourceName, String namespace, int gracePeriodInSecs, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        Configuration.setDefaultApiClient(client);
+        V1DeleteOptions v1DeleteOptions = new V1DeleteOptions();
+        v1DeleteOptions.setGracePeriodSeconds((long) gracePeriodInSecs);
+        CoreV1Api api = new CoreV1Api();
+        Object result = api.deleteNamespacedPersistentVolumeClaim(resourceName, namespace, "true", null,
+                gracePeriodInSecs, null, null, v1DeleteOptions);
+        System.out.println(result);
+    }
+
     public static void createSecretUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfig) throws IOException, ApiException {
         ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
 //        client.setWriteTimeout(15000);
@@ -99,6 +110,17 @@ public class KubernetesUtility {
         V1Secret resource = (V1Secret) Yaml.load(resourceContent);
         CoreV1Api api = new CoreV1Api();
         Object result = api.createNamespacedSecret(namespace, resource, pretty, null, null);
+        System.out.println(result);
+    }
+
+    public static void deleteSecret(String resourceName, String namespace, int gracePeriodInSecs, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        Configuration.setDefaultApiClient(client);
+        V1DeleteOptions v1DeleteOptions = new V1DeleteOptions();
+        v1DeleteOptions.setGracePeriodSeconds((long) gracePeriodInSecs);
+        CoreV1Api api = new CoreV1Api();
+        Object result = api.deleteNamespacedSecret(resourceName, namespace, "true", null,
+                gracePeriodInSecs, null, null, v1DeleteOptions);
         System.out.println(result);
     }
 
@@ -116,6 +138,17 @@ public class KubernetesUtility {
         System.out.println(result);
     }
 
+    public static void deleteServiceAccount(String resourceName, String namespace, int gracePeriodInSecs, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        Configuration.setDefaultApiClient(client);
+        V1DeleteOptions v1DeleteOptions = new V1DeleteOptions();
+        v1DeleteOptions.setGracePeriodSeconds((long) gracePeriodInSecs);
+        CoreV1Api api = new CoreV1Api();
+        Object result = api.deleteNamespacedServiceAccount(resourceName, namespace, "true", null,
+                gracePeriodInSecs, null, null, v1DeleteOptions);
+        System.out.println(result);
+    }
+
     public static void createConfigmapUsingYamlContent(String resourceContent, String namespace, String pretty, String kubeConfig) throws IOException, ApiException {
         ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
@@ -124,6 +157,17 @@ public class KubernetesUtility {
         CoreV1Api api = new CoreV1Api();
 
         Object result = api.createNamespacedConfigMap(namespace, resource, pretty, null, null);
+    }
+
+    public static void deleteConfigMap(String resourceName, String namespace, int gracePeriodInSecs, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        Configuration.setDefaultApiClient(client);
+        V1DeleteOptions v1DeleteOptions = new V1DeleteOptions();
+        v1DeleteOptions.setGracePeriodSeconds((long) gracePeriodInSecs);
+        CoreV1Api api = new CoreV1Api();
+        Object result = api.deleteNamespacedConfigMap(resourceName, namespace, "true", null,
+                gracePeriodInSecs, null, null, v1DeleteOptions);
+        System.out.println(result);
     }
 
     public static String createSecret(String resourceFilePath) throws IOException, ApiException {
@@ -239,7 +283,7 @@ public class KubernetesUtility {
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
 
         LinkedHashMap<String, Object> resource = loadYamlResourceAsMap(resourceFilePath);
-        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty, null, null);
         System.out.println(result);
     }
 
@@ -252,7 +296,17 @@ public class KubernetesUtility {
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
 
         LinkedHashMap<String, Object> resource = (LinkedHashMap<String, Object>) Yaml.loadAs(resourceYaml, Map.class);
-        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty, null, null);
+        System.out.println(result);
+    }
+
+    public static void deleteCRD(String resourceName, String namespace, String group, String version, String plural, int gracePeriodInSecs, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        Configuration.setDefaultApiClient(client);
+        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+        V1DeleteOptions v1DeleteOptions = new V1DeleteOptions();
+        v1DeleteOptions.setGracePeriodSeconds((long) gracePeriodInSecs);
+        Object result = apiInstance.deleteNamespacedCustomObject(group, version, namespace, plural, resourceName, gracePeriodInSecs, null, null, null, v1DeleteOptions);
         System.out.println(result);
     }
 
@@ -264,7 +318,7 @@ public class KubernetesUtility {
         Configuration.setDefaultApiClient(client);
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
 
-        Object result = apiInstance.replaceNamespacedCustomObject(group, version, namespace, plural, resourceName, resourceYaml);
+        Object result = apiInstance.replaceNamespacedCustomObject(group, version, namespace, plural, resourceName, resourceYaml, null, null);
         System.out.println(result);
     }
 
@@ -295,7 +349,7 @@ public class KubernetesUtility {
         LinkedHashMap<String, Object> resource = loadYamlResourceAsMap(resourceFilePath);
 
 //        try {
-        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty, null, null);
         System.out.println(result);
         String responseJson = new Gson().toJson(result);
         return getData(responseJson, "$.metadata.name");
@@ -325,7 +379,7 @@ public class KubernetesUtility {
         System.out.println(rJson);
 
 //        try {
-        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty, null, null);
         System.out.println(result);
         String responseJson = new Gson().toJson(result);
         return getData(responseJson, "$.metadata.name");
@@ -353,7 +407,7 @@ public class KubernetesUtility {
         LinkedHashMap<String, Object> resource = loadYamlResourceAsMap(resourceFilePath);
 
 //        try {
-        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty, null, null);
         System.out.println(result);
         String responseJson = new Gson().toJson(result);
         return getData(responseJson, "$.metadata.name");
@@ -380,7 +434,7 @@ public class KubernetesUtility {
         LinkedHashMap<String, Object> resource = loadYamlResourceAsMap(resourceFilePath);
 
 //        try {
-        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty);
+        Object result = apiInstance.createNamespacedCustomObject(group, version, namespace, plural, resource, pretty, null, null);
         System.out.println(result);
         String responseJson = new Gson().toJson(result);
         return getData(responseJson, "$.metadata.name");
@@ -730,7 +784,7 @@ public class KubernetesUtility {
 
         if (deploymentAlreadyExists(appsV1Api, appId, namespace, deploymentName) && updateIfAlreadyExists) {
             List<V1Deployment> deployments = new ArrayList<>();
-            appsV1Api.patchNamespacedDeployment(deploymentName, namespace, deployments, null, null, null, false);
+//            appsV1Api.patchNamespacedDeployment(deploymentName, namespace, deployments, null, null, null, false);
         } else {
             appsV1Api.createNamespacedDeployment(namespace, deployment, null, null, null);
         }
