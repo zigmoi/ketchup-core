@@ -15,6 +15,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
 import org.springframework.security.core.Authentication;
@@ -974,23 +975,6 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         } catch (IOException e) {
             throw new UnexpectedException("Failed while parsing deployment details for release : " + release.getId().getReleaseResourceId());
         }
-    }
-
-    //    @Scheduled(cron = "${pipeline.cleanup.cron}")
-    public void cleanupPipelineJob() {
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        Authentication authentication =
-                new UsernamePasswordAuthenticationToken("user", "doesnotmatter", AuthorityUtils.createAuthorityList("ROLE_USER"));
-        context.setAuthentication(authentication);
-
-        SimpleAsyncTaskExecutor delegateExecutor = new SimpleAsyncTaskExecutor();
-        DelegatingSecurityContextExecutor executor = new DelegatingSecurityContextExecutor(delegateExecutor, context);
-
-        Runnable originalRunnable = new Runnable() {
-            public void run() {
-                cleanPipelineResources(new ReleaseId("", ""));
-            }
-        };
     }
 
     @Override

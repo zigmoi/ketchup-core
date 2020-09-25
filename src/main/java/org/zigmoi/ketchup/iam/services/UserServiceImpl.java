@@ -2,9 +2,17 @@ package org.zigmoi.ketchup.iam.services;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,6 +27,7 @@ import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.exceptions.TenantInActiveException;
 import org.zigmoi.ketchup.iam.exceptions.TenantNotFoundException;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
+import org.zigmoi.ketchup.release.repositories.ReleaseRepository;
 
 import javax.validation.Valid;
 import java.util.*;
@@ -35,6 +44,9 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ReleaseRepository releaseRepository;
 
 
     @Override
@@ -283,4 +295,26 @@ public class UserServiceImpl implements UserDetailsService, UserService {
                     String.format("Invalid Organization Id in fully qualified user name, expecting %s.", currentTenantId));
         }
     }
+
+//    @Scheduled(cron = "${pipeline.cleanup.cron}")
+//    @Transactional
+//    public void cleanupPipelineJob() {
+//        SecurityContext context = SecurityContextHolder.createEmptyContext();
+//        Authentication authentication =
+//                new UsernamePasswordAuthenticationToken("admin@zigmoi.com", "doesnotmatter", AuthorityUtils.createAuthorityList("ROLE_SUPER_ADMIN"));
+//        context.setAuthentication(authentication);
+//
+//        SimpleAsyncTaskExecutor delegateExecutor = new SimpleAsyncTaskExecutor();
+//        DelegatingSecurityContextExecutor executor = new DelegatingSecurityContextExecutor(delegateExecutor, context);
+//
+//        Runnable originalRunnable = new Runnable() {
+//            public void run() {
+//                System.out.println("test");
+//               // System.out.println("count : " + releaseRepository.countAllByDeploymentResourceId("a0fcbb27-7e2f-44e0-b205-4b28249a7594"));
+//                System.out.println("count: " + tenantService.listAllTenants().size());
+//                //cleanPipelineResources(new ReleaseId("", ""));
+//            }
+//        };
+//        executor.execute(originalRunnable);
+//    }
 }
