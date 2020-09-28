@@ -18,4 +18,6 @@ public interface DeploymentService {
     Optional<BasicSpringBootDeploymentResponseDto> getBasicSpringBootDeployment(String projectResourceId, String deploymentResourceId);
     void deleteDeployment(String projectResourceId, String deploymentResourceId);
     List<DeploymentEntity> listAllBasicSpringBootDeployments(String projectResourceId);
+
+    void updateDeployment(String projectResourceId, String deploymentResourceId, DeploymentRequestDto deploymentRequestDto);
 }

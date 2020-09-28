@@ -150,6 +150,39 @@ public class DeploymentServiceImpl implements DeploymentService {
     }
 
     @Override
+    public void updateDeployment(String projectResourceId, String deploymentResourceId, DeploymentRequestDto deploymentRequestDto) {
+        DeploymentEntity deployment = deploymentRepository.getByDeploymentResourceId(deploymentResourceId);
+        DeploymentId deploymentId = deployment.getId();
+        deployment.setDisplayName(deploymentRequestDto.getDisplayName());
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            JSONObject deploymentJson = new JSONObject(objectMapper.writeValueAsString(deploymentRequestDto));
+            JSONObject deploymentIdJson = new JSONObject(objectMapper.writeValueAsString(deploymentId));
+            deploymentJson.put("deploymentId", deploymentIdJson);
+
+            //get all setting values and store it in deployment.
+            final KubernetesClusterSettingsResponseDto devKubernetesCluster = projectSettingsService.getKubernetesCluster(projectResourceId, deploymentRequestDto.getDevKubernetesClusterSettingId());
+            final ContainerRegistrySettingsResponseDto containerRegistry = projectSettingsService.getContainerRegistry(projectResourceId, deploymentRequestDto.getContainerRegistrySettingId());
+            final BuildToolSettingsResponseDto buildTool = projectSettingsService.getBuildTool(projectResourceId, deploymentRequestDto.getBuildToolSettingId());
+            //save settings for host alias settings
+
+            deploymentJson.put("devKubeconfig", devKubernetesCluster.getFileData());
+            deploymentJson.put("containerRegistryType", containerRegistry.getType());
+            deploymentJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
+            deploymentJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
+            deploymentJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
+            deploymentJson.put("containerRepositoryName", containerRegistry.getRepository());
+            deploymentJson.put("buildToolType", buildTool.getType());
+            deploymentJson.put("buildToolSettingsData", buildTool.getFileData());
+
+            deployment.setData(deploymentJson.toString());
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        deploymentRepository.save(deployment);
+    }
+
+    @Override
     public String createBasicSpringBootDeployment(String projectResourceId, BasicSpringBootDeploymentRequestDto dto) {
 
         String id = getNewDeploymentId();

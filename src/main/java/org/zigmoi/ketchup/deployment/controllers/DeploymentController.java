@@ -5,6 +5,16 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.token.TokenService;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.common.KubernetesUtility;
@@ -17,7 +27,10 @@ import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.services.DeploymentService;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -25,6 +38,50 @@ public class DeploymentController {
 
     @Autowired
     private DeploymentService deploymentService;
+
+    @Autowired
+    private AuthorizationServerTokenServices jwtTokenServices;
+
+    public void generateToken() {
+        HashMap<String, String> authorizationParameters = new HashMap<String, String>();
+        authorizationParameters.put("scope", "read");
+        authorizationParameters.put("username", "admin@t1.com");
+        authorizationParameters.put("client_id", "client-id-1");
+        authorizationParameters.put("grant", "password");
+
+        Set<GrantedAuthority> authorities = new HashSet<GrantedAuthority>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_TENANT_ADMIN"));
+
+        Set<String> responseType = new HashSet<String>();
+        responseType.add("password");
+
+        Set<String> scopes = new HashSet<String>();
+        scopes.add("read");
+        scopes.add("write");
+
+        OAuth2Request authorizationRequest = new OAuth2Request(
+                authorizationParameters, "client-id-1",
+                authorities, true, scopes, null, "",
+                responseType, null);
+
+        User userPrincipal = new User("admin@t1.com", "", true, true, true, true, authorities);
+
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                userPrincipal, null, authorities);
+
+        OAuth2Authentication authenticationRequest = new OAuth2Authentication(
+                authorizationRequest, authenticationToken);
+        authenticationRequest.setAuthenticated(true);
+
+        OAuth2AccessToken accessToken = jwtTokenServices.createAccessToken(authenticationRequest);
+        System.out.println(accessToken.toString());
+    }
+
+    @PostMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot")
+    public void createBasicSpringBootDeployment(@RequestBody DeploymentRequestDto deploymentRequestDto, @PathVariable String projectResourceId) {
+       // deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);
+        deploymentService.createDeployment(projectResourceId, deploymentRequestDto);
+    }
 
     @GetMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}/instances")
     public List<String> getDeploymentInstances(@PathVariable String deploymentResourceId) {
@@ -36,10 +93,22 @@ public class DeploymentController {
             V1PodList res = KubernetesUtility.listPods(labelSelector, "default", "false", kubeConfig);
             System.out.println(res);
             return res.getItems().stream().map(pod -> pod.getMetadata().getName()).collect(Collectors.toList());
-        } catch (IOException | ApiException e ) {
+        } catch (IOException | ApiException e) {
             e.printStackTrace();
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get instances.");
         }
+    }
+
+    @GetMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot/{deploymentResourceId}")
+    public DeploymentResponseDto getBasicSpringBootDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
+      // generateToken();
+        return deploymentService.getDeploymentDetails(deploymentResourceId);
+    }
+
+    @PutMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")
+    public void updateDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId, @RequestBody DeploymentRequestDto deploymentRequestDto) {
+        //TODO provide option to update current deployment with new changes.
+        deploymentService.updateDeployment(projectResourceId, deploymentResourceId, deploymentRequestDto);
     }
 
     @PutMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}/status/{status}")
@@ -52,16 +121,6 @@ public class DeploymentController {
         deploymentService.updateDeploymentDisplayName(projectResourceId, deploymentResourceId, displayName);
     }
 
-    @PostMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot")
-    public void createBasicSpringBootDeployment(@RequestBody DeploymentRequestDto deploymentRequestDto, @PathVariable String projectResourceId) {
-        deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);
-        deploymentService.createDeployment(projectResourceId, deploymentRequestDto);
-    }
-
-    @GetMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot/{deploymentResourceId}")
-    public DeploymentResponseDto getBasicSpringBootDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
-        return deploymentService.getDeploymentDetails(deploymentResourceId);
-    }
 
     @DeleteMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")
     public void deleteDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {

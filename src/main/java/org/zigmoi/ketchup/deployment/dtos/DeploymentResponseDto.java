@@ -12,6 +12,7 @@ public class DeploymentResponseDto {
     private String serviceName;
     private String appServerPort;
     private String replicas;
+    private String deploymentStrategy;
     private String gitRepoUrl;
     private String gitRepoUsername;
     private String gitRepoPassword;

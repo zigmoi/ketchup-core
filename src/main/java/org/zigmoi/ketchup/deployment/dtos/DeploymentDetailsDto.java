@@ -12,6 +12,7 @@ public class DeploymentDetailsDto {
     private String appServerPort;
     private String applicationType;
     private String replicas;
+    private String deploymentStrategy;
     private String gitRepoUrl;
     private String gitRepoUsername;
     private String gitRepoPassword;
