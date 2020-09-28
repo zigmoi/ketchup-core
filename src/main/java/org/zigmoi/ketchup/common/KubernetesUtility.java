@@ -528,7 +528,7 @@ public class KubernetesUtility {
         }
     }
 
-    private static JSONObject parsePipelineRunResponse(String responseJson) {
+    public static JSONObject parsePipelineRunResponse(String responseJson) {
         System.out.println("Raw Status Details: " + responseJson);
         JSONObject details = new JSONObject();
         String startTime = getData(responseJson, "$.status.startTime");
@@ -551,7 +551,7 @@ public class KubernetesUtility {
         try {
             taskRuns = JsonPath.read(responseJson, "$.status.taskRuns");
         } catch (Exception e) {
-            logger.error("exception in getting taskruns, ", e);
+            logger.debug("exception in getting taskruns, ", e);
             details.put("tasks", taskDetails);
             System.out.println("Details: " + details);
             return details;
@@ -647,7 +647,7 @@ public class KubernetesUtility {
         try {
             response = JsonPath.read(inputJson, jsonPath);
         } catch (Exception e) {
-            logger.error("Exception in reading value at specified json path not found. ", e);
+            logger.debug("Exception in reading value at specified json path not found. ", e);
         }
         return response;
     }

@@ -2,10 +2,12 @@ package org.zigmoi.ketchup.release.controllers;
 
 import com.google.common.io.ByteStreams;
 import io.kubernetes.client.openapi.ApiException;
+import io.netty.handler.codec.http.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -17,11 +19,13 @@ import org.zigmoi.ketchup.release.entities.Release;
 import org.zigmoi.ketchup.release.entities.ReleaseId;
 import org.zigmoi.ketchup.release.services.ReleaseService;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -61,6 +65,64 @@ public class ReleaseController {
     @DeleteMapping("/v1/release/pipeline/cleanup")
     public void deletePipelineResources(@RequestParam("releaseId") String releaseResourceId) {
         releaseService.cleanPipelineResources(new ReleaseId(AuthUtils.getCurrentTenantId(), releaseResourceId));
+    }
+
+    @GetMapping("/v1/release/pipeline/tekton-events")
+    public void pipelineTektonEventsGet() {
+        log.info("Tekton event received");
+    }
+
+    @PostMapping("/v1/release/pipeline/tekton-events")
+    public void pipelineTektonEventsPost(HttpEntity<String> request) {
+        try {
+            JSONObject jo = new JSONObject(Objects.requireNonNull(request.getBody())).getJSONObject("pipelineRun");
+            if (jo != null) {
+                String pipelineRunName = jo.getJSONObject("metadata").getString("name");
+                String releaseId = pipelineRunName.substring(("pipeline-run-").length());
+                Release release = releaseService.findById(releaseId);
+                if (release == null) {
+                    log.debug("Release info not found : " + releaseId);
+                    return;
+                }
+                JSONObject parsedStatus = KubernetesUtility.parsePipelineRunResponse(jo.toString());
+                if (StringUtility.isNullOrEmpty(parsedStatus.getString("status"))) {
+                    return;
+                }
+                log.info("Tekton event received, event -> \n{}", parsedStatus);
+                // success, failed, unknown, running
+                if ("success".equalsIgnoreCase(release.getStatus()) || "failed".equalsIgnoreCase(release.getStatus())) {
+                    return;
+                } else if (getDBStatusFromJSON(parsedStatus).equalsIgnoreCase(release.getStatus())) {
+                    return;
+                } else {
+                    release.setStatus(getDBStatusFromJSON(parsedStatus));
+                    release.setPipelineStatusJson(parsedStatus.toString());
+                    releaseService.update(release);
+                    log.debug("Release status updated, release -> \n{}", release.toString());
+                    if ("success".equalsIgnoreCase(release.getStatus()) || "failed".equalsIgnoreCase(release.getStatus())) {
+                        releaseService.cleanPipelineResources(release.getId());
+                        log.info("Release resources cleaned up, release -> \n{}", release.toString());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.info("Tekton event received, failed parsing.", e);
+        }
+    }
+
+    private String getDBStatusFromJSON(JSONObject parsedStatus) {
+        String statusPipeline = parsedStatus.getString("status");
+        String statusReasonPipeline = parsedStatus.getString("reason");
+        if (statusPipeline.equalsIgnoreCase("True")) {
+            return "SUCCESS";
+        } else if (statusPipeline.equalsIgnoreCase("Unknown")
+                || statusReasonPipeline.equalsIgnoreCase("Running")) {
+            return "IN PROGRESS";
+        } else if (statusPipeline.equalsIgnoreCase("False")) {
+            return "FAILED";
+        } else {
+            return "UNKNOWN";
+        }
     }
 
     @GetMapping("/v1/release/pipeline/status/stream/sse")
