@@ -79,7 +79,7 @@ public class DeploymentController {
 
     @PostMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot")
     public void createBasicSpringBootDeployment(@RequestBody DeploymentRequestDto deploymentRequestDto, @PathVariable String projectResourceId) {
-        deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);
+       // deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);
         deploymentService.createDeployment(projectResourceId, deploymentRequestDto);
     }
 
