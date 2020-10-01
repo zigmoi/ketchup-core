@@ -72,6 +72,11 @@ public class ReleaseController {
         return releaseService.listAllInProjectWithStatus(projectResourceId, status);
     }
 
+    @GetMapping("/v1/pipelines/recent")
+    public Set<Release> listRecentReleases(@RequestParam("projectResourceId") String projectResourceId) {
+        return releaseService.listRecentInProject(projectResourceId);
+    }
+
     @GetMapping("/v1/release/pipeline/tekton-events")
     public void pipelineTektonEventsGet() {
         log.info("Tekton event received");

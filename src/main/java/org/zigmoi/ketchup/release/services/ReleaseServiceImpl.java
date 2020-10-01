@@ -219,6 +219,11 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     }
 
     @Override
+    public Set<Release> listRecentInProject(String projectResourceId) {
+        return releaseRepository.findDistinctTop5ByProjectResourceIdOrderByLastUpdatedOnDesc(projectResourceId);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Set<Release> listAllInProjectWithStatus(String projectResourceId, String status) {
         return releaseRepository.findDistinctByProjectResourceIdAndStatusOrderByLastUpdatedOnDesc(projectResourceId, status);
