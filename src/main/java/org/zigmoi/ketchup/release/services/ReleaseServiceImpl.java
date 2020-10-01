@@ -220,6 +220,12 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
     @Override
     @Transactional(readOnly = true)
+    public Set<Release> listAllInProjectWithStatus(String projectResourceId, String status) {
+        return releaseRepository.findDistinctByProjectResourceIdAndStatusOrderByLastUpdatedOnDesc(projectResourceId, status);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Set<PipelineResource> listAllPipelineResources(String releaseResourceId) {
         ReleaseId id = new ReleaseId();
         id.setTenantId(AuthUtils.getCurrentTenantId());

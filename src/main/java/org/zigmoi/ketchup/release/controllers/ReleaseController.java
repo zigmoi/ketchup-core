@@ -67,6 +67,11 @@ public class ReleaseController {
         releaseService.cleanPipelineResources(new ReleaseId(AuthUtils.getCurrentTenantId(), releaseResourceId));
     }
 
+    @GetMapping("/v1/pipelines")
+    public Set<Release> listAllReleasesInDeployment(@RequestParam("projectResourceId") String projectResourceId, @RequestParam("status") String status) {
+        return releaseService.listAllInProjectWithStatus(projectResourceId, status);
+    }
+
     @GetMapping("/v1/release/pipeline/tekton-events")
     public void pipelineTektonEventsGet() {
         log.info("Tekton event received");
@@ -188,7 +193,7 @@ public class ReleaseController {
                                          @RequestParam("podName") String podName,
                                          @RequestParam("containerName") String containerName,
                                          @RequestParam(value = "tailLines", required = false) Integer tailLines) throws IOException, ApiException {
-        if("1".equalsIgnoreCase(containerName)){
+        if ("1".equalsIgnoreCase(containerName)) {
             containerName = null;
         }
         try (InputStream logStream = getLogsInputStream(releaseResourceId, podName, containerName, tailLines)) {
@@ -196,8 +201,6 @@ public class ReleaseController {
             ByteStreams.copy(logStream, response.getOutputStream());
         }
     }
-
-
 
 
     //    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/sse")

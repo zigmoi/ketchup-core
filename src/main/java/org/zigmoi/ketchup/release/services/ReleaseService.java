@@ -16,6 +16,7 @@ public interface ReleaseService {
     void delete(String releaseResourceId);
     void update(Release release);
     Set<Release> listAllInDeployment(String deploymentResourceId);
+    Set<Release> listAllInProjectWithStatus(String projectResourceId, String status);
     Set<Release> listAllInProject(String projectResourceId);
     Set<PipelineResource> listAllPipelineResources(String releaseResourceId);
     PipelineResource getPipelineResourceById(String pipelineResourceId);
