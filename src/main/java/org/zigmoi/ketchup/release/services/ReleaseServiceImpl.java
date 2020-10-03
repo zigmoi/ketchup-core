@@ -10,23 +10,23 @@ import org.apache.commons.lang.text.StrSubstitutor;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.zigmoi.ketchup.common.ConfigUtility;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
@@ -45,6 +45,7 @@ import org.zigmoi.ketchup.release.repositories.ReleaseRepository;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.zigmoi.ketchup.deployment.DeploymentConstants.*;
@@ -52,21 +53,71 @@ import static org.zigmoi.ketchup.deployment.DeploymentConstants.*;
 @Service
 public class ReleaseServiceImpl extends TenantProviderService implements ReleaseService {
     private static final Logger logger = LoggerFactory.getLogger(ReleaseServiceImpl.class);
-
+    private static final Map<String, Boolean> tektonConfigAppliedToKubernetesCluster = new ConcurrentHashMap<>();
     private final ReleaseRepository releaseRepository;
-
     private final PipelineResourceRepository pipelineResourceRepository;
     private final PermissionUtilsService permissionUtilsService;
     private final DeploymentService deploymentService;
-    ResourceLoader resourceLoader;
+    private final ResourceLoader resourceLoader;
+    private final AuthorizationServerTokenServices jwtTokenServices;
 
-    @Autowired
-    public ReleaseServiceImpl(ReleaseRepository releaseRepository, PipelineResourceRepository pipelineResourceRepository, PermissionUtilsService permissionUtilsService, DeploymentService deploymentService, ResourceLoader resourceLoader) {
+    public ReleaseServiceImpl(ReleaseRepository releaseRepository, PipelineResourceRepository pipelineResourceRepository, PermissionUtilsService permissionUtilsService, DeploymentService deploymentService, ResourceLoader resourceLoader, AuthorizationServerTokenServices jwtTokenServices) {
         this.releaseRepository = releaseRepository;
         this.pipelineResourceRepository = pipelineResourceRepository;
         this.permissionUtilsService = permissionUtilsService;
         this.deploymentService = deploymentService;
         this.resourceLoader = resourceLoader;
+        this.jwtTokenServices = jwtTokenServices;
+    }
+
+    private static String getNamespaceForTektonPipeline(String devKubernetesClusterSettingId) {
+        return "tekton-pipelines";
+    }
+
+    private synchronized void checkAndApplyTektonCloudEventURL(DeploymentDetailsDto deploymentDetailsDto, Release release, String kubeConfig) throws IOException, ApiException {
+        if (!(tektonConfigAppliedToKubernetesCluster.containsKey(deploymentDetailsDto.getDevKubernetesClusterSettingId())
+                && tektonConfigAppliedToKubernetesCluster.get(deploymentDetailsDto.getDevKubernetesClusterSettingId()))) {
+            String templatedContent = "";
+            try {
+                PipelineResource tektonCloudEventSinkConfig = new PipelineResource();
+                tektonCloudEventSinkConfig.setFormat("yaml");
+                tektonCloudEventSinkConfig.setResourceType("configmap");
+
+                Map<String, Object> labels = new HashMap<>();
+                labels.put("app.kubernetes.io/instance", "default");
+                labels.put("app.kubernetes.io/part-of", "tekton-pipelines");
+
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("name", "config-defaults");
+                metadata.put("namespace", getNamespaceForTektonPipeline(deploymentDetailsDto.getDevKubernetesClusterSettingId()));
+                metadata.put("labels", labels);
+
+                Map<String, Object> configMapValues = new HashMap<>();
+                configMapValues.put("kind", "ConfigMap");
+                configMapValues.put("apiVersion", "v1");
+                configMapValues.put("metadata", metadata);
+                configMapValues.put("data", new SingletonMap("default-cloud-events-sink", buildTektonCloudEventSinkURL(release)));
+
+                DumperOptions options = new DumperOptions();
+                options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+                options.setPrettyFlow(true);
+                Yaml yaml = new Yaml(options);
+                templatedContent = yaml.dump(configMapValues);
+                System.out.println(templatedContent);
+                tektonCloudEventSinkConfig.setResourceContent(templatedContent);
+                KubernetesUtility.createConfigmapUsingYamlContent(templatedContent,
+                        getNamespaceForTektonPipeline(deploymentDetailsDto.getDevKubernetesClusterSettingId()), "false", kubeConfig);
+            } catch (ApiException e) {
+                if (e.getMessage().toLowerCase().contains("conflict")) {
+                    KubernetesUtility.updateConfigmapUsingYamlContent("config-defaults",
+                            getNamespaceForTektonPipeline(deploymentDetailsDto.getDevKubernetesClusterSettingId()), templatedContent, kubeConfig);
+                }
+            } catch (IOException e) {
+                throw new UnexpectedException(e.getMessage(), e);
+            }
+
+            tektonConfigAppliedToKubernetesCluster.put(deploymentDetailsDto.getDevKubernetesClusterSettingId(), true);
+        }
     }
 
     @Override
@@ -115,7 +166,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         releaseRepository.save(r);
 
         String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
-        deployPipelineResources(pipelineResources, kubeConfig);
+        deployPipelineResources(pipelineResources, kubeConfig, deploymentDetailsDto, r);
     }
 
     private String getHelmReleaseId(String deploymentResourceId) {
@@ -255,8 +306,12 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                                 String.format("Pipeline Resource with id %s not found.", pipelineResourceId)));
     }
 
-
-    private void deployPipelineResources(List<PipelineResource> pipelineResources, String kubeConfig) {
+    private void deployPipelineResources(List<PipelineResource> pipelineResources, String kubeConfig, DeploymentDetailsDto deploymentDetailsDto, Release release) {
+        try {
+            checkAndApplyTektonCloudEventURL(deploymentDetailsDto, release, kubeConfig);
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+        }
         pipelineResources.stream()
                 .filter(r -> "pipeline-pvc".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipelineResource -> {
@@ -338,6 +393,13 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                         e.printStackTrace();
                     }
                 });
+    }
+
+    private String buildTektonCloudEventSinkURL(Release release) {
+        String domain = ConfigUtility.instance().getProperty("ketchup.base-url");
+        String tektonEventSink = ConfigUtility.instance().getProperty("ketchup.tekton-event-sink-api-path");
+        String accessToken = generateToken(jwtTokenServices);
+        return domain + "/" + tektonEventSink + "?access_token=" + accessToken;
     }
 
     private void deletePipelineResources(Collection<PipelineResource> pipelineResources, String kubeConfig) {
@@ -1007,5 +1069,40 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         LinkedHashMap<String, Object> pipelineResource = (LinkedHashMap<String, Object>) yaml.loadAs(resourceYaml, Map.class);
         LinkedHashMap<String, Object> metadata = (LinkedHashMap<String, Object>) pipelineResource.get("metadata");
         return (String) metadata.get("name");
+    }
+
+    public String generateToken(AuthorizationServerTokenServices jwtTokenServices) {
+        Map<String, String> authorizationParameters = new HashMap<String, String>();
+        authorizationParameters.put("scope", "read");
+        authorizationParameters.put("username", "admin@" + AuthUtils.getCurrentTenantId());
+        authorizationParameters.put("client_id", "client-id-forever-active");
+        authorizationParameters.put("grant", "password");
+
+        Set<GrantedAuthority> authorities = new HashSet<GrantedAuthority>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_TENANT_ADMIN"));
+
+        Set<String> responseType = new HashSet<String>();
+        responseType.add("password");
+
+        Set<String> scopes = new HashSet<String>();
+        scopes.add("read");
+        scopes.add("write");
+
+        OAuth2Request authorizationRequest = new OAuth2Request(
+                authorizationParameters, "client-id-forever-active",
+                authorities, true, scopes, null, "",
+                responseType, null);
+
+        User userPrincipal = new User("admin@" + AuthUtils.getCurrentTenantId(), "", true, true, true, true, authorities);
+
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                userPrincipal, null, authorities);
+
+        OAuth2Authentication authenticationRequest = new OAuth2Authentication(
+                authorizationRequest, authenticationToken);
+        authenticationRequest.setAuthenticated(true);
+
+        OAuth2AccessToken accessToken = jwtTokenServices.createAccessToken(authenticationRequest);
+        return accessToken.toString();
     }
 }

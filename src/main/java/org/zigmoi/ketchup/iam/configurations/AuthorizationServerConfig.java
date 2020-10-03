@@ -44,6 +44,9 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 	public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
 		clients.inMemory().withClient("client-id-1").secret(passwordEncoder.encode("client-id-1-secret"))
 				.authorizedGrantTypes("client_credentials", "password").scopes("all").accessTokenValiditySeconds(36000);
+
+		clients.inMemory().withClient("client-id-forever-active").secret(passwordEncoder.encode("client-secret-forever-active"))
+				.authorizedGrantTypes("client_credentials", "password").scopes("all").accessTokenValiditySeconds(-1);
 	}
 
 	@Autowired

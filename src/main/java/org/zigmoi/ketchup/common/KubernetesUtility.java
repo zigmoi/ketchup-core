@@ -253,28 +253,14 @@ public class KubernetesUtility {
         }
     }
 
-    public String getResourceNameUsingResourceYamlPath(String resourceFilePath) throws IOException {
-        LinkedHashMap<String, Object> resource =
-                (LinkedHashMap<String, Object>) Yaml.loadAs(new File(resourceFilePath), Map.class);
-        String resourceJson = new Gson().toJson(resource);
-        System.out.println(resourceJson);
-        String resourceName = getData(resourceJson, "$.metadata.name");
-        return resourceName;
-    }
+    public static void updateConfigmapUsingYamlContent(String name, String namespace, String resourceContent, String kubeConfig) throws ApiException, IOException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        Configuration.setDefaultApiClient(client);
+        V1ConfigMap resource = (V1ConfigMap) Yaml.load(resourceContent);
+        CoreV1Api api = new CoreV1Api();
+        Object result = api.replaceNamespacedConfigMap(name, namespace, resource, "false", null, null);
+        System.out.println(result);
 
-    public String getResourceNameUsingResourceJson(String resourceJson) {
-        System.out.println(resourceJson);
-        String resourceName = getData(resourceJson, "$.metadata.name");
-        return resourceName;
-    }
-
-    public String getResourceNameUsingResourceYaml(String resourceYaml) {
-        LinkedHashMap<String, Object> resource =
-                (LinkedHashMap<String, Object>) Yaml.loadAs(resourceYaml, Map.class);
-        String resourceJson = new Gson().toJson(resource);
-        System.out.println(resourceJson);
-        String resourceName = getData(resourceJson, "$.metadata.name");
-        return resourceName;
     }
 
     public static void createCustomResource(String resourceFilePath, String namespace, String group, String version, String plural, String pretty) throws IOException, ApiException {
@@ -391,7 +377,6 @@ public class KubernetesUtility {
 //            e.printStackTrace();
 //        }
     }
-
 
     public static String createPipeline(String resourceFilePath) throws IOException, ApiException {
         ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
@@ -562,6 +547,7 @@ public class KubernetesUtility {
             System.out.println("Setting values for task: " + taskName);
             System.out.println("Raw Task Details: " + tr.toString());
             String taskRunJson = new Gson().toJson(tr.getValue());
+            System.out.println("Raw Task Details JSON: " + taskRunJson);
             String taskBaseName = getData(taskRunJson, "$.pipelineTaskName");
             String podName = getData(taskRunJson, "$.status.podName");
             String taskStartTime = getData(taskRunJson, "$.status.startTime");
@@ -606,8 +592,7 @@ public class KubernetesUtility {
                     }
                 }
                 taskJson.put("steps", stepDetails);
-            }
-            else if ("build-image".equalsIgnoreCase(taskBaseName)) {
+            } else if ("build-image".equalsIgnoreCase(taskBaseName)) {
                 taskJson.put("order", 2);
                 JSONArray stepDetails = new JSONArray();
                 for (Object stepEntry : steps) {
@@ -674,10 +659,10 @@ public class KubernetesUtility {
             stepJson.put("state", "Terminated");
             String stepTerminationReason = step.getJSONObject("terminated").getString("reason");
             stepJson.put("reason", stepTerminationReason);
-            try{
-            String stepTerminationMessage = step.getJSONObject("terminated").getString("message");
-            stepJson.put("message", stepTerminationMessage);
-            }catch (Exception e){
+            try {
+                String stepTerminationMessage = step.getJSONObject("terminated").getString("message");
+                stepJson.put("message", stepTerminationMessage);
+            } catch (Exception e) {
                 stepJson.put("message", "");
             }
             String stepStartTime = step.getJSONObject("terminated").getString("startedAt");
@@ -694,7 +679,6 @@ public class KubernetesUtility {
         }
         return stepJson;
     }
-
 
     public static void watchListPods() throws IOException, ApiException {
         ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
@@ -722,7 +706,6 @@ public class KubernetesUtility {
             watch.close();
         }
     }
-
 
     public static void getPipeLineRunDetails() throws IOException, ApiException {
         ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
@@ -841,5 +824,29 @@ public class KubernetesUtility {
                                 .namespace(namespace)
                                 .putLabelsItem("app", appId))
                         .spec(v1PodSpec));
+    }
+
+    public String getResourceNameUsingResourceYamlPath(String resourceFilePath) throws IOException {
+        LinkedHashMap<String, Object> resource =
+                (LinkedHashMap<String, Object>) Yaml.loadAs(new File(resourceFilePath), Map.class);
+        String resourceJson = new Gson().toJson(resource);
+        System.out.println(resourceJson);
+        String resourceName = getData(resourceJson, "$.metadata.name");
+        return resourceName;
+    }
+
+    public String getResourceNameUsingResourceJson(String resourceJson) {
+        System.out.println(resourceJson);
+        String resourceName = getData(resourceJson, "$.metadata.name");
+        return resourceName;
+    }
+
+    public String getResourceNameUsingResourceYaml(String resourceYaml) {
+        LinkedHashMap<String, Object> resource =
+                (LinkedHashMap<String, Object>) Yaml.loadAs(resourceYaml, Map.class);
+        String resourceJson = new Gson().toJson(resource);
+        System.out.println(resourceJson);
+        String resourceName = getData(resourceJson, "$.metadata.name");
+        return resourceName;
     }
 }
