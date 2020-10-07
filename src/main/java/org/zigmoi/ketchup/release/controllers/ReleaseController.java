@@ -10,8 +10,10 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
@@ -430,5 +432,27 @@ public class ReleaseController {
             }
         });
         return emitter;
+    }
+
+    @GetMapping(value = "/v1/release/active/application/logs/stream")
+    public void streamActiveReleaseLogs(HttpServletResponse response,
+                                        @RequestParam("deploymentResourceId") String deploymentResourceId,
+                                        @RequestParam("podName") String podName,
+                                        @RequestParam("containerName") String containerName,
+                                        @RequestParam(value = "tailLines", required = false) Integer tailLines) throws IOException, ApiException {
+        Release release = releaseService.getActiveRelease(deploymentResourceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No Active release found for deployment with ID: " + deploymentResourceId));
+        String releaseResourceId = release.getId().getReleaseResourceId();
+
+        if (!podName.startsWith("release-" + deploymentResourceId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You dont have sufficient access to fetch logs for this release.");
+        }
+        if ("1".equalsIgnoreCase(containerName)) {
+            containerName = null;
+        }
+        try (InputStream logStream = getLogsInputStream(releaseResourceId, podName, containerName, tailLines)) {
+            //noinspection UnstableApiUsage
+            ByteStreams.copy(logStream, response.getOutputStream());
+        }
     }
 }

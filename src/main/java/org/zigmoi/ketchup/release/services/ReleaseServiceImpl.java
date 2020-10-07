@@ -258,6 +258,12 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<Release> getActiveRelease(String deploymentResourceId) {
+        return releaseRepository.findTopByDeploymentResourceIdAndStatusOrderByLastUpdatedOnDesc(deploymentResourceId, "SUCCESS");
+    }
+
+    @Override
     @Transactional
     public Set<Release> listAllInDeployment(String deploymentResourceId) {
         return releaseRepository.findDistinctByDeploymentResourceIdOrderByCreatedOnDesc(deploymentResourceId);

@@ -9,6 +9,7 @@ import org.zigmoi.ketchup.release.entities.ReleaseId;
 
 import javax.persistence.OrderBy;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface ReleaseRepository extends JpaRepository<Release, ReleaseId> {
@@ -17,4 +18,5 @@ public interface ReleaseRepository extends JpaRepository<Release, ReleaseId> {
     Set<Release> findDistinctTop5ByProjectResourceIdOrderByLastUpdatedOnDesc(String projectResourceId);
     Set<Release> findDistinctByProjectResourceIdAndStatusOrderByLastUpdatedOnDesc(String projectResourceId, String status);
     long countAllByDeploymentResourceId(String deploymentResourceId);
+    Optional<Release> findTopByDeploymentResourceIdAndStatusOrderByLastUpdatedOnDesc(String deploymentResourceId, String status);
 }

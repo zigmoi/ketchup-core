@@ -5,6 +5,7 @@ import org.zigmoi.ketchup.release.entities.PipelineResource;
 import org.zigmoi.ketchup.release.entities.Release;
 import org.zigmoi.ketchup.release.entities.ReleaseId;
 
+import java.util.Optional;
 import java.util.Set;
 
 public interface ReleaseService {
@@ -15,6 +16,7 @@ public interface ReleaseService {
     Release findById(String releaseResourceId);
     void delete(String releaseResourceId);
     void update(Release release);
+    Optional<Release> getActiveRelease(String deploymentResourceId);
     Set<Release> listAllInDeployment(String deploymentResourceId);
     Set<Release> listAllInProjectWithStatus(String projectResourceId, String status);
     Set<Release> listAllInProject(String projectResourceId);
