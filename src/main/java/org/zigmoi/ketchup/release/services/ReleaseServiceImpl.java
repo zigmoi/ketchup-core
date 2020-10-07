@@ -122,7 +122,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
     @Override
     @Transactional
-    public void create(String deploymentResourceId) {
+    public String create(String deploymentResourceId) {
         //validate and fetch deploymentId.
         //get projectId from deployment.
         //handle duplicate pipeline resources error in k8s.
@@ -167,6 +167,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
         String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
         deployPipelineResources(pipelineResources, kubeConfig, deploymentDetailsDto, r);
+        return releaseResourceId;
     }
 
     private String getHelmReleaseId(String deploymentResourceId) {

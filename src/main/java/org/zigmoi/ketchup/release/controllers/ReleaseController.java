@@ -28,10 +28,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -218,8 +215,8 @@ public class ReleaseController {
     }
 
     @PostMapping("/v1/release")
-    public void createRelease(@RequestParam("deploymentId") String deploymentResourceId) {
-        releaseService.create(deploymentResourceId);
+    public Map<String, String> createRelease(@RequestParam("deploymentId") String deploymentResourceId) {
+        return Collections.singletonMap("releaseResourceId", releaseService.create(deploymentResourceId));
     }
 
     @GetMapping("/v1/release")

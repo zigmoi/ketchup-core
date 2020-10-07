@@ -10,7 +10,7 @@ import java.util.Set;
 
 public interface ReleaseService {
 
-    void create(String deploymentResourceId);
+    String create(String deploymentResourceId);
     void rollback(String deploymentResourceId); //rollback current release to previous version.
     void stop(String releaseResourceId);
     Release findById(String releaseResourceId);
