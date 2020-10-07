@@ -224,6 +224,11 @@ public class ReleaseController {
         return releaseService.findById(releaseResourceId);
     }
 
+    @GetMapping("/v1/release/active")
+    public Release getActiveRelease(@RequestParam("deploymentResourceId") String deploymentResourceId) {
+        return releaseService.getActiveRelease(deploymentResourceId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active release not found."));
+    }
+
     @GetMapping("/v1/release/stop")
     public void stopRelease(@RequestParam("releaseResourceId") String releaseResourceId) {
         releaseService.stop(releaseResourceId);
