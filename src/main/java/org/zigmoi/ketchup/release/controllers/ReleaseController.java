@@ -12,6 +12,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -229,6 +230,26 @@ public class ReleaseController {
         return releaseService.getActiveRelease(deploymentResourceId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active release not found."));
     }
 
+    @GetMapping("/v1/release/refresh")
+    public Release refreshReleaseStatus(@RequestParam("releaseResourceId") String releaseResourceId) throws IOException, ApiException {
+        Release release = releaseService.findById(releaseResourceId);
+        String pipelineRunName = "pipeline-run-".concat(releaseResourceId);
+        String kubeConfig = getKubeConfig(release.getDeploymentDataJson());
+        String namespace = getKubernetesNamespace(release.getDeploymentDataJson());
+        JSONObject parsedStatus = KubernetesUtility.getPipelineRunStatus(kubeConfig, namespace, pipelineRunName);
+        if (parsedStatus == null) {
+            return release;
+        }
+        String commitId = getCommitIdFromJSON(parsedStatus);
+        if (commitId != null) {
+            release.setCommitId(commitId);
+        }
+        release.setStatus(getDBStatusFromJSON(parsedStatus));
+        release.setPipelineStatusJson(parsedStatus.toString());
+        releaseService.update(release);
+        return release;
+    }
+
     @GetMapping("/v1/release/stop")
     public void stopRelease(@RequestParam("releaseResourceId") String releaseResourceId) {
         releaseService.stop(releaseResourceId);
@@ -293,7 +314,7 @@ public class ReleaseController {
                 } else {
                     String commitId = getCommitIdFromJSON(parsedStatus);
                     if (commitId != null) {
-                        release.setCommitId(getCommitIdFromJSON(parsedStatus));
+                        release.setCommitId(commitId);
                     }
                     release.setStatus(getDBStatusFromJSON(parsedStatus));
                     release.setPipelineStatusJson(parsedStatus.toString());
@@ -456,5 +477,16 @@ public class ReleaseController {
             //noinspection UnstableApiUsage
             ByteStreams.copy(logStream, response.getOutputStream());
         }
+    }
+
+    @PostMapping(value = "/v1/release/git-webhook/{vendor}/listen")
+    public void gitWebhookListenPost(HttpServletResponse response, @PathVariable String vendor, @RequestParam("deploymentId") String deploymentResourceId, RequestEntity<String> req) throws IOException, ApiException {
+        releaseService.create(deploymentResourceId);
+    }
+
+    @GetMapping(value = "/v1/release/git-webhook/{vendor}/generate-listener-url")
+    public void gitWebhookGenerateListenerURL(HttpServletResponse response, @PathVariable String vendor,
+                                              @RequestParam("deploymentId") String deploymentResourceId) throws IOException, ApiException {
+        releaseService.generateGitWebhookListenerURL(vendor, deploymentResourceId);
     }
 }

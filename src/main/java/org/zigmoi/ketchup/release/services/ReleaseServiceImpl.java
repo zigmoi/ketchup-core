@@ -405,7 +405,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     private String buildTektonCloudEventSinkURL(Release release) {
         String domain = ConfigUtility.instance().getProperty("ketchup.base-url");
         String tektonEventSink = ConfigUtility.instance().getProperty("ketchup.tekton-event-sink-api-path");
-        String accessToken = generateToken(jwtTokenServices);
+        String accessToken = generateForeverActiveToken(jwtTokenServices);
         return domain + "/" + tektonEventSink + "?access_token=" + accessToken;
     }
 
@@ -1019,6 +1019,11 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         }
     }
 
+    @Override
+    public Optional<Release> refreshReleaseStatus(String releaseResourceId) {
+        return Optional.empty();
+    }
+
     public String getImagePullSecretConfig(DeploymentDetailsDto deploymentDetailsDto) {
         if ("local".equalsIgnoreCase(deploymentDetailsDto.getContainerRegistryType())) {
             throw new RuntimeException("UnSupported secured local docker registry, only docker-hub and gcr are currently supported.");
@@ -1078,7 +1083,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         return (String) metadata.get("name");
     }
 
-    public String generateToken(AuthorizationServerTokenServices jwtTokenServices) {
+    public String generateForeverActiveToken(AuthorizationServerTokenServices jwtTokenServices) {
         Map<String, String> authorizationParameters = new HashMap<String, String>();
         authorizationParameters.put("scope", "read");
         authorizationParameters.put("username", "admin@" + AuthUtils.getCurrentTenantId());
@@ -1111,5 +1116,10 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
         OAuth2AccessToken accessToken = jwtTokenServices.createAccessToken(authenticationRequest);
         return accessToken.toString();
+    }
+
+    @Override
+    public void generateGitWebhookListenerURL(String vendor, String deploymentResourceId) {
+
     }
 }

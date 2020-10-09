@@ -1,25 +1,21 @@
 package org.zigmoi.ketchup.deployment.controllers;
 
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.token.TokenService;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
-import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
-import org.zigmoi.ketchup.deployment.DeploymentConstants;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentRequestDto;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentResponseDto;
@@ -79,7 +75,7 @@ public class DeploymentController {
 
     @PostMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot")
     public void createBasicSpringBootDeployment(@RequestBody DeploymentRequestDto deploymentRequestDto, @PathVariable String projectResourceId) {
-       // deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);
+        // deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);
         deploymentService.createDeployment(projectResourceId, deploymentRequestDto);
     }
 
@@ -101,7 +97,7 @@ public class DeploymentController {
 
     @GetMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot/{deploymentResourceId}")
     public DeploymentResponseDto getBasicSpringBootDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
-      // generateToken();
+        // generateToken();
         return deploymentService.getDeploymentDetails(deploymentResourceId);
     }
 
@@ -120,7 +116,6 @@ public class DeploymentController {
     public void updateDeploymentDisplayName(@PathVariable("deploymentResourceId") String deploymentResourceId, @PathVariable("displayName") String displayName, @PathVariable String projectResourceId) {
         deploymentService.updateDeploymentDisplayName(projectResourceId, deploymentResourceId, displayName);
     }
-
 
     @DeleteMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")
     public void deleteDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {

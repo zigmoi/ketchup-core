@@ -209,6 +209,30 @@ public class KubernetesUtility {
 //        }
     }
 
+    public static JSONObject getPipelineRunStatus(String kubeConfig, String namespace, String pipelineRunName) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        Configuration.setDefaultApiClient(client);
+
+        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+        String group = "tekton.dev"; // String | the custom resource's group
+        String version = "v1beta1"; // String | the custom resource's version
+        String plural = "pipelineruns"; // String | the custom object's plural name. For TPRs this would be lowercase plural kind.
+        String fieldSelector = "metadata.name=".concat(pipelineRunName);
+
+        Object item = apiInstance.listNamespacedCustomObject(group, version, namespace,
+                plural, null, null, fieldSelector, null,
+                5, null, 30, false);
+        if (item == null) {
+            return null;
+        }
+        Map itemMap = (Map) item;
+        List items = (List) itemMap.get("items");
+        String responseJson = new Gson().toJson(items.get(0));
+        System.out.println(responseJson);
+        return parsePipelineRunResponse(responseJson);
+    }
+
     public static void watchAndStreamPipelineRunStatus(String kubeConfig, String namespace, String pipelineRunName, SseEmitter emitter) throws IOException, ApiException {
         ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
 //        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
@@ -582,6 +606,8 @@ public class KubernetesUtility {
             System.out.println(steps.length());
             if ("fetch-source-code".equalsIgnoreCase(taskBaseName)) {
                 taskJson.put("order", 1);
+                String commitId = getData(taskRunJson, "$.status.taskResults[0].value");
+                taskJson.put("commitId", commitId);
                 JSONArray stepDetails = new JSONArray();
                 for (Object stepEntry : steps) {
                     JSONObject step = (JSONObject) stepEntry;

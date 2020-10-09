@@ -27,4 +27,8 @@ public interface ReleaseService {
     DeploymentDetailsDto extractDeployment(Release release);
 
     void cleanPipelineResources(ReleaseId releaseId);
+
+    void generateGitWebhookListenerURL(String vendor, String deploymentResourceId);
+
+    Optional<Release> refreshReleaseStatus(String releaseResourceId);
 }
