@@ -720,6 +720,14 @@ public class KubernetesUtility {
         }
     }
 
+    public static boolean testConnection(String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        Configuration.setDefaultApiClient(client);
+        CoreV1Api coreApi = new CoreV1Api(client);
+        V1NamespaceList namespaceList = coreApi.listNamespace("false", false, null, null, null, 10, null, 30, false);
+        return namespaceList != null;
+    }
+
     public static void getPipeLineRunDetails(String namespace, String kubeConfig) throws IOException, ApiException {
         ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);

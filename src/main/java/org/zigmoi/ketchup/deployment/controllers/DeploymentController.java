@@ -137,7 +137,19 @@ public class DeploymentController {
         try {
             GitUtility.instance(username, password).lsRemote(repoURL);
         } catch (GitAPIException e) {
-            new ResponseStatusException(HttpStatus.NOT_FOUND, "Remote Exception : " + e.getLocalizedMessage() + ", trace : \n" + ExceptionUtils.getStackTrace(e));
+            new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Remote Exception : " + e.getLocalizedMessage() + ", trace : \n" + ExceptionUtils.getStackTrace(e));
+        }
+    }
+
+    @PutMapping("v1/project/test-connection/kubernetes-cluster/kubeconfig-auth")
+    public void testConnectionKubernetesClusterKubeConfigAuth(@RequestBody String kubeConfig) {
+        try {
+            if (!KubernetesUtility.testConnection(kubeConfig)) {
+                new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to connect to the cluster");
+            }
+         } catch (ApiException | IOException  e) {
+            new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to connect to the cluster : " + e.getLocalizedMessage()
+                    + ", trace : \n" + ExceptionUtils.getStackTrace(e));
         }
     }
 }
