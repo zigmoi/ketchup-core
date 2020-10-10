@@ -166,8 +166,13 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         releaseRepository.save(r);
 
         String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
-        deployPipelineResources(pipelineResources, kubeConfig, deploymentDetailsDto, r);
+        queueAndDeployPipelineResources(pipelineResources, kubeConfig, deploymentDetailsDto, r);
         return releaseResourceId;
+    }
+
+    private void queueAndDeployPipelineResources(List<PipelineResource> pipelineResources, String kubeConfig,
+                                                 DeploymentDetailsDto deploymentDetailsDto, Release r) {
+        deployPipelineResources(pipelineResources, kubeConfig, deploymentDetailsDto, r);
     }
 
     private String getHelmReleaseId(String deploymentResourceId) {
@@ -847,7 +852,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         Map<String, String> args = new HashMap<>();
         args.put("maven.image.name", getMaven3ImageNameForJavaPlatform(deploymentDetails));
         args.put("jre.image.name", getJREImageNameForJavaPlatform(deploymentDetails));
-        args.put("app.jar.name", "ketchup-demo-basicspringboot-0.0.1-SNAPSHOT.jar"); // TODO: 23/08/20 hardcoded
+//        args.put("app.jar.name", "ketchup-demo-basicspringboot-0.0.1-SNAPSHOT.jar"); // TODO: 23/08/20 hardcoded
         args.put("app.port", deploymentDetails.getAppServerPort());
         return args;
     }
@@ -1083,7 +1088,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         return (String) metadata.get("name");
     }
 
-    public String generateForeverActiveToken(AuthorizationServerTokenServices jwtTokenServices) {
+    public static String generateForeverActiveToken(AuthorizationServerTokenServices jwtTokenServices) {
         Map<String, String> authorizationParameters = new HashMap<String, String>();
         authorizationParameters.put("scope", "read");
         authorizationParameters.put("username", "admin@" + AuthUtils.getCurrentTenantId());
@@ -1119,7 +1124,10 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     }
 
     @Override
-    public void generateGitWebhookListenerURL(String vendor, String deploymentResourceId) {
-
+    public String generateGitWebhookListenerURL(String vendor, String deploymentResourceId) {
+        String domain = ConfigUtility.instance().getProperty("ketchup.base-url");
+        String webhookListenerUrl = "v1/release/git-webhook/"+vendor+"/listen?access_token="
+                + generateForeverActiveToken(jwtTokenServices)+"&uid="+deploymentResourceId;
+        return domain + "/" + webhookListenerUrl;
     }
 }

@@ -12,13 +12,14 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.RequestEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.zigmoi.ketchup.common.GitWebHookParserUtility;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
+import org.zigmoi.ketchup.deployment.services.DeploymentService;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.release.entities.Release;
 import org.zigmoi.ketchup.release.entities.ReleaseId;
@@ -42,6 +43,8 @@ public class ReleaseController {
 
     @Autowired
     private ReleaseService releaseService;
+    @Autowired
+    private DeploymentService deploymentService;
 
     @Autowired
     private ResourceLoader resourceLoader;
@@ -480,13 +483,37 @@ public class ReleaseController {
     }
 
     @PostMapping(value = "/v1/release/git-webhook/{vendor}/listen")
-    public void gitWebhookListenPost(HttpServletResponse response, @PathVariable String vendor, @RequestParam("deploymentId") String deploymentResourceId, RequestEntity<String> req) throws IOException, ApiException {
-        releaseService.create(deploymentResourceId);
+    public void gitWebhookListenPost(HttpServletResponse response, @PathVariable String vendor,
+                                     @RequestParam("uid") String deploymentResourceId, @RequestBody(required = false) String req) {
+        DeploymentDetailsDto deploymentDetailsDto = deploymentService.getDeployment(deploymentResourceId);
+        if (deploymentDetailsDto == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        GitWebHookParserUtility.WebhookEvent event = GitWebHookParserUtility.parseEvent(vendor, deploymentResourceId, req);
+        log.info("Received Webhook Event : " + event.toString());
+
+        nonBlockingService.submit(() -> {
+            if (GitWebHookParserUtility.isPushEvent(event)
+                    && deploymentDetailsDto.getGitRepoBranchName().equalsIgnoreCase(event.getBranchName())) {
+                try {
+                    releaseService.create(deploymentResourceId);
+                    log.info("Invoked redeploy for Webhook Event : " + event.toString());
+                } catch (Exception e) {
+                    log.error("Failed redeploy for Webhook Event : " + event.toString(), e);
+                }
+            } else {
+                log.info("Ignored Webhook Event : " + event.toString());
+            }
+        });
+
     }
 
-    @GetMapping(value = "/v1/release/git-webhook/{vendor}/generate-listener-url")
-    public void gitWebhookGenerateListenerURL(HttpServletResponse response, @PathVariable String vendor,
-                                              @RequestParam("deploymentId") String deploymentResourceId) throws IOException, ApiException {
-        releaseService.generateGitWebhookListenerURL(vendor, deploymentResourceId);
+    @GetMapping(value = "/v1/release/git-webhook/{vendor}/listener-url")
+    public Map<String, String> gitWebhookGenerateListenerURL(HttpServletResponse response, @PathVariable String vendor,
+                                              @RequestParam("deploymentId") String deploymentResourceId) {
+        String url = releaseService.generateGitWebhookListenerURL(vendor, deploymentResourceId);
+        Map<String, String> map = new HashMap<>();
+        map.put("webhookUrl", url);
+        return map;
     }
 }

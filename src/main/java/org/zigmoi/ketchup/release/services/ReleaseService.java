@@ -28,7 +28,7 @@ public interface ReleaseService {
 
     void cleanPipelineResources(ReleaseId releaseId);
 
-    void generateGitWebhookListenerURL(String vendor, String deploymentResourceId);
+    String generateGitWebhookListenerURL(String vendor, String deploymentResourceId);
 
     Optional<Release> refreshReleaseStatus(String releaseResourceId);
 }
