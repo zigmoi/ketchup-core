@@ -2,6 +2,8 @@ package org.zigmoi.ketchup.deployment.controllers;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1PodList;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,6 +16,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.zigmoi.ketchup.common.GitUtility;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
@@ -127,4 +130,14 @@ public class DeploymentController {
         return deploymentService.listAllBasicSpringBootDeployments(projectResourceId);
     }
 
+    @GetMapping("v1/project/test-connection/git-remote/basic-auth")
+    public void testConnectionGitRemoteBasicAuth(@RequestParam String repoURL,
+                                                 @RequestParam String username,
+                                                 @RequestParam String password) {
+        try {
+            GitUtility.instance(username, password).lsRemote(repoURL);
+        } catch (GitAPIException e) {
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Remote Exception : " + e.getLocalizedMessage() + ", trace : \n" + ExceptionUtils.getStackTrace(e));
+        }
+    }
 }

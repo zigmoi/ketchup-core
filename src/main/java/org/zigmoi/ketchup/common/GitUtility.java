@@ -1,15 +1,18 @@
 package org.zigmoi.ketchup.common;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Config;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +90,16 @@ public class GitUtility {
 
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws GitAPIException {
+    }
 
+    public void lsRemote(String repoURL) throws GitAPIException {
+        Collection<Ref> result = Git.lsRemoteRepository()
+                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(GIT_USERNAME, GIT_PASSWORD))
+                .setRemote(repoURL)
+                .call();
+        if (CollectionUtils.isEmpty(result)) {
+            throw new UnknownError("No references found while running ");
+        }
     }
 }
