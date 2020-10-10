@@ -40,15 +40,16 @@ public class KubernetesUtility {
 
     public static void main(String[] args) throws IOException, ApiException {
         //create pipeline resources in order. (createPipelineRun should be last.)
+        String kubeconfig = FileUtility.readDataFromFile(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
         String baseResourcePath = ConfigUtility.instance().getProperty("ketchup.test.default-pipeline-config");
-        createCustomResource(baseResourcePath.concat("resource.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineresources", "false");
-        createCustomResource(baseResourcePath.concat("task-makisu.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
-        createCustomResource(baseResourcePath.concat("task-helm.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
-        createCustomResource(baseResourcePath.concat("pipeline.yaml"), "default", "tekton.dev", "v1alpha1", "pipelines", "false");
-        createSecret("default", baseResourcePath.concat("secrets.yaml"));
-        createServiceAccount("default", baseResourcePath.concat("service-account.yaml"));
+        createCustomResource(kubeconfig, baseResourcePath.concat("resource.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineresources", "false");
+        createCustomResource(kubeconfig, baseResourcePath.concat("task-makisu.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
+        createCustomResource(kubeconfig, baseResourcePath.concat("task-helm.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
+        createCustomResource(kubeconfig, baseResourcePath.concat("pipeline.yaml"), "default", "tekton.dev", "v1alpha1", "pipelines", "false");
+        createSecret("default", kubeconfig, baseResourcePath.concat("secrets.yaml"));
+        createServiceAccount("default", kubeconfig, baseResourcePath.concat("service-account.yaml"));
 
-        createCustomResource(baseResourcePath.concat("pipeline-run.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineruns", "false");
+        createCustomResource(kubeconfig, baseResourcePath.concat("pipeline-run.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineruns", "false");
 
 //        createPipelineResource(baseResourcePath.concat("resource.yaml"));
 //        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
@@ -170,8 +171,13 @@ public class KubernetesUtility {
         System.out.println(result);
     }
 
-    public static String createSecret(String namespace, String resourceFilePath) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//    public static String createSecret(String namespace, String resourceFilePath) throws IOException, ApiException {
+//        String kubeconfig = FileUtility.readDataFromFile(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//        return createSecret(namespace, kubeconfig, resourceFilePath);
+//    }
+
+    public static String createSecret(String namespace, String kubeConfig, String resourceFilePath) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
 
         String pretty = "false";
@@ -184,8 +190,13 @@ public class KubernetesUtility {
         return getData(responseJson, "$.metadata.name");
     }
 
-    public static String createServiceAccount(String namespace, String resourceFilePath) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//    public static String createServiceAccount(String namespace, String resourceFilePath) throws IOException, ApiException {
+//        String kubeconfig = FileUtility.readDataFromFile(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//        return createServiceAccount(namespace, kubeconfig, resourceFilePath);
+//    }
+
+    public static String createServiceAccount(String namespace, String kubeConfig, String resourceFilePath) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
 
         String pretty = "false";
@@ -208,8 +219,7 @@ public class KubernetesUtility {
     }
 
     public static JSONObject getPipelineRunStatus(String kubeConfig, String namespace, String pipelineRunName) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
-//        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
 
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
@@ -232,10 +242,8 @@ public class KubernetesUtility {
     }
 
     public static void watchAndStreamPipelineRunStatus(String kubeConfig, String namespace, String pipelineRunName, SseEmitter emitter) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
-//        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
-
 
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
         String group = "tekton.dev"; // String | the custom resource's group
@@ -285,8 +293,8 @@ public class KubernetesUtility {
 
     }
 
-    public static void createCustomResource(String resourceFilePath, String namespace, String group, String version, String plural, String pretty) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+    public static void createCustomResource(String kubeConfig, String resourceFilePath, String namespace, String group, String version, String plural, String pretty) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
 
@@ -343,8 +351,13 @@ public class KubernetesUtility {
         return resource;
     }
 
-    public static String createPipelineResource(String namespace, String resourceFilePath) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//    public static String createPipelineResource(String namespace, String resourceFilePath) throws IOException, ApiException {
+//        String kubeconfig = FileUtility.readDataFromFile(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//        return createPipelineResource(namespace, kubeconfig, resourceFilePath);
+//    }
+
+    public static String createPipelineResource(String namespace, String kubeConfig, String resourceFilePath) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
 
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
@@ -369,8 +382,13 @@ public class KubernetesUtility {
 //        }
     }
 
-    public static String createPipelineTask(String namespace, String resourceFilePath) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//    public static String createPipelineTask(String namespace, String resourceFilePath) throws IOException, ApiException {
+//        String kubeconfig = FileUtility.readDataFromFile(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//        return createPipelineTask(namespace, kubeconfig, resourceFilePath);
+//    }
+
+    public static String createPipelineTask(String namespace, String kubeConfig, String resourceFilePath) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
 
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
@@ -398,8 +416,13 @@ public class KubernetesUtility {
 //        }
     }
 
-    public static String createPipeline(String namespace, String resourceFilePath) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//    public static String createPipeline(String namespace, String resourceFilePath) throws IOException, ApiException {
+//        String kubeconfig = FileUtility.readDataFromFile(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//        return createPipeline(namespace, kubeconfig, resourceFilePath);
+//    }
+
+    public static String createPipeline(String namespace, String kubeConfig, String resourceFilePath) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
 
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
@@ -424,8 +447,13 @@ public class KubernetesUtility {
 //        }
     }
 
-    public static String createPipelineRun(String namespace, String resourceFilePath) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//    public static String createPipelineRun(String namespace, String resourceFilePath) throws IOException, ApiException {
+//        String kubeconfig = FileUtility.readDataFromFile(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//        return createPipelineRun(namespace, kubeconfig, resourceFilePath);
+//    }
+
+    public static String createPipelineRun(String namespace, String kubeConfig, String resourceFilePath) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
 
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
@@ -454,82 +482,47 @@ public class KubernetesUtility {
         return (LinkedHashMap<String, Object>) Yaml.loadAs(new File(filePath), Map.class);
     }
 
-    public static void watchAndStreamPipelineRunStatus(String namespace, String pipelineRunName, SseEmitter emitter) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
-        Configuration.setDefaultApiClient(client);
+//    public static void watchAndStreamPipelineRunStatus(String namespace, String pipelineRunName, SseEmitter emitter) throws IOException, ApiException {
+//        String kubeconfig = FileUtility.readDataFromFile(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//        watchAndStreamPipelineRunStatus(namespace, kubeconfig, pipelineRunName, emitter);
+//    }
 
-
-        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
-        String group = "tekton.dev"; // String | the custom resource's group
-        String version = "v1alpha1"; // String | the custom resource's version
-        String plural = "pipelineruns"; // String | the custom object's plural name. For TPRs this would be lowercase plural kind.
-        String fieldSelector = "metadata.name=".concat(pipelineRunName);
-
-        OkHttpClient httpClient =
-                client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
-        client.setHttpClient(httpClient);
-
-        Watch<Object> watch =
-                Watch.createWatch(
-                        client,
-                        apiInstance.listNamespacedCustomObjectCall(group, version, namespace,
-                                plural, null, null, fieldSelector, null,
-                                5, null, 75, true, null),
-                        new TypeToken<Watch.Response<Object>>() {
-                        }.getType());
-
-        try {
-            for (Watch.Response<Object> item : watch) {
-                String responseJson = new Gson().toJson(item.object);
-                System.out.println(responseJson);
-                SseEmitter.SseEventBuilder eventBuilderDataStream = SseEmitter.event().name("data").data(parsePipelineRunResponse(responseJson).toString());
-                emitter.send(eventBuilderDataStream);
-                //  System.out.printf("%s : %s%n", item.type, item.object.toString());
-            }
-        } finally {
-            watch.close();
-            SseEmitter.SseEventBuilder eventBuilderCloseStream = SseEmitter.event().data("").name("close");
-            emitter.send(eventBuilderCloseStream);
-            emitter.complete();
-        }
-    }
-
-    public static void watchPipelineRunStatus(String namespace) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
-        Configuration.setDefaultApiClient(client);
-
-
-        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
-        String group = "tekton.dev"; // String | the custom resource's group
-        String version = "v1alpha1"; // String | the custom resource's version
-        String plural = "pipelineruns"; // String | the custom object's plural name. For TPRs this would be lowercase plural kind.
-        String name = "demo-pipeline-run-1"; // String | the custom object's name
-        String fieldSelector = "metadata.name=demo-pipeline-run-1";
-
-        OkHttpClient httpClient =
-                client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
-        client.setHttpClient(httpClient);
-
-        Watch<Object> watch =
-                Watch.createWatch(
-                        client,
-                        apiInstance.listNamespacedCustomObjectCall(group, version, namespace,
-                                plural, null, null, fieldSelector, null,
-                                5, null, 75, true, null),
-                        new TypeToken<Watch.Response<Object>>() {
-                        }.getType());
-
-        try {
-            for (Watch.Response<Object> item : watch) {
-                String responseJson = new Gson().toJson(item.object);
-                System.out.println(responseJson);
-                parsePipelineRunResponse(responseJson);
-                //  System.out.printf("%s : %s%n", item.type, item.object.toString());
-            }
-        } finally {
-            watch.close();
-        }
-    }
+//    public static void watchPipelineRunStatus(String namespace) throws IOException, ApiException {
+//        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//        Configuration.setDefaultApiClient(client);
+//
+//
+//        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+//        String group = "tekton.dev"; // String | the custom resource's group
+//        String version = "v1alpha1"; // String | the custom resource's version
+//        String plural = "pipelineruns"; // String | the custom object's plural name. For TPRs this would be lowercase plural kind.
+//        String name = "demo-pipeline-run-1"; // String | the custom object's name
+//        String fieldSelector = "metadata.name=demo-pipeline-run-1";
+//
+//        OkHttpClient httpClient =
+//                client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
+//        client.setHttpClient(httpClient);
+//
+//        Watch<Object> watch =
+//                Watch.createWatch(
+//                        client,
+//                        apiInstance.listNamespacedCustomObjectCall(group, version, namespace,
+//                                plural, null, null, fieldSelector, null,
+//                                5, null, 75, true, null),
+//                        new TypeToken<Watch.Response<Object>>() {
+//                        }.getType());
+//
+//        try {
+//            for (Watch.Response<Object> item : watch) {
+//                String responseJson = new Gson().toJson(item.object);
+//                System.out.println(responseJson);
+//                parsePipelineRunResponse(responseJson);
+//                //  System.out.printf("%s : %s%n", item.type, item.object.toString());
+//            }
+//        } finally {
+//            watch.close();
+//        }
+//    }
 
     public static JSONObject parsePipelineRunResponse(String responseJson) {
         System.out.println("Raw Status Details: " + responseJson);
@@ -700,8 +693,8 @@ public class KubernetesUtility {
         return stepJson;
     }
 
-    public static void watchListPods(String namespace) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+    public static void watchListPods(String namespace, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
 
         OkHttpClient httpClient =
@@ -727,8 +720,8 @@ public class KubernetesUtility {
         }
     }
 
-    public static void getPipeLineRunDetails(String namespace) throws IOException, ApiException {
-        ApiClient client = Config.fromConfig(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+    public static void getPipeLineRunDetails(String namespace, String kubeConfig) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);
         CoreV1Api coreApi = new CoreV1Api(client);
 
