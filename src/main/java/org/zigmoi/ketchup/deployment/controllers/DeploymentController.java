@@ -86,7 +86,7 @@ public class DeploymentController {
         String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
         try {
             String labelSelector = "app.kubernetes.io/instance=release-".concat(deploymentResourceId);
-            V1PodList res = KubernetesUtility.listPods(labelSelector, "default", "false", kubeConfig);
+            V1PodList res = KubernetesUtility.listPods(labelSelector, deploymentDetailsDto.getDevKubernetesNamespace(), "false", kubeConfig);
             System.out.println(res);
             return res.getItems().stream().map(pod -> pod.getMetadata().getName()).collect(Collectors.toList());
         } catch (IOException | ApiException e) {

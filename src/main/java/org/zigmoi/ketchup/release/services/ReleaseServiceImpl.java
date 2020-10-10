@@ -195,6 +195,9 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         Release release = releaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         String.format("Release with id %s not found.", releaseResourceId)));
+        String deploymentResourceId = release.getDeploymentResourceId();
+        DeploymentDetailsDto deploymentDetails = deploymentService.getDeployment(deploymentResourceId);
+        String namespace = deploymentDetails.getDevKubernetesNamespace();
         //check if release is not failed/success than cancel the pipeline.
         PipelineResource resource = pipelineResourceRepository.findByReleaseResourceIdAndResourceType(releaseResourceId, "pipeline-run").orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                 String.format("Pipeline run for release with id %s not found.", releaseResourceId)));
@@ -213,7 +216,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         }
         String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
         try {
-            LinkedTreeMap<String, Object> latestPipelineRun = KubernetesUtility.getCRD(resourceName, "default", "tekton.dev", "v1beta1", "pipelineruns", kubeConfig);
+            LinkedTreeMap<String, Object> latestPipelineRun = KubernetesUtility.getCRD(resourceName, namespace, "tekton.dev", "v1beta1", "pipelineruns", kubeConfig);
             ((LinkedTreeMap<String, Object>) latestPipelineRun.get("spec")).put("status", "PipelineRunCancelled");
 
             DumperOptions options = new DumperOptions();
@@ -223,12 +226,11 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             String cancelledPipelineRun = updatedYaml.dump(latestPipelineRun);
             System.out.println(cancelledPipelineRun);
 
-            KubernetesUtility.updateCRDUsingYamlContent(resourceName, cancelledPipelineRun, "default", "tekton.dev", "v1beta1", "pipelineruns", kubeConfig);
+            KubernetesUtility.updateCRDUsingYamlContent(resourceName, cancelledPipelineRun, namespace, "tekton.dev", "v1beta1", "pipelineruns", kubeConfig);
         } catch (IOException | ApiException e) {
             logger.error("Failed to cancel pipeline, ", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to cancel pipeline.");
         }
-
     }
 
     @Override
@@ -324,11 +326,12 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
         }
+        String namespace = deploymentDetailsDto.getDevKubernetesNamespace();
         pipelineResources.stream()
                 .filter(r -> "pipeline-pvc".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipelineResource -> {
                     try {
-                        KubernetesUtility.createPvcUsingYamlContent(pipelineResource.getResourceContent(), "default", "false", kubeConfig);
+                        KubernetesUtility.createPvcUsingYamlContent(pipelineResource.getResourceContent(), namespace, "false", kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -340,7 +343,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "secret".equalsIgnoreCase(r.getResourceType()))
                 .forEach(secret -> {
                     try {
-                        KubernetesUtility.createSecretUsingYamlContent(secret.getResourceContent(), "default", "false", kubeConfig);
+                        KubernetesUtility.createSecretUsingYamlContent(secret.getResourceContent(), namespace, "false", kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -353,7 +356,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "service-account".equalsIgnoreCase(r.getResourceType()))
                 .forEach(serviceAccount -> {
                     try {
-                        KubernetesUtility.createServiceAccountUsingYamlContent(serviceAccount.getResourceContent(), "default", "false", kubeConfig);
+                        KubernetesUtility.createServiceAccountUsingYamlContent(serviceAccount.getResourceContent(), namespace, "false", kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -365,7 +368,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "configmap".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipelineResource -> {
                     try {
-                        KubernetesUtility.createConfigmapUsingYamlContent(pipelineResource.getResourceContent(), "default", "false", kubeConfig);
+                        KubernetesUtility.createConfigmapUsingYamlContent(pipelineResource.getResourceContent(), namespace, "false", kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -377,7 +380,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "task".equalsIgnoreCase(r.getResourceType()))
                 .forEach(task -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(task.getResourceContent(), "default", "tekton.dev", "v1beta1", "tasks", "false", kubeConfig);
+                        KubernetesUtility.createCRDUsingYamlContent(task.getResourceContent(), namespace, "tekton.dev", "v1beta1", "tasks", "false", kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -389,7 +392,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "pipeline".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipeline -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipeline.getResourceContent(), "default", "tekton.dev", "v1beta1", "pipelines", "false", kubeConfig);
+                        KubernetesUtility.createCRDUsingYamlContent(pipeline.getResourceContent(), namespace, "tekton.dev", "v1beta1", "pipelines", "false", kubeConfig);
                     } catch (IOException | ApiException e) {
                         e.printStackTrace();
                     }
@@ -400,7 +403,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .filter(r -> "pipeline-run".equalsIgnoreCase(r.getResourceType()))
                 .forEach(pipelineRun -> {
                     try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipelineRun.getResourceContent(), "default", "tekton.dev", "v1beta1", "pipelineruns", "false", kubeConfig);
+                        KubernetesUtility.createCRDUsingYamlContent(pipelineRun.getResourceContent(), namespace, "tekton.dev", "v1beta1", "pipelineruns", "false", kubeConfig);
                     } catch (IOException | ApiException e) {
                         e.printStackTrace();
                     }
@@ -414,14 +417,15 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         return domain + "/" + tektonEventSink + "?access_token=" + accessToken;
     }
 
-    private void deletePipelineResources(Collection<PipelineResource> pipelineResources, String kubeConfig) {
+    private void deletePipelineResources(DeploymentDetailsDto deploymentDetailsDto, Collection<PipelineResource> pipelineResources, String kubeConfig) {
 
+        String namespace = deploymentDetailsDto.getDevKubernetesNamespace();
         pipelineResources.stream()
                 .filter(r -> Objects.equals("pipeline-run", r.getResourceType().toLowerCase()))
                 .forEach(task -> {
                     try {
                         KubernetesUtility.deleteCRD(getPipelineResourceName(task.getResourceContent()),
-                                "default", "tekton.dev", "v1beta1",
+                                namespace, "tekton.dev", "v1beta1",
                                 getPluralForResourceType(task.getResourceType()), 0, kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -435,7 +439,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .forEach(task -> {
                     try {
                         KubernetesUtility.deleteCRD(getPipelineResourceName(task.getResourceContent()),
-                                "default", "tekton.dev", "v1beta1",
+                                namespace, "tekton.dev", "v1beta1",
                                 getPluralForResourceType(task.getResourceType()), 0, kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -449,7 +453,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .forEach(task -> {
                     try {
                         KubernetesUtility.deleteCRD(getPipelineResourceName(task.getResourceContent()),
-                                "default", "tekton.dev", "v1beta1",
+                                namespace, "tekton.dev", "v1beta1",
                                 getPluralForResourceType(task.getResourceType()), 0, kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -464,7 +468,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .forEach(secret -> {
                     try {
                         KubernetesUtility.deleteSecret(getPipelineResourceName(secret.getResourceContent()),
-                                "default", 10, kubeConfig);
+                                namespace, 10, kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -478,7 +482,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .forEach(serviceAccount -> {
                     try {
                         KubernetesUtility.deleteServiceAccount(getPipelineResourceName(serviceAccount.getResourceContent()),
-                                "default", 10, kubeConfig);
+                                namespace, 10, kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -491,7 +495,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .forEach(pipelineResource -> {
                     try {
                         KubernetesUtility.deleteConfigMap(getPipelineResourceName(pipelineResource.getResourceContent()),
-                                "default", 10, kubeConfig);
+                                namespace, 10, kubeConfig);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (ApiException e) {
@@ -504,7 +508,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .forEach(pipelineResource -> {
                     try {
                         KubernetesUtility.deletePvc(getPipelineResourceName(pipelineResource.getResourceContent()),
-                                "default", 10, kubeConfig);
+                                namespace, 10, kubeConfig);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -1072,8 +1076,9 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     public void cleanPipelineResources(ReleaseId releaseId) {
         Set<PipelineResource> resources = pipelineResourceRepository.findDistinctByReleaseResourceId(releaseId.getReleaseResourceId());
         Release release = findById(releaseId.getReleaseResourceId());
+        DeploymentDetailsDto deploymentDetailsDto = deploymentService.getDeployment(release.getDeploymentResourceId());
         String kubeConfig = getKubeConfig(release.getDeploymentDataJson());
-        deletePipelineResources(resources, kubeConfig);
+        deletePipelineResources(deploymentDetailsDto, resources, kubeConfig);
     }
 
     private String getKubeConfig(String deploymentDataJson) {
