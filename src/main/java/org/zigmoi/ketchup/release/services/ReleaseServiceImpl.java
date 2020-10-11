@@ -884,11 +884,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     }
 
     public String getHelmCommand(String releaseVersion) {
-        if ("v1".equalsIgnoreCase(releaseVersion)) {
-            return "install";
-        } else {
-            return "upgrade";
-        }
+        return "upgrade";
     }
 
     public String getTemplatedPipelineResource(String template, Map<String, String> templatingVariables) {
@@ -1131,8 +1127,8 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     @Override
     public String generateGitWebhookListenerURL(String vendor, String deploymentResourceId) {
         String domain = ConfigUtility.instance().getProperty("ketchup.base-url");
-        String webhookListenerUrl = "v1/release/git-webhook/"+vendor+"/listen?access_token="
-                + generateForeverActiveToken(jwtTokenServices, "git-webhook")+"&uid="+deploymentResourceId;
+        String webhookListenerUrl = "v1/release/git-webhook/" + vendor + "/listen?access_token="
+                + generateForeverActiveToken(jwtTokenServices, "git-webhook") + "&uid=" + deploymentResourceId;
         System.out.println(webhookListenerUrl);
         return domain + "/" + webhookListenerUrl;
     }
