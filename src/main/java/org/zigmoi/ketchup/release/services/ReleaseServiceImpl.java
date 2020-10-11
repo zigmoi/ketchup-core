@@ -413,7 +413,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     private String buildTektonCloudEventSinkURL(Release release) {
         String domain = ConfigUtility.instance().getProperty("ketchup.base-url");
         String tektonEventSink = ConfigUtility.instance().getProperty("ketchup.tekton-event-sink-api-path");
-        String accessToken = generateForeverActiveToken(jwtTokenServices);
+        String accessToken = generateForeverActiveToken(jwtTokenServices, "tekton-event");
         return domain + "/" + tektonEventSink + "?access_token=" + accessToken;
     }
 
@@ -1093,9 +1093,9 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         return (String) metadata.get("name");
     }
 
-    public static String generateForeverActiveToken(AuthorizationServerTokenServices jwtTokenServices) {
+    public static String generateForeverActiveToken(AuthorizationServerTokenServices jwtTokenServices, String scope) {
         Map<String, String> authorizationParameters = new HashMap<String, String>();
-        authorizationParameters.put("scope", "read");
+        authorizationParameters.put("scope", scope);
         authorizationParameters.put("username", "admin@" + AuthUtils.getCurrentTenantId());
         authorizationParameters.put("client_id", "client-id-forever-active");
         authorizationParameters.put("grant", "password");
@@ -1107,8 +1107,8 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         responseType.add("password");
 
         Set<String> scopes = new HashSet<String>();
-        scopes.add("read");
-        scopes.add("write");
+        scopes.add(scope);
+//        scopes.add("write");
 
         OAuth2Request authorizationRequest = new OAuth2Request(
                 authorizationParameters, "client-id-forever-active",
@@ -1132,7 +1132,8 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     public String generateGitWebhookListenerURL(String vendor, String deploymentResourceId) {
         String domain = ConfigUtility.instance().getProperty("ketchup.base-url");
         String webhookListenerUrl = "v1/release/git-webhook/"+vendor+"/listen?access_token="
-                + generateForeverActiveToken(jwtTokenServices)+"&uid="+deploymentResourceId;
+                + generateForeverActiveToken(jwtTokenServices, "git-webhook")+"&uid="+deploymentResourceId;
+        System.out.println(webhookListenerUrl);
         return domain + "/" + webhookListenerUrl;
     }
 }

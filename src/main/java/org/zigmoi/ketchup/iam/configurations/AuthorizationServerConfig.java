@@ -47,7 +47,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 				.authorizedGrantTypes("client_credentials", "password").scopes("all").accessTokenValiditySeconds(36000)
 				.and()
 				.withClient("client-id-forever-active").secret(passwordEncoder.encode("client-secret-forever-active"))
-				.authorizedGrantTypes("client_credentials", "password").scopes("all").accessTokenValiditySeconds(-1);
+				.authorizedGrantTypes("client_credentials", "password").scopes("git-webhook", "tekton-event").accessTokenValiditySeconds(-1);
 	}
 
 	@Autowired

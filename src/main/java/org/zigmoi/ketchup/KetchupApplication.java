@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @SpringBootApplication
 @EnableTransactionManagement
 @EnableGlobalMethodSecurity(prePostEnabled = true)
-@EnableResourceServer
+//@EnableResourceServer
 @EnableScheduling
 public class KetchupApplication {
 
