@@ -163,7 +163,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
             pipelineResource.setReleaseResourceId(releaseResourceId);
         });
         pipelineResourceRepository.saveAll(pipelineResources);
-        releaseRepository.save(r);
+        releaseRepository.saveAndFlush(r);
 
         String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
         queueAndDeployPipelineResources(pipelineResources, kubeConfig, deploymentDetailsDto, r);
