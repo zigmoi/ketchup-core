@@ -91,15 +91,17 @@ public class GitUtility {
     }
 
     public static void main(String[] args) throws GitAPIException {
+
     }
 
-    public void lsRemote(String repoURL) throws GitAPIException {
-        Collection<Ref> result = Git.lsRemoteRepository()
+    public Collection<Ref> lsRemote(String repoURL) throws GitAPIException {
+        return Git.lsRemoteRepository()
                 .setCredentialsProvider(new UsernamePasswordCredentialsProvider(GIT_USERNAME, GIT_PASSWORD))
                 .setRemote(repoURL)
                 .call();
-        if (CollectionUtils.isEmpty(result)) {
-            throw new UnknownError("No references found while running ");
-        }
+    }
+
+    public boolean testConnection(String repoURL) throws GitAPIException {
+        return !CollectionUtils.isEmpty(lsRemote(repoURL));
     }
 }
