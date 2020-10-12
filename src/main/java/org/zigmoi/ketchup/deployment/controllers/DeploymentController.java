@@ -2,7 +2,6 @@ package org.zigmoi.ketchup.deployment.controllers;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1PodList;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -133,9 +132,8 @@ public class DeploymentController {
                                                                  @RequestParam String password) {
         boolean connectionSuccessful = false;
         try {
-            GitUtility.instance(username, password).lsRemote(repoURL);
-            connectionSuccessful = true;
-        } catch (GitAPIException e) {
+            connectionSuccessful = GitUtility.instance(username, password).testConnection(repoURL);
+        } catch (Exception e) {
             connectionSuccessful = false;
         }
         Map<String, String> status = new HashMap<>();
