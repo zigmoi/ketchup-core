@@ -2,7 +2,6 @@ package org.zigmoi.ketchup.deployment.controllers;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1PodList;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -27,10 +26,7 @@ import org.zigmoi.ketchup.deployment.services.DeploymentService;
 import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsRequestDto;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -132,25 +128,32 @@ public class DeploymentController {
     }
 
     @GetMapping("v1/project/test-connection/git-remote/basic-auth")
-    public void testConnectionGitRemoteBasicAuth(@RequestParam String repoURL,
-                                                 @RequestParam String username,
-                                                 @RequestParam String password) {
+    public Map<String, String> testConnectionGitRemoteBasicAuth(@RequestParam String repoURL,
+                                                                 @RequestParam String username,
+                                                                 @RequestParam String password) {
+        boolean connectionSuccessful = false;
         try {
             GitUtility.instance(username, password).lsRemote(repoURL);
+            connectionSuccessful = true;
         } catch (GitAPIException e) {
-            new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Remote Exception : " + e.getLocalizedMessage() + ", trace : \n" + ExceptionUtils.getStackTrace(e));
+            connectionSuccessful = false;
         }
+        Map<String, String> status = new HashMap<>();
+        status.put("status", connectionSuccessful ? "success" : "failed");
+        return status;
     }
 
     @PutMapping("v1/project/test-connection/kubernetes-cluster/kubeconfig-auth")
-    public void testConnectionKubernetesClusterKubeConfigAuth(@RequestBody KubernetesClusterSettingsRequestDto request) {
+    public Map<String, String> testConnectionKubernetesClusterKubeConfigAuth(@RequestBody KubernetesClusterSettingsRequestDto request) {
+        boolean connectionSuccessful = false;
         try {
             String kubeConfig = StringUtility.decodeBase64(request.getFileData());
-            if (!KubernetesUtility.testConnection(kubeConfig)) {
-                new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to connect to the cluster");
-            }
+            connectionSuccessful = KubernetesUtility.testConnection(kubeConfig);
          } catch (ApiException | IOException  e) {
-            new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to connect to the cluster.");
+            connectionSuccessful = false;
         }
+        Map<String, String> status = new HashMap<>();
+        status.put("status", connectionSuccessful ? "success" : "failed");
+        return status;
     }
 }

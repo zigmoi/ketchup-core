@@ -19,6 +19,30 @@ import java.util.Set;
 @Slf4j
 public class DockerUtility {
 
+    public static void main(String[] args) throws IOException, InterruptedException {
+        testConnection("http://191.101.165.0:5000", "", "");
+    }
+
+    public static void testConnection(String registryUrl, String registryUser, String registryPass) throws InterruptedException, IOException {
+
+        DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
+                .withDockerHost("unix:///var/run/docker.sock")
+                .withRegistryUrl(registryUrl)
+                .withRegistryUsername(registryUser)
+                .withRegistryPassword(registryPass)
+                .withDockerTlsVerify(false)
+                .build();
+        DockerClient dockerClient = null;
+        try {
+            dockerClient = DockerClientBuilder.getInstance(config).build();
+
+            AuthResponse response = dockerClient.authCmd().exec();
+            log.info(response.getStatus());
+        } finally {
+            Objects.requireNonNull(dockerClient).close();
+        }
+    }
+
     public static void pullImage(String registryUrl, String registryUser, String registryPass,
                                  String imageRepo, String imageTag) throws InterruptedException, IOException {
 
