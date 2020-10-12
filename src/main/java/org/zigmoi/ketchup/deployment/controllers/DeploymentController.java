@@ -20,6 +20,7 @@ import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentRequestDto;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentResponseDto;
+import org.zigmoi.ketchup.deployment.dtos.GitRepoConnectionTestRequestDto;
 import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.services.DeploymentService;
 import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsRequestDto;
@@ -126,13 +127,11 @@ public class DeploymentController {
         return deploymentService.listAllBasicSpringBootDeployments(projectResourceId);
     }
 
-    @GetMapping("v1/project/test-connection/git-remote/basic-auth")
-    public Map<String, String> testConnectionGitRemoteBasicAuth(@RequestParam String repoURL,
-                                                                 @RequestParam String username,
-                                                                 @RequestParam String password) {
+    @PostMapping("v1/project/test-connection/git-remote/basic-auth")
+    public Map<String, String> testConnectionGitRemoteBasicAuth(@RequestBody GitRepoConnectionTestRequestDto requestDto) {
         boolean connectionSuccessful = false;
         try {
-            connectionSuccessful = GitUtility.instance(username, password).testConnection(repoURL);
+            connectionSuccessful = GitUtility.instance(requestDto.getUsername(), requestDto.getPassword()).testConnection(requestDto.getRepoUrl());
         } catch (Exception e) {
             connectionSuccessful = false;
         }
