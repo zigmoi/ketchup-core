@@ -24,6 +24,7 @@ import org.zigmoi.ketchup.deployment.dtos.DeploymentRequestDto;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentResponseDto;
 import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.services.DeploymentService;
+import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsRequestDto;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -142,14 +143,14 @@ public class DeploymentController {
     }
 
     @PutMapping("v1/project/test-connection/kubernetes-cluster/kubeconfig-auth")
-    public void testConnectionKubernetesClusterKubeConfigAuth(@RequestBody String kubeConfig) {
+    public void testConnectionKubernetesClusterKubeConfigAuth(@RequestBody KubernetesClusterSettingsRequestDto request) {
         try {
+            String kubeConfig = StringUtility.decodeBase64(request.getFileData());
             if (!KubernetesUtility.testConnection(kubeConfig)) {
-                new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to connect to the cluster");
+                new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to connect to the cluster");
             }
          } catch (ApiException | IOException  e) {
-            new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to connect to the cluster : " + e.getLocalizedMessage()
-                    + ", trace : \n" + ExceptionUtils.getStackTrace(e));
+            new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to connect to the cluster.");
         }
     }
 }
