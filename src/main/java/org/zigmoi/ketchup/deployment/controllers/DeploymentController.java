@@ -131,7 +131,7 @@ public class DeploymentController {
     public Map<String, String> testConnectionGitRemoteBasicAuth(@RequestBody GitRepoConnectionTestRequestDto requestDto) {
         boolean connectionSuccessful = false;
         try {
-            connectionSuccessful = GitUtility.instance(requestDto.getUsername(), requestDto.getPassword()).testConnection(requestDto.getRepoUrl());
+            connectionSuccessful = GitUtility.instance().testConnection(requestDto.getUsername(), requestDto.getPassword(), requestDto.getRepoUrl());
         } catch (Exception e) {
             connectionSuccessful = false;
         }

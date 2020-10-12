@@ -19,8 +19,6 @@ import java.util.Map;
 
 public class GitUtility {
 
-    private String GIT_USERNAME;
-    private String GIT_PASSWORD;
     private static GitUtility gitUtility;
 
     private String[] ignoreCommitMessageWords = new String[]{
@@ -31,16 +29,8 @@ public class GitUtility {
             , "bug:", "bug"
     };
 
-    public static GitUtility instance(String userName, String password) {
-        if (gitUtility == null) {
-            gitUtility = new GitUtility(userName, password);
-        }
+    public static GitUtility instance() {
         return gitUtility;
-    }
-
-    private GitUtility(String userName, String password) {
-        this.GIT_USERNAME = userName;
-        this.GIT_PASSWORD = password;
     }
 
     public Map<String, File> getGitRemoteUrlsFromLocal(List<File> gitFiles) throws IOException {
@@ -54,25 +44,25 @@ public class GitUtility {
         return gitRemoteUrls;
     }
 
-    public void clone(String remoteUrl, String repoBasePath) throws IOException, GitAPIException {
+    public void clone(String username, String password, String remoteUrl, String repoBasePath) throws IOException, GitAPIException {
         File localPath = new File(repoBasePath);
         try (Git result = Git.cloneRepository()
-                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(GIT_USERNAME, GIT_PASSWORD))
+                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
                 .setURI(remoteUrl)
                 .setDirectory(localPath)
                 .call()) {
         }
     }
 
-    public void pull(File gitFile) throws IOException, GitAPIException {
+    public void pull(String userName, String password, File gitFile) throws IOException, GitAPIException {
         Git git = Git.open(gitFile);
         PullResult result = git
                 .pull()
-                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(GIT_USERNAME, GIT_PASSWORD))
+                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(userName, password))
                 .call();
     }
 
-    public void push(File gitFile, String pomFile) throws IOException, GitAPIException {
+    public void push(String username, String password, File gitFile, String pomFile) throws IOException, GitAPIException {
         Git git = Git.open(gitFile);
         boolean ignore = false;
         try {
@@ -84,24 +74,25 @@ public class GitUtility {
         }
         if (!ignore) {
             git.push()
-                    .setCredentialsProvider(new UsernamePasswordCredentialsProvider(GIT_USERNAME, GIT_PASSWORD))
+                    .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
                     .call();
         }
 
     }
 
     public static void main(String[] args) throws GitAPIException {
+        System.out.println(GitUtility.instance().testConnection("gitlab+deploy-token-116182", "ZAhC3nQA4qGcr1ovHCUY", "https://gitlab.com/zigmoi/ketchup/ketchup-demo-basicspringboot.git"));
 
     }
 
-    public Collection<Ref> lsRemote(String repoURL) throws GitAPIException {
+    public Collection<Ref> lsRemote(String username, String password, String repoURL) throws GitAPIException {
         return Git.lsRemoteRepository()
-                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(GIT_USERNAME, GIT_PASSWORD))
+                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
                 .setRemote(repoURL)
                 .call();
     }
 
-    public boolean testConnection(String repoURL) throws GitAPIException {
-        return !CollectionUtils.isEmpty(lsRemote(repoURL));
+    public boolean testConnection(String username, String password, String repoURL) throws GitAPIException {
+        return !CollectionUtils.isEmpty(lsRemote(username, password, repoURL));
     }
 }

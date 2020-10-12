@@ -106,12 +106,12 @@ public class BasicSpringBootDeploymentCommandsFlow implements IBasicSpringBootDe
         MCommandStatus commandStatus = new MCommandStatus();
         try {
             if (arg.getRepoPath().exists()) {
-                GitUtility.instance(arg.getGitVendorArg().getUsername(), arg.getGitVendorArg().getPassword())
-                        .pull(arg.getRepoPath());
+                GitUtility.instance()
+                        .pull(arg.getGitVendorArg().getUsername(), arg.getGitVendorArg().getPassword(), arg.getRepoPath());
             } else {
                 if (arg.getRepoPath().mkdirs()) {
-                    GitUtility.instance(arg.getGitVendorArg().getUsername(), arg.getGitVendorArg().getPassword())
-                            .clone(arg.getGitVendorArg().getUrl(), arg.getRepoPath().getAbsolutePath());
+                    GitUtility.instance()
+                            .clone(arg.getGitVendorArg().getUsername(), arg.getGitVendorArg().getPassword(), arg.getGitVendorArg().getUrl(), arg.getRepoPath().getAbsolutePath());
                 } else {
                     throw new UnexpectedException("Failed to create directory : " + arg.getRepoPath());
                 }
