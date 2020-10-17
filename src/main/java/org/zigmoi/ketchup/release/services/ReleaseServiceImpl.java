@@ -32,6 +32,7 @@ import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
 import org.zigmoi.ketchup.deployment.services.DeploymentService;
 import org.zigmoi.ketchup.exception.UnexpectedException;
+import org.zigmoi.ketchup.helm.services.HelmService;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.services.TenantProviderService;
 import org.zigmoi.ketchup.project.services.PermissionUtilsService;
@@ -60,14 +61,16 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     private final DeploymentService deploymentService;
     private final ResourceLoader resourceLoader;
     private final AuthorizationServerTokenServices jwtTokenServices;
+    private final HelmService helmService;
 
-    public ReleaseServiceImpl(ReleaseRepository releaseRepository, PipelineResourceRepository pipelineResourceRepository, PermissionUtilsService permissionUtilsService, DeploymentService deploymentService, ResourceLoader resourceLoader, AuthorizationServerTokenServices jwtTokenServices) {
+    public ReleaseServiceImpl(ReleaseRepository releaseRepository, PipelineResourceRepository pipelineResourceRepository, PermissionUtilsService permissionUtilsService, DeploymentService deploymentService, ResourceLoader resourceLoader, AuthorizationServerTokenServices jwtTokenServices, HelmService helmService) {
         this.releaseRepository = releaseRepository;
         this.pipelineResourceRepository = pipelineResourceRepository;
         this.permissionUtilsService = permissionUtilsService;
         this.deploymentService = deploymentService;
         this.resourceLoader = resourceLoader;
         this.jwtTokenServices = jwtTokenServices;
+        this.helmService = helmService;
     }
 
     private static String getNamespaceForTektonPipeline(String devKubernetesClusterSettingId) {
@@ -181,8 +184,21 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
     @Override
     @Transactional
-    public void rollback(String deploymentResourceId) {
+    public void rollback(String releaseResourceId) {
+        ReleaseId id = new ReleaseId();
+        id.setTenantId(AuthUtils.getCurrentTenantId());
+        id.setReleaseResourceId(releaseResourceId);
 
+        Release release = releaseRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format("Release with id %s not found.", releaseResourceId)));
+        String deploymentResourceId = release.getDeploymentResourceId();
+        DeploymentDetailsDto deploymentDetails = deploymentService.getDeployment(deploymentResourceId);
+        String namespace = deploymentDetails.getDevKubernetesNamespace();
+        String kubeConfig = StringUtility.decodeBase64(deploymentDetails.getDevKubeconfig());
+        String releaseName = getHelmReleaseId(deploymentDetails.getDeploymentId().getDeploymentResourceId());
+        String revision = "1";
+        helmService.rollbackRelease(releaseName, revision, namespace, kubeConfig);
     }
 
     @Override

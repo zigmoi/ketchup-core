@@ -20,5 +20,7 @@ public interface HelmService {
 
     List<ListAllChartsResponseDto> listAllCharts();
 
-    void deleteRelease(String releaseName, String kubeConfig);
+    void uninstallChart(String releaseName, String namespace, String kubeConfig);
+
+    void rollbackRelease(String releaseName, String revision, String namespace, String kubeConfig);
 }

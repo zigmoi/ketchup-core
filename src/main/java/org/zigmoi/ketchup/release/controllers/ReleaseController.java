@@ -228,6 +228,12 @@ public class ReleaseController {
         return releaseService.findById(releaseResourceId);
     }
 
+    @GetMapping("/v1/release/rollback")
+    public void rollbackRelease(@RequestParam("releaseResourceId") String releaseResourceId) {
+        //rollback current application to release version as in releaseResourceId.
+        releaseService.rollback(releaseResourceId);
+    }
+
     @GetMapping("/v1/release/active")
     public Release getActiveRelease(@RequestParam("deploymentResourceId") String deploymentResourceId) {
         return releaseService.getActiveRelease(deploymentResourceId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active release not found."));

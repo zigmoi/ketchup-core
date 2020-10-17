@@ -199,7 +199,7 @@ public class HelmServiceImpl implements HelmService {
     }
 
     @Override
-    public void deleteRelease(String releaseName, String kubeConfig) {
+    public void uninstallChart(String releaseName, String namespace, String kubeConfig) {
         String kubeConfigPath = "";
         try {
             kubeConfigPath = createTempKubeconfig(kubeConfig);
@@ -208,9 +208,10 @@ public class HelmServiceImpl implements HelmService {
         }
         Map<String, String> args = new HashMap<>();
         args.put("releaseName", releaseName);
+        args.put("namespace", namespace);
         args.put("kubeConfigPath", kubeConfigPath);
         StrSubstitutor sub = new StrSubstitutor(args, "${", "}");
-        String command = sub.replace("helm uninstall ${releaseName} --kubeconfig=${kubeConfigPath}"); //-o json is not supported in this.
+        String command = sub.replace("helm uninstall ${releaseName} --namespace=${namespace} --kubeconfig=${kubeConfigPath}"); //-o json is not supported in this.
         String output = "";
         try {
             output = new ProcessExecutor().commandSplit(command)
@@ -228,6 +229,40 @@ public class HelmServiceImpl implements HelmService {
         }
         log.debug("Command output: " + output);
     }
+
+    @Override
+    public void rollbackRelease(String releaseName, String revision, String namespace, String kubeConfig) {
+        String kubeConfigPath = "";
+        try {
+            kubeConfigPath = createTempKubeconfig(kubeConfig);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Map<String, String> args = new HashMap<>();
+        args.put("releaseName", releaseName);
+        args.put("revision", revision);
+        args.put("namespace", namespace);
+        args.put("kubeConfigPath", kubeConfigPath);
+        StrSubstitutor sub = new StrSubstitutor(args, "${", "}");
+        String command = sub.replace("helm rollback ${releaseName} ${revision} --wait --namespace=${namespace} --kubeconfig=${kubeConfigPath}"); //-o json is not supported in this.
+        String output = "";
+        try {
+            output = new ProcessExecutor().commandSplit(command)
+                    .readOutput(true)
+                    .exitValues(0) //valid exit codes, if other code is encountered exception will be raised.
+                    .execute().outputString();
+        } catch (InvalidExitValueException e) {
+            log.debug("Command error code: " + e.getExitValue());
+            log.debug("Command error message: " + e.getResult().outputString());
+            log.error(e);
+            throw new CommandFailureException("Command execution failed with non zero exit code, ", e);
+        } catch (InterruptedException | IOException | TimeoutException e) {
+            log.error(e);
+            throw new CommandFailureException("Error encountered in executing command, ", e);
+        }
+        log.debug("Command output: " + output);
+    }
+
 
     private String createTempKubeconfig(String kubeConfig) throws IOException {
         File tmpFile = File.createTempFile("kubeconfig-", null);
