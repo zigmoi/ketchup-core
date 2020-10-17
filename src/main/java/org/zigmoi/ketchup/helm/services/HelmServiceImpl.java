@@ -11,6 +11,8 @@ import org.zigmoi.ketchup.helm.exceptions.CommandFailureException;
 import org.zigmoi.ketchup.helm.dtos.ListAllChartsResponseDto;
 import org.zigmoi.ketchup.helm.dtos.ReleaseStatusResponseDto;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
@@ -36,7 +38,7 @@ public class HelmServiceImpl implements HelmService {
         List<ListAllChartsResponseDto> response1 = new HelmServiceImpl().listAllCharts();
         response1.stream().forEach(a -> log.info(a.toString()));
 
-        new HelmServiceImpl().deleteRelease(releaseName);
+        //  new HelmServiceImpl().deleteRelease(releaseName);
 
         //Auto generate release name.
 //        ChartInstallResponseDto installResponse1 = new HelmServiceImpl().installChart("bitnami/tomcat");
@@ -197,11 +199,18 @@ public class HelmServiceImpl implements HelmService {
     }
 
     @Override
-    public void deleteRelease(String releaseName) {
+    public void deleteRelease(String releaseName, String kubeConfig) {
+        String kubeConfigPath = "";
+        try {
+            kubeConfigPath = createTempKubeconfig(kubeConfig);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         Map<String, String> args = new HashMap<>();
         args.put("releaseName", releaseName);
+        args.put("kubeConfigPath", kubeConfigPath);
         StrSubstitutor sub = new StrSubstitutor(args, "${", "}");
-        String command = sub.replace("helm delete ${releaseName}"); //-o json is not supported in this.
+        String command = sub.replace("helm uninstall ${releaseName} --kubeconfig=${kubeConfigPath}"); //-o json is not supported in this.
         String output = "";
         try {
             output = new ProcessExecutor().commandSplit(command)
@@ -218,5 +227,13 @@ public class HelmServiceImpl implements HelmService {
             throw new CommandFailureException("Error encountered in executing command, ", e);
         }
         log.debug("Command output: " + output);
+    }
+
+    private String createTempKubeconfig(String kubeConfig) throws IOException {
+        File tmpFile = File.createTempFile("kubeconfig-", null);
+        FileWriter writer = new FileWriter(tmpFile);
+        writer.write(kubeConfig);
+        writer.close();
+        return tmpFile.getAbsolutePath();
     }
 }

@@ -20,5 +20,5 @@ public interface HelmService {
 
     List<ListAllChartsResponseDto> listAllCharts();
 
-    void deleteRelease(String releaseName);
+    void deleteRelease(String releaseName, String kubeConfig);
 }

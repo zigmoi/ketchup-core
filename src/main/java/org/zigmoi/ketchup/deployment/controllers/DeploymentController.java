@@ -35,44 +35,6 @@ public class DeploymentController {
     @Autowired
     private DeploymentService deploymentService;
 
-    @Autowired
-    private AuthorizationServerTokenServices jwtTokenServices;
-
-    public void generateToken() {
-        HashMap<String, String> authorizationParameters = new HashMap<String, String>();
-        authorizationParameters.put("scope", "read");
-        authorizationParameters.put("username", "admin@t1.com");
-        authorizationParameters.put("client_id", "client-id-1");
-        authorizationParameters.put("grant", "password");
-
-        Set<GrantedAuthority> authorities = new HashSet<GrantedAuthority>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_TENANT_ADMIN"));
-
-        Set<String> responseType = new HashSet<String>();
-        responseType.add("password");
-
-        Set<String> scopes = new HashSet<String>();
-        scopes.add("read");
-        scopes.add("write");
-
-        OAuth2Request authorizationRequest = new OAuth2Request(
-                authorizationParameters, "client-id-1",
-                authorities, true, scopes, null, "",
-                responseType, null);
-
-        User userPrincipal = new User("admin@t1.com", "", true, true, true, true, authorities);
-
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                userPrincipal, null, authorities);
-
-        OAuth2Authentication authenticationRequest = new OAuth2Authentication(
-                authorizationRequest, authenticationToken);
-        authenticationRequest.setAuthenticated(true);
-
-        OAuth2AccessToken accessToken = jwtTokenServices.createAccessToken(authenticationRequest);
-        System.out.println(accessToken.toString());
-    }
-
     @PostMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot")
     public void createBasicSpringBootDeployment(@RequestBody DeploymentRequestDto deploymentRequestDto, @PathVariable String projectResourceId) {
         // deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);

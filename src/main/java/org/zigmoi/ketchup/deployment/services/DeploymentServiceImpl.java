@@ -20,6 +20,7 @@ import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.entities.DeploymentId;
 import org.zigmoi.ketchup.deployment.repositories.DeploymentRepository;
 import org.zigmoi.ketchup.exception.UnexpectedException;
+import org.zigmoi.ketchup.helm.services.HelmService;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.project.dtos.settings.BuildToolSettingsResponseDto;
 import org.zigmoi.ketchup.project.dtos.settings.ContainerRegistrySettingsResponseDto;
@@ -43,6 +44,9 @@ public class DeploymentServiceImpl implements DeploymentService {
 
     @Autowired
     private ProjectSettingsService projectSettingsService;
+
+    @Autowired
+    private HelmService helmService;
 
     @Autowired
     public DeploymentServiceImpl(DeploymentRepository deploymentRepository) {
@@ -137,7 +141,10 @@ public class DeploymentServiceImpl implements DeploymentService {
 
     @Override
     public void deleteDeployment(String projectResourceId, String deploymentResourceId) {
-
+        //Considering cluster cannot be changed.
+        DeploymentDetailsDto deploymentDetailsDto = getDeployment(deploymentResourceId);
+        String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
+        helmService.deleteRelease("release-" + deploymentResourceId, kubeConfig);
     }
 
     @Override
@@ -317,7 +324,7 @@ public class DeploymentServiceImpl implements DeploymentService {
 
         String basePath = ((JSONObject) stageMvnCleanInstallArgs.get(0)).getString("base-path")
                 + "/" + ((JSONObject) stageMvnCleanInstallArgs.get(0)).getString("repo-name");
-        String dockerFilePath = basePath + "/" + "Dockerfile" ;
+        String dockerFilePath = basePath + "/" + "Dockerfile";
         String dockerRegistryVendor = containerRegistry.getType();
         if (!ContainerRegistryProviders.AWS_ECR.toString().equals(dockerRegistryVendor)) {
             throw new UnsupportedOperationException("Container provider not supported yet");
