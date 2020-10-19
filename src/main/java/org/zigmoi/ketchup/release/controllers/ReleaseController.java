@@ -259,6 +259,12 @@ public class ReleaseController {
         return release;
     }
 
+    @DeleteMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")
+    public void deleteDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
+//        deploymentService.deleteDeployment(projectResourceId, deploymentResourceId);
+        releaseService.deleteDeployment(projectResourceId, deploymentResourceId);
+    }
+
     @GetMapping("/v1/release/stop")
     public void stopRelease(@RequestParam("releaseResourceId") String releaseResourceId) {
         releaseService.stop(releaseResourceId);

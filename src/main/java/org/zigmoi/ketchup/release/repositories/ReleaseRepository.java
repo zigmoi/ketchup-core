@@ -14,9 +14,11 @@ import java.util.Set;
 
 public interface ReleaseRepository extends JpaRepository<Release, ReleaseId> {
     Set<Release> findDistinctByDeploymentResourceIdOrderByCreatedOnDesc(String deploymentResourceId);
+    List<Release> findAllByDeploymentResourceId(String deploymentResourceId);
     Set<Release> findDistinctByProjectResourceId(String projectResourceId);
     Set<Release> findDistinctTop5ByProjectResourceIdOrderByLastUpdatedOnDesc(String projectResourceId);
     Set<Release> findDistinctByProjectResourceIdAndStatusOrderByLastUpdatedOnDesc(String projectResourceId, String status);
     long countAllByDeploymentResourceId(String deploymentResourceId);
     Optional<Release> findTopByDeploymentResourceIdAndStatusOrderByLastUpdatedOnDesc(String deploymentResourceId, String status);
+    void deleteAllByDeploymentResourceId(String deploymentResourceId);
 }

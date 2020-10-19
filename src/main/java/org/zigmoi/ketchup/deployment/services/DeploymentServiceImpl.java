@@ -141,11 +141,7 @@ public class DeploymentServiceImpl implements DeploymentService {
 
     @Override
     public void deleteDeployment(String projectResourceId, String deploymentResourceId) {
-        //Considering cluster cannot be changed.
-        DeploymentDetailsDto deploymentDetailsDto = getDeployment(deploymentResourceId);
-        String namespace = deploymentDetailsDto.getDevKubernetesNamespace();
-        String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
-        helmService.uninstallChart("release-" + deploymentResourceId, namespace, kubeConfig);
+        //delete
     }
 
     @Override

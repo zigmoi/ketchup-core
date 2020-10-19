@@ -15,6 +15,7 @@ public interface ReleaseService {
     void stop(String releaseResourceId);
     Release findById(String releaseResourceId);
     void delete(String releaseResourceId);
+    void deleteDeployment(String projectResourceId, String deploymentResourceId);
     void update(Release release);
     Optional<Release> getActiveRelease(String deploymentResourceId);
     Set<Release> listAllInDeployment(String deploymentResourceId);

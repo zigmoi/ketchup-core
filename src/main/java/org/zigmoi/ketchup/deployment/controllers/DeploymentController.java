@@ -2,6 +2,7 @@ package org.zigmoi.ketchup.deployment.controllers;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1PodList;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,6 +25,7 @@ import org.zigmoi.ketchup.deployment.dtos.GitRepoConnectionTestRequestDto;
 import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
 import org.zigmoi.ketchup.deployment.services.DeploymentService;
 import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsRequestDto;
+import org.zigmoi.ketchup.release.services.ReleaseService;
 
 import java.io.IOException;
 import java.util.*;
@@ -79,10 +81,11 @@ public class DeploymentController {
         deploymentService.updateDeploymentDisplayName(projectResourceId, deploymentResourceId, displayName);
     }
 
-    @DeleteMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")
-    public void deleteDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
-        deploymentService.deleteDeployment(projectResourceId, deploymentResourceId);
-    }
+//    @DeleteMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")
+//    public void deleteDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
+//        deploymentService.deleteDeployment(projectResourceId, deploymentResourceId);
+//        releaseService.deleteDeployment(deploymentResourceId);
+//    }
 
     @GetMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot/list")
     public List<DeploymentEntity> listAllBasicSpringBootDeployments(@PathVariable String projectResourceId) {

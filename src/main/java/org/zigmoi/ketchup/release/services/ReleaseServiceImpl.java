@@ -277,6 +277,36 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
 
     @Override
     @Transactional
+    public void deleteDeployment(String projectResourceId, String deploymentResourceId) {
+        Optional<Release> activeRelease = getActiveRelease(deploymentResourceId);
+        if (activeRelease.isPresent()) {
+            DeploymentDetailsDto deploymentDetailsDto = deploymentJsonToDto(activeRelease.get().getDeploymentDataJson());
+            String namespace = deploymentDetailsDto.getDevKubernetesNamespace();
+            String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
+            helmService.uninstallChart("release-" + deploymentResourceId, namespace, kubeConfig);
+        } else {
+            System.out.println("No active release found to uninstall.");
+        }
+
+        List<Release> releases = releaseRepository.findAllByDeploymentResourceId(deploymentResourceId);
+        releases.forEach(release -> pipelineResourceRepository.deleteAllByReleaseResourceId(release.getId().getReleaseResourceId()));
+        releaseRepository.deleteAllByDeploymentResourceId(deploymentResourceId);
+        deploymentService.deleteDeployment(projectResourceId, deploymentResourceId);
+    }
+
+    public DeploymentDetailsDto deploymentJsonToDto(String deploymentJson) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        DeploymentDetailsDto deploymentDetailsDto = null;
+        try {
+            deploymentDetailsDto = objectMapper.readValue(deploymentJson, DeploymentDetailsDto.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return deploymentDetailsDto;
+    }
+
+    @Override
+    @Transactional
     public void update(Release release) {
 
     }
