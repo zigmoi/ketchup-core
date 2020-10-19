@@ -16,7 +16,6 @@ import org.zigmoi.ketchup.project.repositories.ProjectRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -80,59 +79,6 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
         project.setDescription(description);
-    }
-
-//    @Override
-//    @Transactional
-//    public void addMember(String projectResourceId, String member) {
-//        permissionUtilsService.validatePrincipalCanAddMember(projectResourceId);
-//
-//        ProjectId projectId = new ProjectId();
-//        projectId.setResourceId(projectResourceId);
-//        projectId.setTenantId(AuthUtils.getCurrentTenantId());
-//
-//        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
-//        Set<String> members = project.getMembers();
-//        if (members.contains(member) == false) {
-//            members.add(member);
-//            project.setMembers(members);
-//            projectRepository.save(project);
-//        }
-//    }
-
-//    @Override
-//    @Transactional
-//    public void removeMember(String projectResourceId, String member) {
-//        permissionUtilsService.validatePrincipalCanRemoveMember(projectResourceId);
-//
-//        ProjectId projectId = new ProjectId();
-//        projectId.setResourceId(projectResourceId);
-//        projectId.setTenantId(AuthUtils.getCurrentTenantId());
-//
-//        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
-//        Set<String> members = project.getMembers();
-//        if (members.contains(member)) {
-//            members.remove(member);
-//            project.setMembers(members);
-//            projectRepository.save(project);
-//        }
-//    }
-
-    @Override
-    @Transactional
-    public Set<String> listMembers(String projectResourceId) {
-        permissionUtilsService.validatePrincipalCanListMembers(projectResourceId);
-
-        ProjectId projectId = new ProjectId();
-        projectId.setResourceId(projectResourceId);
-        projectId.setTenantId(AuthUtils.getCurrentTenantId());
-        projectRepository.findById(projectId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
-
-        return userService.listAllUsers()
-                .stream()
-                .filter(user -> permissionUtilsService.hasAnyPermissions(user.getUsername(), projectResourceId))
-                .map(user -> user.getUsername())
-                .collect(Collectors.toSet());
     }
 
     @Override

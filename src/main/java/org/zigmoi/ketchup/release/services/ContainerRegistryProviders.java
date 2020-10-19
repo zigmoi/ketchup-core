@@ -1,4 +1,4 @@
-package org.zigmoi.ketchup.deployment.services;
+package org.zigmoi.ketchup.release.services;
 
 public enum ContainerRegistryProviders {
 

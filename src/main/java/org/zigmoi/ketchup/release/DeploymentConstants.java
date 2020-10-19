@@ -1,4 +1,4 @@
-package org.zigmoi.ketchup.deployment;
+package org.zigmoi.ketchup.release;
 
 public class DeploymentConstants {
     public final static String APP_TYPE_BASIC_SPRING_BOOT = "basic-spring-boot";

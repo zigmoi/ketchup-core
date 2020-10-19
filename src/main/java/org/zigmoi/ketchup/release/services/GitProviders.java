@@ -1,19 +1,21 @@
-package org.zigmoi.ketchup.deployment.services;
+package org.zigmoi.ketchup.release.services;
 
-public enum CloudProviders {
+public enum GitProviders {
 
-    AWS("aws"),
+    BITBUCKET("bitbucket"),
+    GITLAB("gitlab"),
     ;
 
     private String type;
 
-    CloudProviders(String type) {
+    GitProviders(String type) {
         this.type = type;
     }
 
     public String[] getAll() {
         return new String[]{
-                "aws",
+                "bitbucket",
+                "gitlab",
         };
     }
 

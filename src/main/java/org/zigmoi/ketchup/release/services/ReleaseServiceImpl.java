@@ -1,6 +1,7 @@
 package org.zigmoi.ketchup.release.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.internal.LinkedTreeMap;
 import io.kubernetes.client.openapi.ApiException;
@@ -10,6 +11,7 @@ import org.apache.commons.lang.text.StrSubstitutor;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
@@ -29,17 +31,20 @@ import org.yaml.snakeyaml.Yaml;
 import org.zigmoi.ketchup.common.ConfigUtility;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
-import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
-import org.zigmoi.ketchup.deployment.services.DeploymentService;
+import org.zigmoi.ketchup.project.dtos.settings.BuildToolSettingsResponseDto;
+import org.zigmoi.ketchup.project.dtos.settings.ContainerRegistrySettingsResponseDto;
+import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsResponseDto;
+import org.zigmoi.ketchup.project.services.ProjectSettingsService;
+import org.zigmoi.ketchup.release.dtos.DeploymentDetailsDto;
 import org.zigmoi.ketchup.exception.UnexpectedException;
 import org.zigmoi.ketchup.helm.services.HelmService;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.services.TenantProviderService;
 import org.zigmoi.ketchup.project.services.PermissionUtilsService;
-import org.zigmoi.ketchup.release.entities.PipelineResource;
-import org.zigmoi.ketchup.release.entities.PipelineResourceId;
-import org.zigmoi.ketchup.release.entities.Release;
-import org.zigmoi.ketchup.release.entities.ReleaseId;
+import org.zigmoi.ketchup.release.dtos.DeploymentRequestDto;
+import org.zigmoi.ketchup.release.dtos.DeploymentResponseDto;
+import org.zigmoi.ketchup.release.entities.*;
+import org.zigmoi.ketchup.release.repositories.DeploymentRepository;
 import org.zigmoi.ketchup.release.repositories.PipelineResourceRepository;
 import org.zigmoi.ketchup.release.repositories.ReleaseRepository;
 
@@ -47,9 +52,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static org.zigmoi.ketchup.deployment.DeploymentConstants.*;
+import static org.zigmoi.ketchup.release.DeploymentConstants.*;
 
 @Service
 public class ReleaseServiceImpl extends TenantProviderService implements ReleaseService {
@@ -58,19 +64,21 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     private final ReleaseRepository releaseRepository;
     private final PipelineResourceRepository pipelineResourceRepository;
     private final PermissionUtilsService permissionUtilsService;
-    private final DeploymentService deploymentService;
     private final ResourceLoader resourceLoader;
     private final AuthorizationServerTokenServices jwtTokenServices;
     private final HelmService helmService;
+    private final DeploymentRepository deploymentRepository;
+    private ProjectSettingsService projectSettingsService;
 
-    public ReleaseServiceImpl(ReleaseRepository releaseRepository, PipelineResourceRepository pipelineResourceRepository, PermissionUtilsService permissionUtilsService, DeploymentService deploymentService, ResourceLoader resourceLoader, AuthorizationServerTokenServices jwtTokenServices, HelmService helmService) {
+    public ReleaseServiceImpl(ReleaseRepository releaseRepository, PipelineResourceRepository pipelineResourceRepository, PermissionUtilsService permissionUtilsService, ResourceLoader resourceLoader, AuthorizationServerTokenServices jwtTokenServices, HelmService helmService, DeploymentRepository deploymentRepository, ProjectSettingsService projectSettingsService) {
         this.releaseRepository = releaseRepository;
         this.pipelineResourceRepository = pipelineResourceRepository;
         this.permissionUtilsService = permissionUtilsService;
-        this.deploymentService = deploymentService;
         this.resourceLoader = resourceLoader;
         this.jwtTokenServices = jwtTokenServices;
         this.helmService = helmService;
+        this.deploymentRepository = deploymentRepository;
+        this.projectSettingsService = projectSettingsService;
     }
 
     private static String getNamespaceForTektonPipeline(String devKubernetesClusterSettingId) {
@@ -129,7 +137,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         //validate and fetch deploymentId.
         //get projectId from deployment.
         //handle duplicate pipeline resources error in k8s.
-        DeploymentDetailsDto deploymentDetailsDto = deploymentService.getDeployment(deploymentResourceId);
+        DeploymentDetailsDto deploymentDetailsDto = getDeployment(deploymentResourceId);
         long noOfReleases = releaseRepository.countAllByDeploymentResourceId(deploymentResourceId);
         String releaseVersion = "v".concat(String.valueOf(noOfReleases + 1));
 
@@ -193,7 +201,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         String.format("Release with id %s not found.", releaseResourceId)));
         String deploymentResourceId = release.getDeploymentResourceId();
-        DeploymentDetailsDto deploymentDetails = deploymentService.getDeployment(deploymentResourceId);
+        DeploymentDetailsDto deploymentDetails = getDeployment(deploymentResourceId);
         String namespace = deploymentDetails.getDevKubernetesNamespace();
         String kubeConfig = StringUtility.decodeBase64(deploymentDetails.getDevKubeconfig());
         String releaseName = getHelmReleaseId(deploymentDetails.getDeploymentId().getDeploymentResourceId());
@@ -212,7 +220,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         String.format("Release with id %s not found.", releaseResourceId)));
         String deploymentResourceId = release.getDeploymentResourceId();
-        DeploymentDetailsDto deploymentDetails = deploymentService.getDeployment(deploymentResourceId);
+        DeploymentDetailsDto deploymentDetails = getDeployment(deploymentResourceId);
         String namespace = deploymentDetails.getDevKubernetesNamespace();
         //check if release is not failed/success than cancel the pipeline.
         PipelineResource resource = pipelineResourceRepository.findByReleaseResourceIdAndResourceType(releaseResourceId, "pipeline-run").orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
@@ -291,7 +299,11 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         List<Release> releases = releaseRepository.findAllByDeploymentResourceId(deploymentResourceId);
         releases.forEach(release -> pipelineResourceRepository.deleteAllByReleaseResourceId(release.getId().getReleaseResourceId()));
         releaseRepository.deleteAllByDeploymentResourceId(deploymentResourceId);
-        deploymentService.deleteDeployment(projectResourceId, deploymentResourceId);
+//        DeploymentId deploymentId = new DeploymentId();
+//        deploymentId.setProjectResourceId(projectResourceId);
+//        deploymentId.setDeploymentResourceId(deploymentResourceId);
+//        deploymentId.setTenantId(AuthUtils.getCurrentTenantId());
+//        deploymentRepository.deleteById(deploymentId);
     }
 
     public DeploymentDetailsDto deploymentJsonToDto(String deploymentJson) {
@@ -1118,7 +1130,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     public void cleanPipelineResources(ReleaseId releaseId) {
         Set<PipelineResource> resources = pipelineResourceRepository.findDistinctByReleaseResourceId(releaseId.getReleaseResourceId());
         Release release = findById(releaseId.getReleaseResourceId());
-        DeploymentDetailsDto deploymentDetailsDto = deploymentService.getDeployment(release.getDeploymentResourceId());
+        DeploymentDetailsDto deploymentDetailsDto = getDeployment(release.getDeploymentResourceId());
         String kubeConfig = getKubeConfig(release.getDeploymentDataJson());
         deletePipelineResources(deploymentDetailsDto, resources, kubeConfig);
     }
@@ -1177,5 +1189,129 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
                 + generateForeverActiveToken(jwtTokenServices, "git-webhook") + "&uid=" + deploymentResourceId;
         System.out.println(webhookListenerUrl);
         return domain + "/" + webhookListenerUrl;
+    }
+
+
+    private String getNewDeploymentId() {
+        return UUID.randomUUID().toString();
+    }
+
+    @Override
+    public void updateDeploymentStatus(String projectResourceId, String deploymentResourceId, String status) {
+
+    }
+
+    @Override
+    public void updateDeploymentDisplayName(String projectResourceId, String deploymentResourceId, String displayName) {
+
+    }
+
+    @Override
+    @Transactional
+    public String createDeployment(String projectResourceId, DeploymentRequestDto deploymentRequestDto) {
+        DeploymentId deploymentId = new DeploymentId(AuthUtils.getCurrentTenantId(), projectResourceId, getNewDeploymentId());
+        DeploymentEntity deploymentEntity = new DeploymentEntity();
+        deploymentEntity.setId(deploymentId);
+        deploymentEntity.setType(deploymentRequestDto.getApplicationType());
+        deploymentEntity.setDisplayName(deploymentRequestDto.getDisplayName());
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            JSONObject deploymentJson = new JSONObject(objectMapper.writeValueAsString(deploymentRequestDto));
+            JSONObject deploymentIdJson = new JSONObject(objectMapper.writeValueAsString(deploymentId));
+            deploymentJson.put("deploymentId", deploymentIdJson);
+
+            //get all setting values and store it in deployment.
+            final KubernetesClusterSettingsResponseDto devKubernetesCluster = projectSettingsService.getKubernetesCluster(projectResourceId, deploymentRequestDto.getDevKubernetesClusterSettingId());
+            final ContainerRegistrySettingsResponseDto containerRegistry = projectSettingsService.getContainerRegistry(projectResourceId, deploymentRequestDto.getContainerRegistrySettingId());
+            final BuildToolSettingsResponseDto buildTool = projectSettingsService.getBuildTool(projectResourceId, deploymentRequestDto.getBuildToolSettingId());
+            //save settings for host alias settings
+
+            deploymentJson.put("devKubeconfig", devKubernetesCluster.getFileData());
+            deploymentJson.put("containerRegistryType", containerRegistry.getType());
+            deploymentJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
+            deploymentJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
+            deploymentJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
+            deploymentJson.put("containerRepositoryName", containerRegistry.getRepository());
+            deploymentJson.put("buildToolType", buildTool.getType());
+            deploymentJson.put("buildToolSettingsData", buildTool.getFileData());
+
+            deploymentEntity.setData(deploymentJson.toString());
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        deploymentRepository.save(deploymentEntity);
+        return deploymentId.getDeploymentResourceId();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DeploymentDetailsDto getDeployment(String deploymentResourceId) {
+        DeploymentEntity deploymentEntity = deploymentRepository.getByDeploymentResourceId(deploymentResourceId);
+        ObjectMapper objectMapper = new ObjectMapper();
+        DeploymentDetailsDto deploymentDetailsDto = null;
+        try {
+            deploymentDetailsDto = objectMapper.readValue(deploymentEntity.getData(), DeploymentDetailsDto.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return deploymentDetailsDto;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DeploymentResponseDto getDeploymentDetails(String deploymentResourceId) {
+        DeploymentEntity deploymentEntity = deploymentRepository.getByDeploymentResourceId(deploymentResourceId);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        DeploymentResponseDto deploymentResponseDto = null;
+        try {
+            deploymentResponseDto = objectMapper.readValue(deploymentEntity.getData(), DeploymentResponseDto.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return deploymentResponseDto;
+    }
+
+    @Override
+    public List<DeploymentEntity> listAllDeployments(String projectResourceId) {
+        return deploymentRepository.findAll()
+                .stream()
+                .filter(deploymentEntity ->
+                        deploymentEntity.getId().getProjectResourceId().equalsIgnoreCase(projectResourceId))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void updateDeployment(String projectResourceId, String deploymentResourceId, DeploymentRequestDto deploymentRequestDto) {
+        DeploymentEntity deployment = deploymentRepository.getByDeploymentResourceId(deploymentResourceId);
+        DeploymentId deploymentId = deployment.getId();
+        deployment.setDisplayName(deploymentRequestDto.getDisplayName());
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            JSONObject deploymentJson = new JSONObject(objectMapper.writeValueAsString(deploymentRequestDto));
+            JSONObject deploymentIdJson = new JSONObject(objectMapper.writeValueAsString(deploymentId));
+            deploymentJson.put("deploymentId", deploymentIdJson);
+
+            //get all setting values and store it in deployment.
+            final KubernetesClusterSettingsResponseDto devKubernetesCluster = projectSettingsService.getKubernetesCluster(projectResourceId, deploymentRequestDto.getDevKubernetesClusterSettingId());
+            final ContainerRegistrySettingsResponseDto containerRegistry = projectSettingsService.getContainerRegistry(projectResourceId, deploymentRequestDto.getContainerRegistrySettingId());
+            final BuildToolSettingsResponseDto buildTool = projectSettingsService.getBuildTool(projectResourceId, deploymentRequestDto.getBuildToolSettingId());
+            //save settings for host alias settings
+
+            deploymentJson.put("devKubeconfig", devKubernetesCluster.getFileData());
+            deploymentJson.put("containerRegistryType", containerRegistry.getType());
+            deploymentJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
+            deploymentJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
+            deploymentJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
+            deploymentJson.put("containerRepositoryName", containerRegistry.getRepository());
+            deploymentJson.put("buildToolType", buildTool.getType());
+            deploymentJson.put("buildToolSettingsData", buildTool.getFileData());
+
+            deployment.setData(deploymentJson.toString());
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        deploymentRepository.save(deployment);
     }
 }

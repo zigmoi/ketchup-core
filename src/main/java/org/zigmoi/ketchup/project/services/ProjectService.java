@@ -16,12 +16,6 @@ public interface ProjectService {
 
     void updateDescription(String projectResourceId, String description);
 
-//    void addMember(String projectResourceId, String member);
-//
-//    void removeMember(String projectResourceId, String member);
-
-    Set<String> listMembers(String projectResourceId);
-
     List<Project> listAllProjects();
 
     Optional<Project> findById(String projectResourceId);

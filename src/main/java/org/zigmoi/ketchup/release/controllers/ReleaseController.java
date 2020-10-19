@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.jayway.jsonpath.JsonPath;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1PodList;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -15,11 +16,16 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.zigmoi.ketchup.common.GitUtility;
 import org.zigmoi.ketchup.common.GitWebHookParserUtility;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
-import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
-import org.zigmoi.ketchup.deployment.services.DeploymentService;
+import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsRequestDto;
+import org.zigmoi.ketchup.release.dtos.DeploymentDetailsDto;
+import org.zigmoi.ketchup.release.dtos.DeploymentRequestDto;
+import org.zigmoi.ketchup.release.dtos.DeploymentResponseDto;
+import org.zigmoi.ketchup.release.dtos.GitRepoConnectionTestRequestDto;
+import org.zigmoi.ketchup.release.entities.DeploymentEntity;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.release.entities.Release;
 import org.zigmoi.ketchup.release.entities.ReleaseId;
@@ -34,6 +40,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -43,8 +50,6 @@ public class ReleaseController {
 
     @Autowired
     private ReleaseService releaseService;
-    @Autowired
-    private DeploymentService deploymentService;
 
     @Autowired
     private ResourceLoader resourceLoader;
@@ -497,7 +502,7 @@ public class ReleaseController {
     @PostMapping(value = "/v1-alpha/release/git-webhook/{vendor}/listen")
     public void gitWebhookListenPost(HttpServletResponse response, @PathVariable String vendor,
                                      @RequestParam("uid") String deploymentResourceId, @RequestBody(required = false) String req) {
-        DeploymentDetailsDto deploymentDetailsDto = deploymentService.getDeployment(deploymentResourceId);
+        DeploymentDetailsDto deploymentDetailsDto = releaseService.getDeployment(deploymentResourceId);
         if (deploymentDetailsDto == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
@@ -527,5 +532,80 @@ public class ReleaseController {
         Map<String, String> map = new HashMap<>();
         map.put("webhookUrl", url);
         return map;
+    }
+
+    @PostMapping("/v1-alpha/project/{projectResourceId}/deployments/basic-spring-boot")
+    public void createBasicSpringBootDeployment(@RequestBody DeploymentRequestDto deploymentRequestDto, @PathVariable String projectResourceId) {
+        // deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);
+        releaseService.createDeployment(projectResourceId, deploymentRequestDto);
+    }
+
+    @GetMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}/instances")
+    public List<String> getDeploymentInstances(@PathVariable String deploymentResourceId) {
+        //TODO find active version of deployment and use its kubeconfig to get instances.
+        DeploymentDetailsDto deploymentDetailsDto = releaseService.getDeployment(deploymentResourceId);
+        String kubeConfig = StringUtility.decodeBase64(deploymentDetailsDto.getDevKubeconfig());
+        try {
+            String labelSelector = "app.kubernetes.io/instance=release-".concat(deploymentResourceId);
+            V1PodList res = KubernetesUtility.listPods(labelSelector, deploymentDetailsDto.getDevKubernetesNamespace(), "false", kubeConfig);
+            System.out.println(res);
+            return res.getItems().stream().map(pod -> pod.getMetadata().getName()).collect(Collectors.toList());
+        } catch (IOException | ApiException e) {
+            e.printStackTrace();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get instances.");
+        }
+    }
+
+    @GetMapping("/v1-alpha/project/{projectResourceId}/deployments/basic-spring-boot/{deploymentResourceId}")
+    public DeploymentResponseDto getBasicSpringBootDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
+        return releaseService.getDeploymentDetails(deploymentResourceId);
+    }
+
+    @PutMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}")
+    public void updateDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId, @RequestBody DeploymentRequestDto deploymentRequestDto) {
+        //TODO provide option to update current deployment with new changes.
+        releaseService.updateDeployment(projectResourceId, deploymentResourceId, deploymentRequestDto);
+    }
+
+    @PutMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}/status/{status}")
+    public void updateDeploymentStatus(@PathVariable("status") String status, @PathVariable String deploymentResourceId, @PathVariable String projectResourceId) {
+        releaseService.updateDeploymentStatus(projectResourceId, deploymentResourceId, status);
+    }
+
+    @PutMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}/displayName/{displayName}")
+    public void updateDeploymentDisplayName(@PathVariable("deploymentResourceId") String deploymentResourceId, @PathVariable("displayName") String displayName, @PathVariable String projectResourceId) {
+        releaseService.updateDeploymentDisplayName(projectResourceId, deploymentResourceId, displayName);
+    }
+
+    @GetMapping("/v1-alpha/project/{projectResourceId}/deployments/basic-spring-boot/list")
+    public List<DeploymentEntity> listAllBasicSpringBootDeployments(@PathVariable String projectResourceId) {
+        return releaseService.listAllDeployments(projectResourceId);
+    }
+
+    @PostMapping("/v1-alpha/project/test-connection/git-remote/basic-auth")
+    public Map<String, String> testConnectionGitRemoteBasicAuth(@RequestBody GitRepoConnectionTestRequestDto requestDto) {
+        boolean connectionSuccessful = false;
+        try {
+            connectionSuccessful = GitUtility.instance().testConnection(requestDto.getUsername(), requestDto.getPassword(), requestDto.getRepoUrl());
+        } catch (Exception e) {
+            connectionSuccessful = false;
+        }
+        Map<String, String> status = new HashMap<>();
+        status.put("status", connectionSuccessful ? "success" : "failed");
+        return status;
+    }
+
+    @PutMapping("/v1-alpha/project/test-connection/kubernetes-cluster/kubeconfig-auth")
+    public Map<String, String> testConnectionKubernetesClusterKubeConfigAuth(@RequestBody KubernetesClusterSettingsRequestDto request) {
+        boolean connectionSuccessful = false;
+        try {
+            String kubeConfig = StringUtility.decodeBase64(request.getFileData());
+            connectionSuccessful = KubernetesUtility.testConnection(kubeConfig);
+        } catch (ApiException | IOException  e) {
+            connectionSuccessful = false;
+        }
+        Map<String, String> status = new HashMap<>();
+        status.put("status", connectionSuccessful ? "success" : "failed");
+        return status;
     }
 }

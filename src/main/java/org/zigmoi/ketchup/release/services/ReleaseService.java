@@ -1,10 +1,14 @@
 package org.zigmoi.ketchup.release.services;
 
-import org.zigmoi.ketchup.deployment.dtos.DeploymentDetailsDto;
+import org.zigmoi.ketchup.release.dtos.DeploymentDetailsDto;
+import org.zigmoi.ketchup.release.dtos.DeploymentRequestDto;
+import org.zigmoi.ketchup.release.dtos.DeploymentResponseDto;
+import org.zigmoi.ketchup.release.entities.DeploymentEntity;
 import org.zigmoi.ketchup.release.entities.PipelineResource;
 import org.zigmoi.ketchup.release.entities.Release;
 import org.zigmoi.ketchup.release.entities.ReleaseId;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -32,4 +36,12 @@ public interface ReleaseService {
     String generateGitWebhookListenerURL(String vendor, String deploymentResourceId);
 
     Optional<Release> refreshReleaseStatus(String releaseResourceId);
+
+    void updateDeploymentStatus(String projectResourceId, String deploymentResourceId, String status);
+    void updateDeploymentDisplayName(String projectResourceId, String deploymentResourceId, String displayName);
+    String createDeployment(String projectResourceId, DeploymentRequestDto deploymentRequestDto);
+    DeploymentDetailsDto getDeployment(String deploymentResourceId);
+    DeploymentResponseDto getDeploymentDetails(String deploymentResourceId);
+    List<DeploymentEntity> listAllDeployments(String projectResourceId);
+    void updateDeployment(String projectResourceId, String deploymentResourceId, DeploymentRequestDto deploymentRequestDto);
 }

@@ -1,11 +1,9 @@
-package org.zigmoi.ketchup.deployment.dtos;
+package org.zigmoi.ketchup.release.dtos;
 
 import lombok.Data;
-import org.zigmoi.ketchup.deployment.entities.DeploymentId;
 
 @Data
-public class DeploymentResponseDto {
-    private DeploymentId deploymentId;
+public class DeploymentRequestDto {
     private String displayName;
     private String description;
     private String applicationType;

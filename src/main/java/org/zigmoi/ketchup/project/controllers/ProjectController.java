@@ -15,7 +15,6 @@ import org.zigmoi.ketchup.project.services.ProjectService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 
@@ -117,38 +116,4 @@ public class ProjectController {
         return allPermissionStatus;
     }
 
-//    @PutMapping("/v1-alpha/project/{resourceId}/member/{action}/{userName}")
-//    public void manageProjectMembers(@PathVariable("resourceId") String resourceId,
-//                                     @PathVariable("action") String action,
-//                                     @PathVariable("userName") String userName) {
-//
-//        if ("ADD".equalsIgnoreCase(action)) {
-//            projectService.addMember(resourceId, userName);
-//        } else if ("REMOVE".equalsIgnoreCase(action)) {
-//            projectService.removeMember(resourceId, userName);
-//        } else {
-//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-//                    "Invalid action, allowed values are ADD and REMOVE.");
-//        }
-//    }
-
-    @GetMapping("/v1-alpha/project/{resourceId}/members")
-    public List<String> listProjectMembers(@PathVariable("resourceId") String resourceId) {
-        return projectService.listMembers(resourceId)
-                .stream()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-//    @PostMapping("/v1-alpha/project/{resourceId}/member/{memberName}/add")
-//    public void addProjectMember(@PathVariable("resourceId") String resourceId,
-//                                 @PathVariable("memberName") String memberName) {
-//        projectService.addMember(resourceId, memberName);
-//    }
-
-//    @PostMapping("/v1-alpha/project/{resourceId}/member/{memberName}/remove")
-//    public void removeProjectMember(@PathVariable("resourceId") String resourceId,
-//                                    @PathVariable("memberName") String memberName) {
-//        projectService.removeMember(resourceId, memberName);
-//    }
 }

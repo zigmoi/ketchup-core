@@ -1,4 +1,4 @@
-package org.zigmoi.ketchup.deployment.entities;
+package org.zigmoi.ketchup.release.entities;
 
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;

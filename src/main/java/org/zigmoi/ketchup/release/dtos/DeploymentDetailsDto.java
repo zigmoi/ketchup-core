@@ -1,7 +1,7 @@
-package org.zigmoi.ketchup.deployment.dtos;
+package org.zigmoi.ketchup.release.dtos;
 
 import lombok.Data;
-import org.zigmoi.ketchup.deployment.entities.DeploymentId;
+import org.zigmoi.ketchup.release.entities.DeploymentId;
 
 @Data
 public class DeploymentDetailsDto {

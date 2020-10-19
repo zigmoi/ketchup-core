@@ -1,13 +1,9 @@
 package org.zigmoi.ketchup.release.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.zigmoi.ketchup.deployment.entities.DeploymentEntity;
-import org.zigmoi.ketchup.deployment.entities.DeploymentId;
 import org.zigmoi.ketchup.release.entities.Release;
 import org.zigmoi.ketchup.release.entities.ReleaseId;
 
-import javax.persistence.OrderBy;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
