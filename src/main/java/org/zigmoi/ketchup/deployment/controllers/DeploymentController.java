@@ -37,13 +37,13 @@ public class DeploymentController {
     @Autowired
     private DeploymentService deploymentService;
 
-    @PostMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot")
+    @PostMapping("/v1-alpha/project/{projectResourceId}/deployments/basic-spring-boot")
     public void createBasicSpringBootDeployment(@RequestBody DeploymentRequestDto deploymentRequestDto, @PathVariable String projectResourceId) {
         // deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);
         deploymentService.createDeployment(projectResourceId, deploymentRequestDto);
     }
 
-    @GetMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}/instances")
+    @GetMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}/instances")
     public List<String> getDeploymentInstances(@PathVariable String deploymentResourceId) {
         //TODO find active version of deployment and use its kubeconfig to get instances.
         DeploymentDetailsDto deploymentDetailsDto = deploymentService.getDeployment(deploymentResourceId);
@@ -59,40 +59,40 @@ public class DeploymentController {
         }
     }
 
-    @GetMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot/{deploymentResourceId}")
+    @GetMapping("/v1-alpha/project/{projectResourceId}/deployments/basic-spring-boot/{deploymentResourceId}")
     public DeploymentResponseDto getBasicSpringBootDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
         // generateToken();
         return deploymentService.getDeploymentDetails(deploymentResourceId);
     }
 
-    @PutMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")
+    @PutMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}")
     public void updateDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId, @RequestBody DeploymentRequestDto deploymentRequestDto) {
         //TODO provide option to update current deployment with new changes.
         deploymentService.updateDeployment(projectResourceId, deploymentResourceId, deploymentRequestDto);
     }
 
-    @PutMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}/status/{status}")
+    @PutMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}/status/{status}")
     public void updateDeploymentStatus(@PathVariable("status") String status, @PathVariable String deploymentResourceId, @PathVariable String projectResourceId) {
         deploymentService.updateDeploymentStatus(projectResourceId, deploymentResourceId, status);
     }
 
-    @PutMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}/displayName/{displayName}")
+    @PutMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}/displayName/{displayName}")
     public void updateDeploymentDisplayName(@PathVariable("deploymentResourceId") String deploymentResourceId, @PathVariable("displayName") String displayName, @PathVariable String projectResourceId) {
         deploymentService.updateDeploymentDisplayName(projectResourceId, deploymentResourceId, displayName);
     }
 
-//    @DeleteMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")
+//    @DeleteMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}")
 //    public void deleteDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
 //        deploymentService.deleteDeployment(projectResourceId, deploymentResourceId);
 //        releaseService.deleteDeployment(deploymentResourceId);
 //    }
 
-    @GetMapping("v1/project/{projectResourceId}/deployments/basic-spring-boot/list")
+    @GetMapping("/v1-alpha/project/{projectResourceId}/deployments/basic-spring-boot/list")
     public List<DeploymentEntity> listAllBasicSpringBootDeployments(@PathVariable String projectResourceId) {
         return deploymentService.listAllBasicSpringBootDeployments(projectResourceId);
     }
 
-    @PostMapping("v1/project/test-connection/git-remote/basic-auth")
+    @PostMapping("/v1-alpha/project/test-connection/git-remote/basic-auth")
     public Map<String, String> testConnectionGitRemoteBasicAuth(@RequestBody GitRepoConnectionTestRequestDto requestDto) {
         boolean connectionSuccessful = false;
         try {
@@ -105,7 +105,7 @@ public class DeploymentController {
         return status;
     }
 
-    @PutMapping("v1/project/test-connection/kubernetes-cluster/kubeconfig-auth")
+    @PutMapping("/v1-alpha/project/test-connection/kubernetes-cluster/kubeconfig-auth")
     public Map<String, String> testConnectionKubernetesClusterKubeConfigAuth(@RequestBody KubernetesClusterSettingsRequestDto request) {
         boolean connectionSuccessful = false;
         try {

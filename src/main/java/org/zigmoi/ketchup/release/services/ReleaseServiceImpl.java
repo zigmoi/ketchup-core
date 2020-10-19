@@ -1173,7 +1173,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
     @Override
     public String generateGitWebhookListenerURL(String vendor, String deploymentResourceId) {
         String domain = ConfigUtility.instance().getProperty("ketchup.base-url");
-        String webhookListenerUrl = "v1/release/git-webhook/" + vendor + "/listen?access_token="
+        String webhookListenerUrl = "v1-alpha/release/git-webhook/" + vendor + "/listen?access_token="
                 + generateForeverActiveToken(jwtTokenServices, "git-webhook") + "&uid=" + deploymentResourceId;
         System.out.println(webhookListenerUrl);
         return domain + "/" + webhookListenerUrl;

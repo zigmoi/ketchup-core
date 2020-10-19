@@ -32,45 +32,45 @@ public class ProjectController {
     @Autowired
     private PermissionUtilsService permissionUtilsService;
 
-    @PostMapping("/v1/project")
+    @PostMapping("/v1-alpha/project")
     public void createProject(@RequestBody ProjectDto projectDto) {
         projectService.createProject(projectDto);
     }
 
-    @DeleteMapping("/v1/project/{projectName}")
+    @DeleteMapping("/v1-alpha/project/{projectName}")
     public void deleteProject(@PathVariable("projectName") String projectName) {
         projectService.deleteProject(projectName);
     }
 
-    @PutMapping("/v1/project/{projectName}/{projectDescription}")
+    @PutMapping("/v1-alpha/project/{projectName}/{projectDescription}")
     public void updateDescription(@PathVariable("projectName") String projectName, @PathVariable("projectDescription") String description) {
         projectService.updateDescription(projectName, description);
     }
 
-    @GetMapping("/v1/projects")
+    @GetMapping("/v1-alpha/projects")
     public List<Project> listAllProjects() {
         return projectService.listAllProjects();
     }
 
-    @GetMapping("/v1/project/{resourceId}")
+    @GetMapping("/v1-alpha/project/{resourceId}")
     public Project getProject(@PathVariable("resourceId") String resourceId) {
         return projectService.findById(resourceId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
     }
 
-    @PutMapping("/v1/project/assign/permissions")
+    @PutMapping("/v1-alpha/project/assign/permissions")
     public void assignProjectPermissions(@RequestBody ProjectAclDto request) {
         //check tenant is current tenant.
         projectAclService.assignPermission(request);
     }
 
-    @PutMapping("/v1/project/revoke/permissions")
+    @PutMapping("/v1-alpha/project/revoke/permissions")
     public void revokeProjectPermissions(@RequestBody ProjectAclDto request) {
         //check tenant is current tenant.
         projectAclService.revokePermission(request);
     }
 
-    @GetMapping("/v1/project/{resourceId}/check/my/permission/{permissionId}")
+    @GetMapping("/v1-alpha/project/{resourceId}/check/my/permission/{permissionId}")
     public boolean currentUserHasProjectPermission(@PathVariable("resourceId") String resourceId,
                                                    @PathVariable("permissionId") String permissionId) {
         //user can check his own permissions in any project.
@@ -78,7 +78,7 @@ public class ProjectController {
         return projectAclService.hasProjectPermission(identity, permissionId, resourceId);
     }
 
-    @GetMapping("/v1/project/{resourceId}/check/user/{userName}/permission/{permissionId}")
+    @GetMapping("/v1-alpha/project/{resourceId}/check/user/{userName}/permission/{permissionId}")
     public boolean userHasProjectPermission(@PathVariable("resourceId") String resourceId,
                                             @PathVariable("userName") String userName,
                                             @PathVariable("permissionId") String permissionId) {
@@ -91,7 +91,7 @@ public class ProjectController {
         return projectAclService.hasProjectPermission(identity, permissionId, resourceId);
     }
 
-    @GetMapping("/v1/project/{resourceId}/user/{userName}/permissions")
+    @GetMapping("/v1-alpha/project/{resourceId}/user/{userName}/permissions")
     public List<ProjectPermissionStatusDto> getAllProjectPermissionsForUser(@PathVariable("resourceId") String resourceId,
                                                                             @PathVariable("userName") String userName) {
         //if current user has read permissions in project he can check any users permissions in that project.
@@ -117,7 +117,7 @@ public class ProjectController {
         return allPermissionStatus;
     }
 
-//    @PutMapping("/v1/project/{resourceId}/member/{action}/{userName}")
+//    @PutMapping("/v1-alpha/project/{resourceId}/member/{action}/{userName}")
 //    public void manageProjectMembers(@PathVariable("resourceId") String resourceId,
 //                                     @PathVariable("action") String action,
 //                                     @PathVariable("userName") String userName) {
@@ -132,7 +132,7 @@ public class ProjectController {
 //        }
 //    }
 
-    @GetMapping("/v1/project/{resourceId}/members")
+    @GetMapping("/v1-alpha/project/{resourceId}/members")
     public List<String> listProjectMembers(@PathVariable("resourceId") String resourceId) {
         return projectService.listMembers(resourceId)
                 .stream()
@@ -140,13 +140,13 @@ public class ProjectController {
                 .collect(Collectors.toList());
     }
 
-//    @PostMapping("/v1/project/{resourceId}/member/{memberName}/add")
+//    @PostMapping("/v1-alpha/project/{resourceId}/member/{memberName}/add")
 //    public void addProjectMember(@PathVariable("resourceId") String resourceId,
 //                                 @PathVariable("memberName") String memberName) {
 //        projectService.addMember(resourceId, memberName);
 //    }
 
-//    @PostMapping("/v1/project/{resourceId}/member/{memberName}/remove")
+//    @PostMapping("/v1-alpha/project/{resourceId}/member/{memberName}/remove")
 //    public void removeProjectMember(@PathVariable("resourceId") String resourceId,
 //                                    @PathVariable("memberName") String memberName) {
 //        projectService.removeMember(resourceId, memberName);

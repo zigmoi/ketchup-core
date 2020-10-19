@@ -218,28 +218,28 @@ public class ReleaseController {
         return stepJson;
     }
 
-    @PostMapping("/v1/release")
+    @PostMapping("/v1-alpha/release")
     public Map<String, String> createRelease(@RequestParam("deploymentId") String deploymentResourceId) {
         return Collections.singletonMap("releaseResourceId", releaseService.create(deploymentResourceId));
     }
 
-    @GetMapping("/v1/release")
+    @GetMapping("/v1-alpha/release")
     public Release getRelease(@RequestParam("releaseResourceId") String releaseResourceId) {
         return releaseService.findById(releaseResourceId);
     }
 
-    @GetMapping("/v1/release/rollback")
+    @GetMapping("/v1-alpha/release/rollback")
     public void rollbackRelease(@RequestParam("releaseResourceId") String releaseResourceId) {
         //rollback current application to release version as in releaseResourceId.
         releaseService.rollback(releaseResourceId);
     }
 
-    @GetMapping("/v1/release/active")
+    @GetMapping("/v1-alpha/release/active")
     public Release getActiveRelease(@RequestParam("deploymentResourceId") String deploymentResourceId) {
         return releaseService.getActiveRelease(deploymentResourceId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active release not found."));
     }
 
-    @GetMapping("/v1/release/refresh")
+    @GetMapping("/v1-alpha/release/refresh")
     public Release refreshReleaseStatus(@RequestParam("releaseResourceId") String releaseResourceId) throws IOException, ApiException {
         Release release = releaseService.findById(releaseResourceId);
         String pipelineRunName = "pipeline-run-".concat(releaseResourceId);
@@ -259,43 +259,43 @@ public class ReleaseController {
         return release;
     }
 
-    @DeleteMapping("v1/project/{projectResourceId}/deployments/{deploymentResourceId}")
+    @DeleteMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}")
     public void deleteDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
 //        deploymentService.deleteDeployment(projectResourceId, deploymentResourceId);
         releaseService.deleteDeployment(projectResourceId, deploymentResourceId);
     }
 
-    @GetMapping("/v1/release/stop")
+    @GetMapping("/v1-alpha/release/stop")
     public void stopRelease(@RequestParam("releaseResourceId") String releaseResourceId) {
         releaseService.stop(releaseResourceId);
     }
 
-    @GetMapping("/v1/releases")
+    @GetMapping("/v1-alpha/releases")
     public Set<Release> listAllReleasesInDeployment(@RequestParam("deploymentId") String deploymentResourceId) {
         return releaseService.listAllInDeployment(deploymentResourceId);
     }
 
-    @DeleteMapping("/v1/release/pipeline/cleanup")
+    @DeleteMapping("/v1-alpha/release/pipeline/cleanup")
     public void deletePipelineResources(@RequestParam("releaseId") String releaseResourceId) {
         releaseService.cleanPipelineResources(new ReleaseId(AuthUtils.getCurrentTenantId(), releaseResourceId));
     }
 
-    @GetMapping("/v1/pipelines")
+    @GetMapping("/v1-alpha/pipelines")
     public Set<Release> listAllReleasesInDeployment(@RequestParam("projectResourceId") String projectResourceId, @RequestParam("status") String status) {
         return releaseService.listAllInProjectWithStatus(projectResourceId, status);
     }
 
-    @GetMapping("/v1/pipelines/recent")
+    @GetMapping("/v1-alpha/pipelines/recent")
     public Set<Release> listRecentReleases(@RequestParam("projectResourceId") String projectResourceId) {
         return releaseService.listRecentInProject(projectResourceId);
     }
 
-    @GetMapping("/v1/release/pipeline/tekton-events")
+    @GetMapping("/v1-alpha/release/pipeline/tekton-events")
     public void pipelineTektonEventsGet() {
         log.info("Tekton event received");
     }
 
-    @PostMapping("/v1/release/pipeline/tekton-events")
+    @PostMapping("/v1-alpha/release/pipeline/tekton-events")
     public void pipelineTektonEventsPost(HttpEntity<String> request) {
         try {
             JSONObject inJo = new JSONObject(Objects.requireNonNull(request.getBody()));
@@ -377,7 +377,7 @@ public class ReleaseController {
         }
     }
 
-    @GetMapping("/v1/release/pipeline/status/stream/sse")
+    @GetMapping("/v1-alpha/release/pipeline/status/stream/sse")
     public SseEmitter streamPipelineStatus(@RequestParam("releaseId") String releaseResourceId) {
         Release release = releaseService.findById(releaseResourceId);
         String kubeConfig = getKubeConfig(release.getDeploymentDataJson());
@@ -433,8 +433,8 @@ public class ReleaseController {
                 deploymentDetailsDto.getDevKubernetesNamespace(), podName, containerName, tailLines);
     }
 
-    //    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/direct")
-    @GetMapping(value = "/v1/release/pipeline/logs/stream/direct")
+    //    @GetMapping(value = "/v1-alpha/release/pipeline/pod-container/logs/stream/direct")
+    @GetMapping(value = "/v1-alpha/release/pipeline/logs/stream/direct")
     public void streamPipelineLogsDirect(HttpServletResponse response,
                                          @RequestParam("releaseId") String releaseResourceId,
                                          @RequestParam("podName") String podName,
@@ -450,8 +450,8 @@ public class ReleaseController {
     }
 
 
-    //    @GetMapping(value = "/v1/release/pipeline/pod-container/logs/stream/sse")
-    @GetMapping(value = "/v1/release/pipeline/logs/stream/sse")
+    //    @GetMapping(value = "/v1-alpha/release/pipeline/pod-container/logs/stream/sse")
+    @GetMapping(value = "/v1-alpha/release/pipeline/logs/stream/sse")
     public SseEmitter streamPipelineLogsSSE(@RequestParam("releaseId") String releaseResourceId,
                                             @RequestParam("podName") String podName,
                                             @RequestParam("containerName") String containerName,
@@ -472,7 +472,7 @@ public class ReleaseController {
         return emitter;
     }
 
-    @GetMapping(value = "/v1/release/active/application/logs/stream")
+    @GetMapping(value = "/v1-alpha/release/active/application/logs/stream")
     public void streamActiveReleaseLogs(HttpServletResponse response,
                                         @RequestParam("deploymentResourceId") String deploymentResourceId,
                                         @RequestParam("podName") String podName,
@@ -494,7 +494,7 @@ public class ReleaseController {
         }
     }
 
-    @PostMapping(value = "/v1/release/git-webhook/{vendor}/listen")
+    @PostMapping(value = "/v1-alpha/release/git-webhook/{vendor}/listen")
     public void gitWebhookListenPost(HttpServletResponse response, @PathVariable String vendor,
                                      @RequestParam("uid") String deploymentResourceId, @RequestBody(required = false) String req) {
         DeploymentDetailsDto deploymentDetailsDto = deploymentService.getDeployment(deploymentResourceId);
@@ -520,7 +520,7 @@ public class ReleaseController {
 
     }
 
-    @GetMapping(value = "/v1/release/git-webhook/{vendor}/listener-url")
+    @GetMapping(value = "/v1-alpha/release/git-webhook/{vendor}/listener-url")
     public Map<String, String> gitWebhookGenerateListenerURL(HttpServletResponse response, @PathVariable String vendor,
                                               @RequestParam("deploymentId") String deploymentResourceId) {
         String url = releaseService.generateGitWebhookListenerURL(vendor, deploymentResourceId);
