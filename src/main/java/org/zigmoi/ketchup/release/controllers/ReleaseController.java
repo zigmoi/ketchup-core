@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -50,9 +49,6 @@ public class ReleaseController {
 
     @Autowired
     private ReleaseService releaseService;
-
-    @Autowired
-    private ResourceLoader resourceLoader;
 
     private static String getData(String inputJson, String jsonPath) {
         String response = "";
@@ -534,9 +530,8 @@ public class ReleaseController {
         return map;
     }
 
-    @PostMapping("/v1-alpha/project/{projectResourceId}/deployments/basic-spring-boot")
-    public void createBasicSpringBootDeployment(@RequestBody DeploymentRequestDto deploymentRequestDto, @PathVariable String projectResourceId) {
-        // deploymentRequestDto.setApplicationType(DeploymentConstants.APP_TYPE_BASIC_SPRING_BOOT);
+    @PostMapping("/v1-alpha/project/{projectResourceId}/deployment")
+    public void createApplication(@RequestBody DeploymentRequestDto deploymentRequestDto, @PathVariable String projectResourceId) {
         releaseService.createDeployment(projectResourceId, deploymentRequestDto);
     }
 
@@ -556,7 +551,7 @@ public class ReleaseController {
         }
     }
 
-    @GetMapping("/v1-alpha/project/{projectResourceId}/deployments/basic-spring-boot/{deploymentResourceId}")
+    @GetMapping("/v1-alpha/project/{projectResourceId}/deployments/{deploymentResourceId}")
     public DeploymentResponseDto getBasicSpringBootDeployment(@PathVariable String projectResourceId, @PathVariable String deploymentResourceId) {
         return releaseService.getDeploymentDetails(deploymentResourceId);
     }
@@ -577,7 +572,7 @@ public class ReleaseController {
         releaseService.updateDeploymentDisplayName(projectResourceId, deploymentResourceId, displayName);
     }
 
-    @GetMapping("/v1-alpha/project/{projectResourceId}/deployments/basic-spring-boot/list")
+    @GetMapping("/v1-alpha/project/{projectResourceId}/deployments")
     public List<DeploymentEntity> listAllBasicSpringBootDeployments(@PathVariable String projectResourceId) {
         return releaseService.listAllDeployments(projectResourceId);
     }

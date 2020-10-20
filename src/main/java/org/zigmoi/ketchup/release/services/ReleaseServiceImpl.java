@@ -11,7 +11,6 @@ import org.apache.commons.lang.text.StrSubstitutor;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
@@ -895,7 +894,7 @@ public class ReleaseServiceImpl extends TenantProviderService implements Release
         args.put("pipelineRunName", "pipeline-run-".concat(releaseResourceId));
         //also has "serviceAccountName", "pipelineName", "gitResourceName", "pipelinePvcName" which are already added.
 
-        if (APP_TYPE_BASIC_SPRING_BOOT.equals(deploymentDetailsDto.getApplicationType())) {
+        if (APP_TYPE_WEB_APPLICATION.equals(deploymentDetailsDto.getApplicationType())) {
             if (BUILD_TOOL_MAVEN_3.equals(deploymentDetailsDto.getBuildTool())) {
                 args.putAll(getMaven3BuildToolDockerFileContent(deploymentDetailsDto));
             } else {

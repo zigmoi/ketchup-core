@@ -1,7 +1,7 @@
 package org.zigmoi.ketchup.release;
 
 public class DeploymentConstants {
-    public final static String APP_TYPE_BASIC_SPRING_BOOT = "basic-spring-boot";
+    public final static String APP_TYPE_WEB_APPLICATION = "WEB-APPLICATION";
     public final static String BUILD_TOOL_MAVEN_3 = "maven-3.3";
     public final static String PLATFORM_JAVA_8 = "java-8";
     public final static String PLATFORM_JAVA_11 = "java-11";
