@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class BuildToolSettingsRequestDto {
 
-    private String projectId;
+    private String projectResourceId;
     private String displayName;
 
     private String type;

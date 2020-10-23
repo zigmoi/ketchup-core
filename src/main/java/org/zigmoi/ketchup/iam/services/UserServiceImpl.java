@@ -2,17 +2,8 @@ package org.zigmoi.ketchup.iam.services;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,7 +18,7 @@ import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.exceptions.TenantInActiveException;
 import org.zigmoi.ketchup.iam.exceptions.TenantNotFoundException;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
-import org.zigmoi.ketchup.release.repositories.ReleaseRepository;
+import org.zigmoi.ketchup.application.repositories.RevisionRepository;
 
 import javax.validation.Valid;
 import java.util.*;
@@ -46,7 +37,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private BCryptPasswordEncoder passwordEncoder;
 
     @Autowired
-    private ReleaseRepository releaseRepository;
+    private RevisionRepository revisionRepository;
 
 
     @Override

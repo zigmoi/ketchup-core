@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.zigmoi.ketchup.common.ConfigUtility;
 import org.zigmoi.ketchup.iam.dtos.UserDto;
 import org.zigmoi.ketchup.iam.dtos.UserRequestDto;
 import org.zigmoi.ketchup.iam.entities.User;
@@ -19,12 +18,13 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
+@RequestMapping("/v1-alpha/users")
 public class UserController {
 
     @Autowired
     private UserService userService;
 
-    @PostMapping("/v1-alpha/user")
+    @PostMapping
     public void createUser(@RequestBody @Valid UserRequestDto userRequestDto) {
         User user = new User();
         user.setUserName(userRequestDto.getUserName());
@@ -38,7 +38,7 @@ public class UserController {
         userService.createUser(user);
     }
 
-    @PutMapping("/v1-alpha/user")
+    @PutMapping
     public void updateUser(@RequestBody @Valid UserRequestDto userRequestDto) {
         User user = new User();
         String userName = userRequestDto.getUserName();
@@ -52,49 +52,49 @@ public class UserController {
         userService.updateUser(user);
     }
 
-    @GetMapping("/v1-alpha/user/{username}")
+    @GetMapping("/{username}")
     public UserDto getUser(@PathVariable("username") String userName) {
         User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
         return prepareUserDto(user);
     }
 
-    @GetMapping("/v1-alpha/user/my/profile")
+    @GetMapping("/my/profile")
     public UserDto getMyProfile() {
         User user = userService.getLoggedInUserDetails();
         return prepareUserDto(user);
     }
 
-    @DeleteMapping("/v1-alpha/user/{username}")
+    @DeleteMapping("/{username}")
     public void deleteUser(@PathVariable("username") String userName) {
         userService.deleteUser(userName);
     }
 
-    @PutMapping("/v1-alpha/user/{username}/enable/{status}")
+    @PutMapping("/{username}/enable/{status}")
     public void updateUserStatus(@PathVariable("username") String userName, @PathVariable("status") boolean status) {
         userService.updateUserStatus(userName, status);
     }
 
-    @PutMapping("/v1-alpha/user/{username}/displayName/{displayName}")
+    @PutMapping("/{username}/displayName/{displayName}")
     public void updateUserDisplayName(@PathVariable("username") String userName, @PathVariable("displayName") String displayName) {
         userService.updateUserDisplayName(userName, displayName);
     }
 
-    @PutMapping("/v1-alpha/user/{username}/role/{roleName}/add")
+    @PutMapping("/{username}/roles/{roleName}/add")
     public void addRole(@PathVariable("username") String userName, @PathVariable("roleName") String roleName) {
         userService.addRole(userName, roleName);
     }
 
-    @PutMapping("/v1-alpha/user/{username}/role/{roleName}/remove")
+    @PutMapping("/{username}/roles/{roleName}/remove")
     public void removeRole(@PathVariable("username") String userName, @PathVariable("roleName") String roleName) {
         userService.removeRole(userName, roleName);
     }
 
-    @PutMapping("/v1-alpha/user/my/displayName/{displayName}")
+    @PutMapping("/my/displayName/{displayName}")
     public void updateMyDisplayName(@PathVariable("displayName") String displayName) {
         userService.updateMyDisplayName(displayName);
     }
 
-    @GetMapping("/v1-alpha/users")
+    @GetMapping
     public List<UserDto> listUsers() {
         return userService.listAllUsers().stream()
                 .map(user -> {
@@ -104,7 +104,7 @@ public class UserController {
                 .collect(Collectors.toList());
     }
 
-    @GetMapping("/v1-alpha/user/{username}/roles")
+    @GetMapping("/{username}/roles")
     public Set<String> listUserRoles(@PathVariable("username") String userName) {
         User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
         return user.getRoles();
@@ -124,10 +124,5 @@ public class UserController {
         userDto.setLastUpdatedBy(user.getLastUpdatedBy());
         userDto.setRoles(user.getRoles());
         return userDto;
-    }
-
-    @GetMapping("/v1-alpha/getProp")
-    public String getProp(@RequestParam String key) {
-        return ConfigUtility.instance().getProperty(key);
     }
 }

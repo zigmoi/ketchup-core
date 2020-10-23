@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class ContainerRegistrySettingsRequestDto {
 
-    private String projectId;
+    private String projectResourceId;
     private String displayName;
 
     private String type;

@@ -3,9 +3,10 @@ package org.zigmoi.ketchup.project.dtos.settings;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.Map;
 
 @Data
-public class BuildToolSettingsResponseDto {
+public class KubernetesHostAliasSettingsResponseDto {
 
     private String projectResourceId;
     private String settingResourceId;
@@ -15,6 +16,5 @@ public class BuildToolSettingsResponseDto {
     private Date lastUpdatedOn;
     private String lastUpdatedBy;
 
-    private String type;
-    private String fileData;
+    private Map<String, String> hostnameIpMapping;
 }

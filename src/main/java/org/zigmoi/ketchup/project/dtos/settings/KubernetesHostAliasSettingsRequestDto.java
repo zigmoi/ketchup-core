@@ -2,11 +2,13 @@ package org.zigmoi.ketchup.project.dtos.settings;
 
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
-public class KubernetesClusterSettingsRequestDto {
+public class KubernetesHostAliasSettingsRequestDto {
 
     private String projectResourceId;
     private String displayName;
 
-    private String fileData;
+    private Map<String, String> hostnameIpMapping;
 }

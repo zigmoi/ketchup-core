@@ -1,0 +1,48 @@
+package org.zigmoi.ketchup.application.entities;
+
+import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.zigmoi.ketchup.iam.entities.TenantEntity;
+
+import javax.persistence.*;
+import java.util.*;
+
+@Data
+@EntityListeners(AuditingEntityListener.class)
+@Entity
+@Table(name = "application_revisions")
+@Filter(name = TenantEntity.TENANT_FILTER_NAME)
+public class Revision {
+
+    @EmbeddedId
+    private RevisionId id;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @CreationTimestamp
+    private Date createdOn;
+
+    @CreatedBy
+    private String createdBy;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @UpdateTimestamp
+    private Date lastUpdatedOn;
+
+    @LastModifiedBy
+    private String lastUpdatedBy;
+
+    private String version;
+    private String status; //IN-PROGRESS|SUCCESS|FAILED
+    private String errorMessage;
+    private String pipelineStatusJson;
+    private String commitId;
+    private String helmChartId; // this will be part of deployment but copied here so we know which chart was used.
+    private String helmReleaseId;
+    private String applicationDataJson;
+
+}

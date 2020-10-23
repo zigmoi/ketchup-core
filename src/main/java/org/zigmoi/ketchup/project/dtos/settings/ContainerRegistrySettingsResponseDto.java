@@ -7,8 +7,8 @@ import java.util.Date;
 @Data
 public class ContainerRegistrySettingsResponseDto {
 
-    private String projectId;
-    private String settingId;
+    private String projectResourceId;
+    private String settingResourceId;
     private String displayName;
     private Date createdOn;
     private String createdBy;

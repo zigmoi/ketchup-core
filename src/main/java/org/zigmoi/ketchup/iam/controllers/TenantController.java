@@ -14,32 +14,33 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
+@RequestMapping("/v1-alpha/tenants")
 public class TenantController {
 
     @Autowired
     private TenantService tenantService;
 
-    @PostMapping("/v1-alpha/tenant")
+    @PostMapping
     public void createTenant(@RequestBody TenantDto tenantDto) {
         tenantService.createTenant(tenantDto);
     }
 
-    @PutMapping("/v1-alpha/tenant/{id}/enable/{status}")
+    @PutMapping("/{id}/enable/{status}")
     public void updateTenantStatus(@PathVariable("id") String tenantId, @PathVariable("status") boolean status) {
         tenantService.updateTenantStatus(tenantId, status);
     }
 
-    @PutMapping("/v1-alpha/tenant/{id}/displayName/{displayName}")
+    @PutMapping("/{id}/displayName/{displayName}")
     public void updateTenantDisplayName(@PathVariable("id") String tenantId, @PathVariable("displayName") String displayName) {
         tenantService.updateTenantDisplayName(tenantId, displayName);
     }
 
-    @PutMapping("/v1-alpha/tenant/my/displayName/{displayName}")
+    @PutMapping("/my/displayName/{displayName}")
     public void updateMyTenantDisplayName(@PathVariable("displayName") String displayName) {
         tenantService.updateMyTenantDisplayName(displayName);
     }
 
-    @GetMapping("/v1-alpha/tenant/{id}")
+    @GetMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
     public Tenant getTenant(@PathVariable("id") String tenantId) {
         Tenant tenant = tenantService.getTenant(tenantId).orElseThrow(() ->
@@ -47,17 +48,17 @@ public class TenantController {
         return tenant;
     }
 
-    @GetMapping("/v1-alpha/tenant/my/profile")
+    @GetMapping("/my/profile")
     public Tenant getTenant() {
         return tenantService.getMyTenantDetails();
     }
 
-    @DeleteMapping("/v1-alpha/tenant/{id}")
+    @DeleteMapping("/{id}")
     public void deleteTenant(@PathVariable("id") String tenantId) {
         tenantService.deleteTenant(tenantId);
     }
 
-    @GetMapping("/v1-alpha/tenants")
+    @GetMapping
     public List<Tenant> listAllTenants() {
         return tenantService.listAllTenants()
                 .stream()

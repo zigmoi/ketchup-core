@@ -19,6 +19,7 @@ import java.util.List;
 import static java.util.Arrays.asList;
 
 @RestController
+@RequestMapping("/v1-alpha/projects")
 public class ProjectController {
 
     @Autowired
@@ -31,12 +32,12 @@ public class ProjectController {
     @Autowired
     private PermissionUtilsService permissionUtilsService;
 
-    @PostMapping("/v1-alpha/project")
+    @PostMapping
     public void createProject(@RequestBody ProjectDto projectDto) {
         projectService.createProject(projectDto);
     }
 
-    @DeleteMapping("/v1-alpha/project/{projectName}")
+    @DeleteMapping("/{projectName}")
     public void deleteProject(@PathVariable("projectName") String projectName) {
         projectService.deleteProject(projectName);
     }
@@ -46,57 +47,59 @@ public class ProjectController {
         projectService.updateDescription(projectName, description);
     }
 
-    @GetMapping("/v1-alpha/projects")
+    @GetMapping
     public List<Project> listAllProjects() {
         return projectService.listAllProjects();
     }
 
-    @GetMapping("/v1-alpha/project/{resourceId}")
-    public Project getProject(@PathVariable("resourceId") String resourceId) {
-        return projectService.findById(resourceId).orElseThrow(() ->
+    @GetMapping("/{projectName}")
+    public Project getProject(@PathVariable("projectName") String projectName) {
+        return projectService.findById(projectName).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
     }
 
-    @PutMapping("/v1-alpha/project/assign/permissions")
-    public void assignProjectPermissions(@RequestBody ProjectAclDto request) {
+    @PutMapping("/{projectName}/permissions/assign")
+    public void assignProjectPermissions(@PathVariable("projectName") String projectName,
+                                         @RequestBody ProjectAclDto request) {
         //check tenant is current tenant.
         projectAclService.assignPermission(request);
     }
 
-    @PutMapping("/v1-alpha/project/revoke/permissions")
-    public void revokeProjectPermissions(@RequestBody ProjectAclDto request) {
+    @PutMapping("/{projectName}/permissions/revoke")
+    public void revokeProjectPermissions(@PathVariable("projectName") String projectName,
+                                         @RequestBody ProjectAclDto request) {
         //check tenant is current tenant.
         projectAclService.revokePermission(request);
     }
 
-    @GetMapping("/v1-alpha/project/{resourceId}/check/my/permission/{permissionId}")
-    public boolean currentUserHasProjectPermission(@PathVariable("resourceId") String resourceId,
+    @GetMapping("/{projectName}/permissions/{permissionId}/validate/my")
+    public boolean currentUserHasProjectPermission(@PathVariable("projectName") String projectName,
                                                    @PathVariable("permissionId") String permissionId) {
         //user can check his own permissions in any project.
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        return projectAclService.hasProjectPermission(identity, permissionId, resourceId);
+        return projectAclService.hasProjectPermission(identity, permissionId, projectName);
     }
 
-    @GetMapping("/v1-alpha/project/{resourceId}/check/user/{userName}/permission/{permissionId}")
-    public boolean userHasProjectPermission(@PathVariable("resourceId") String resourceId,
+    @GetMapping("/{projectName}/permissions/{permissionId}/validate/{userName}")
+    public boolean userHasProjectPermission(@PathVariable("projectName") String projectName,
                                             @PathVariable("userName") String userName,
                                             @PathVariable("permissionId") String permissionId) {
 
         if (userName.equalsIgnoreCase(AuthUtils.getCurrentQualifiedUsername()) == false) {
-            permissionUtilsService.validatePrincipalCanReadProjectDetails(resourceId);
+            permissionUtilsService.validatePrincipalCanReadProjectDetails(projectName);
         }
 
         String identity = userName;
-        return projectAclService.hasProjectPermission(identity, permissionId, resourceId);
+        return projectAclService.hasProjectPermission(identity, permissionId, projectName);
     }
 
-    @GetMapping("/v1-alpha/project/{resourceId}/user/{userName}/permissions")
-    public List<ProjectPermissionStatusDto> getAllProjectPermissionsForUser(@PathVariable("resourceId") String resourceId,
+    @GetMapping("/{projectName}/permissions/{userName}")
+    public List<ProjectPermissionStatusDto> getAllProjectPermissionsForUser(@PathVariable("projectName") String projectName,
                                                                             @PathVariable("userName") String userName) {
         //if current user has read permissions in project he can check any users permissions in that project.
         //user can check his own permissions in any project.
         if (userName.equalsIgnoreCase(AuthUtils.getCurrentQualifiedUsername()) == false) {
-            permissionUtilsService.validatePrincipalCanReadProjectDetails(resourceId);
+            permissionUtilsService.validatePrincipalCanReadProjectDetails(projectName);
         }
 
         String identity = userName;
@@ -106,7 +109,7 @@ public class ProjectController {
                 "assign-update-project", "assign-delete-project");
         List<ProjectPermissionStatusDto> allPermissionStatus = new ArrayList<>();
         for (String permissionId : projectPermissions) {
-            boolean result = projectAclService.hasProjectPermission(identity, permissionId, resourceId);
+            boolean result = projectAclService.hasProjectPermission(identity, permissionId, projectName);
             ProjectPermissionStatusDto permissionStatusDto = new ProjectPermissionStatusDto();
             permissionStatusDto.setStatus(result);
             permissionStatusDto.setPermission(permissionId);
