@@ -53,7 +53,7 @@ public class CommonController {
         return applicationService.listRecentInProject(projectResourceId);
     }
 
-    @PostMapping("/v1-alpha/project/{project-resource-id}/test-connection/git-remote/basic-auth")
+    @PostMapping("/v1-alpha/projects/{project-resource-id}/git-repo/test-connection")
     public Map<String, String> testGitConnectivityAndAuthentication(@PathVariable("project-resource-id") String projectResourceId,
                                                                     @RequestBody GitRepoConnectionTestRequestDto requestDto) {
         boolean connectionSuccessful = false;

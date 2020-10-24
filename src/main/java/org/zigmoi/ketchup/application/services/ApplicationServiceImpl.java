@@ -131,7 +131,6 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         }
     }
 
-    //fixed
     @Override
     @Transactional
     public String create(ApplicationId applicationId) {
@@ -265,7 +264,6 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         pipelineArtifactRepository.deleteAllByRevisionResourceId(revisionId.getRevisionResourceId());
     }
 
-    //fixed
     @Override
     @Transactional
     public void deleteDeployment(ApplicationId applicationId) {
@@ -1188,7 +1186,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         try {
             JSONObject deploymentJson = new JSONObject(objectMapper.writeValueAsString(applicationRequestDto));
             JSONObject deploymentIdJson = new JSONObject(objectMapper.writeValueAsString(applicationId));
-            deploymentJson.put("deploymentId", deploymentIdJson);
+            deploymentJson.put("applicationId", deploymentIdJson);
 
             //get all setting values and store it in deployment.
             final KubernetesClusterSettingsResponseDto devKubernetesCluster = settingService.getKubernetesCluster(projectResourceId, applicationRequestDto.getDevKubernetesClusterSettingId());
@@ -1261,7 +1259,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         try {
             JSONObject deploymentJson = new JSONObject(objectMapper.writeValueAsString(applicationRequestDto));
             JSONObject deploymentIdJson = new JSONObject(objectMapper.writeValueAsString(applicationId));
-            deploymentJson.put("deploymentId", deploymentIdJson);
+            deploymentJson.put("applicationId", deploymentIdJson);
 
             //get all setting values and store it in deployment.
             final KubernetesClusterSettingsResponseDto devKubernetesCluster = settingService.getKubernetesCluster(projectResourceId, applicationRequestDto.getDevKubernetesClusterSettingId());
