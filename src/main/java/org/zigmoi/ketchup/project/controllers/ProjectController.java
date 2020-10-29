@@ -1,5 +1,6 @@
 package org.zigmoi.ketchup.project.controllers;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -42,9 +43,11 @@ public class ProjectController {
         projectService.deleteProject(projectName);
     }
 
-    @PutMapping("/v1-alpha/project/{projectName}/{projectDescription}")
-    public void updateDescription(@PathVariable("projectName") String projectName, @PathVariable("projectDescription") String description) {
-        projectService.updateDescription(projectName, description);
+    @PutMapping("/{projectName}")
+    public void updateDescription(@PathVariable("projectName") String projectName,
+                                  @RequestBody String requestBody) {
+        JSONObject requestJson  = new JSONObject(requestBody);
+        projectService.updateDescription(projectName, requestJson.getString("description"));
     }
 
     @GetMapping
