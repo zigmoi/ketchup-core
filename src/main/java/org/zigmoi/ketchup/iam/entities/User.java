@@ -9,9 +9,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.zigmoi.ketchup.common.validations.ValidDisplayName;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.*;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -23,13 +24,29 @@ import java.util.Set;
 public class User implements UserDetails {
 
     @Id
-    @NotBlank(message = "Please provide fully qualified user name with Organization Id, example: user@organization-id.")
+    @NotBlank(message = "Please provide fully qualified user name with tenant id, example: user@tenant_id.")
+    @Size(max = 100)
     private String userName; //fully qualified username user@tenant example: test@zigmoi.com
+
+    @NotBlank
+    @Size(max = 100)
     private String password;
+
+    @ValidDisplayName
     private String displayName;
+
+    @NotNull
     private boolean enabled;
+
+    @NotNull
+    @Email
+    @Size(max = 100)
     private String email;
+
+    @Size(max = 100)
     private String firstName;
+
+    @Size(max = 100)
     private String lastName;
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -46,10 +63,12 @@ public class User implements UserDetails {
     @LastModifiedBy
     private String lastUpdatedBy;
 
+    @NotNull
+    @NotEmpty
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "userName", referencedColumnName = "userName"))
     @Column(name = "role")
-    Set<String> roles = new HashSet<>();
+    Set<@NotBlank @Size(max = 100) String> roles = new HashSet<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

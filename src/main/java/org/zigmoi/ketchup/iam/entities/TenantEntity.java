@@ -3,6 +3,7 @@ package org.zigmoi.ketchup.iam.entities;
 import lombok.Data;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
+import org.zigmoi.ketchup.common.validations.ValidTenantId;
 
 import javax.persistence.Column;
 import javax.persistence.Inheritance;
@@ -22,6 +23,7 @@ public class TenantEntity {
     public static final String TENANT_ID_PROPERTY_NAME = "tenant_id";
     public static final String TENANT_FILTER_ARGUMENT_NAME = "tenantId";
 
+    @ValidTenantId
     @Column(length = 50)
     protected String tenantId;
 }

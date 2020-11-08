@@ -237,14 +237,14 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         JSONObject jo = new JSONObject(settingsEntity.getData());
 //        settingsDto.setProvider(jo.getString("provider"));
 //        settingsDto.setFileName(jo.getString("fileName"));
-        settingsDto.setFileData(jo.getString("fileData"));
+        settingsDto.setKubeconfig(jo.getString("kubeconfig"));
     }
 
     private void convertToEntity(KubernetesClusterSettingsRequestDto settingsDto, Setting settingsEntity) {
         JSONObject jo = new JSONObject();
 //        jo.put("provider", settingsDto.getProvider());
 //        jo.put("fileName", settingsDto.getFileName());
-        jo.put("fileData", settingsDto.getFileData());
+        jo.put("kubeconfig", settingsDto.getKubeconfig());
         settingsEntity.setData(jo.toString());
     }
     // kubernetes-cluster api impl ends

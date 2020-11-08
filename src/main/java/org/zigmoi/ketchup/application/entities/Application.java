@@ -8,8 +8,13 @@ import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.zigmoi.ketchup.iam.entities.TenantEntity;
+import org.zigmoi.ketchup.common.validations.ValidDisplayName;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.util.Date;
 
 @Data
@@ -18,10 +23,20 @@ import java.util.Date;
 @Table(name = "applications")
 @Filter(name = TenantEntity.TENANT_FILTER_NAME)
 public class Application {
+    @NotNull
     @EmbeddedId
     private ApplicationId id;
+
+    @NotNull
+    @Pattern(regexp = "WEB-APPLICATION")
     private String type;
+
+    @ValidDisplayName
     private String displayName;
+
+    @NotBlank
+    @Size(max = 65535)
+    @Column(columnDefinition="TEXT")
     private String data;
 
     @Temporal(TemporalType.TIMESTAMP)

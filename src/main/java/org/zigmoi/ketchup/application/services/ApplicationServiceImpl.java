@@ -133,20 +133,20 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
-    public String create(ApplicationId applicationId) {
-        //validate and fetch deploymentId.
-        //get projectId from deployment.
+    public String createRevision(ApplicationId applicationId) {
+        //validate and fetch applicationId.
+        //get projectId from application.
         //handle duplicate pipeline resources error in k8s.
-        ApplicationDetailsDto applicationDetailsDto = getDeployment(applicationId);
-        long noOfReleases = revisionRepository.countAllByDeploymentResourceId(applicationId.getApplicationResourceId());
-        String releaseVersion = "v".concat(String.valueOf(noOfReleases + 1));
+        ApplicationDetailsDto applicationDetailsDto = getApplication(applicationId);
+        long noOfRevisions = revisionRepository.countAllByApplicationResourceId(applicationId.getApplicationResourceId());
+        String revisionVersion = "v".concat(String.valueOf(noOfRevisions + 1));
 
         Revision r = new Revision();
-        String releaseResourceId = UUID.randomUUID().toString();
-        RevisionId revisionId = new RevisionId(applicationId, releaseResourceId);
+        String revisionResourceId = UUID.randomUUID().toString();
+        RevisionId revisionId = new RevisionId(applicationId, revisionResourceId);
         r.setId(revisionId);
         r.setHelmReleaseId(getHelmReleaseId(applicationId.getApplicationResourceId()));
-        r.setVersion(releaseVersion);
+        r.setVersion(revisionVersion);
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -157,7 +157,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
         //generate pipeline all resources and save them, name can be parsed from them directly.
         List<PipelineArtifact> pipelineArtifacts = generatePipelineResources_tekton_v1beta1("sb-standard-dev-1.0",
-                applicationDetailsDto, releaseResourceId, releaseVersion);
+                applicationDetailsDto, revisionResourceId, revisionVersion);
         pipelineArtifacts.forEach(pipelineArtifact -> {
             PipelineArtifactId pipelineArtifactId = new PipelineArtifactId(revisionId, UUID.randomUUID().toString());
             pipelineArtifact.setId(pipelineArtifactId);
@@ -167,7 +167,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
         String kubeConfig = StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig());
         queueAndDeployPipelineResources(pipelineArtifacts, kubeConfig, applicationDetailsDto, r);
-        return releaseResourceId;
+        return revisionResourceId;
     }
 
     private void queueAndDeployPipelineResources(List<PipelineArtifact> pipelineArtifacts, String kubeConfig,
@@ -175,38 +175,38 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         deployPipelineResources(pipelineArtifacts, kubeConfig, applicationDetailsDto, r);
     }
 
-    private String getHelmReleaseId(String deploymentResourceId) {
-        return "release-".concat(deploymentResourceId);
+    private String getHelmReleaseId(String applicationResourceId) {
+        return "app-".concat(applicationResourceId);
     }
 
     @Override
     @Transactional
-    public void rollback(RevisionId revisionId) {
-        Revision release = revisionRepository.findById(revisionId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        String.format("Release with id %s not found.", revisionId.getRevisionResourceId())));
-        ApplicationId applicationId = new ApplicationId(revisionId.getTenantId(), revisionId.getProjectResourceId(), revisionId.getApplicationResourceId());
-        ApplicationDetailsDto deploymentDetails = getDeployment(applicationId);
-        String namespace = deploymentDetails.getDevKubernetesNamespace();
-        String kubeConfig = StringUtility.decodeBase64(deploymentDetails.getDevKubeconfig());
-        String releaseName = getHelmReleaseId(deploymentDetails.getApplicationId().getApplicationResourceId());
-        String revision = "1";
-        helmService.rollbackRelease(releaseName, revision, namespace, kubeConfig);
-    }
-
-    @Override
-    @Transactional
-    public void stop(RevisionId revisionId) {
+    public void rollbackRevision(RevisionId revisionId) {
         Revision revision = revisionRepository.findById(revisionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        String.format("Release with id %s not found.", revisionId.getRevisionResourceId())));
+                        String.format("Revision with id %s not found.", revisionId.getRevisionResourceId())));
+        ApplicationId applicationId = new ApplicationId(revisionId.getTenantId(), revisionId.getProjectResourceId(), revisionId.getApplicationResourceId());
+        ApplicationDetailsDto applicationDetails = getApplication(applicationId);
+        String namespace = applicationDetails.getDevKubernetesNamespace();
+        String kubeConfig = StringUtility.decodeBase64(applicationDetails.getDevKubeconfig());
+        String helmReleaseName = getHelmReleaseId(applicationDetails.getApplicationId().getApplicationResourceId());
+        String helmReleaseVersionNumber = "1"; //TODO fetch it from revision.
+        helmService.rollbackRelease(helmReleaseName, helmReleaseVersionNumber, namespace, kubeConfig);
+    }
+
+    @Override
+    @Transactional
+    public void stopRevisionPipeline(RevisionId revisionId) {
+        Revision revision = revisionRepository.findById(revisionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format("Revision with id %s not found.", revisionId.getRevisionResourceId())));
 
         ApplicationId applicationId = new ApplicationId(revisionId.getTenantId(), revisionId.getProjectResourceId(), revisionId.getApplicationResourceId());
-        ApplicationDetailsDto deploymentDetails = getDeployment(applicationId);
-        String namespace = deploymentDetails.getDevKubernetesNamespace();
-        //check if release is not failed/success than cancel the pipeline.
+        ApplicationDetailsDto applicationDetails = getApplication(applicationId);
+        String namespace = applicationDetails.getDevKubernetesNamespace();
+        //check if revision is not failed/success than cancel the pipeline.
         PipelineArtifact resource = pipelineArtifactRepository.findByRevisionResourceIdAndResourceType(revisionId.getRevisionResourceId(), "pipeline-run").orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                String.format("Pipeline run for release with id %s not found.", revisionId.getRevisionResourceId())));
+                String.format("Pipeline run for revision with id %s not found.", revisionId.getRevisionResourceId())));
 
         Yaml yaml = new Yaml();
         LinkedHashMap<String, Object> pipelineRun = (LinkedHashMap<String, Object>) yaml.loadAs(resource.getResourceContent(), Map.class);
@@ -241,24 +241,24 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional(readOnly = true)
-    public Revision findById(RevisionId revisionId) {
+    public Revision findRevisionById(RevisionId revisionId) {
         return revisionRepository.findById(revisionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        String.format("Release with id %s not found.", revisionId.getRevisionResourceId())));
+                        String.format("Revision with id %s not found.", revisionId.getRevisionResourceId())));
     }
 
     @Override
-    public Revision findByReleaseResourceId(String releaseResourceId) {
-        return revisionRepository.findByReleaseResourceId(releaseResourceId)
+    public Revision findRevisionByResourceId(String revisionResourceId) {
+        return revisionRepository.findByRevisionResourceId(revisionResourceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        String.format("Release with id %s not found.", releaseResourceId)));
+                        String.format("Revision with id %s not found.", revisionResourceId)));
     }
 
     @Override
     @Transactional
-    public void delete(RevisionId revisionId) {
+    public void deleteRevision(RevisionId revisionId) {
         if (revisionRepository.existsById(revisionId) == false) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Release with id %s not found.", revisionId.getRevisionResourceId()));
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Revision with id %s not found.", revisionId.getRevisionResourceId()));
         }
         revisionRepository.deleteById(revisionId);
         pipelineArtifactRepository.deleteAllByRevisionResourceId(revisionId.getRevisionResourceId());
@@ -266,28 +266,28 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
-    public void deleteDeployment(ApplicationId applicationId) {
-        Optional<Revision> activeRelease = getActiveRelease(applicationId);
-        if (activeRelease.isPresent()) {
-            ApplicationDetailsDto applicationDetailsDto = deploymentJsonToDto(activeRelease.get().getApplicationDataJson());
+    public void deleteApplication(ApplicationId applicationId) {
+        Optional<Revision> activeRevision = getActiveRevision(applicationId);
+        if (activeRevision.isPresent()) {
+            ApplicationDetailsDto applicationDetailsDto = applicationJsonToDto(activeRevision.get().getApplicationDataJson());
             String namespace = applicationDetailsDto.getDevKubernetesNamespace();
             String kubeConfig = StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig());
-            helmService.uninstallChart("release-" + applicationId.getApplicationResourceId(), namespace, kubeConfig);
+            helmService.uninstallChart("app-" + applicationId.getApplicationResourceId(), namespace, kubeConfig);
         } else {
-            System.out.println("No active release found to uninstall.");
+            System.out.println("No active revision found to uninstall.");
         }
 
-        List<Revision> revisions = revisionRepository.findAllByDeploymentResourceId(applicationId.getApplicationResourceId());
+        List<Revision> revisions = revisionRepository.findAllByApplicationResourceId(applicationId.getApplicationResourceId());
         revisions.forEach(revision -> pipelineArtifactRepository.deleteAllByRevisionResourceId(revision.getId().getRevisionResourceId()));
-        revisionRepository.deleteAllByDeploymentResourceId(applicationId.getApplicationResourceId());
+        revisionRepository.deleteAllByApplicationResourceId(applicationId.getApplicationResourceId());
 //        deploymentRepository.deleteById(deploymentId);
     }
 
-    public ApplicationDetailsDto deploymentJsonToDto(String deploymentJson) {
+    public ApplicationDetailsDto applicationJsonToDto(String applicationJson) {
         ObjectMapper objectMapper = new ObjectMapper();
         ApplicationDetailsDto applicationDetailsDto = null;
         try {
-            applicationDetailsDto = objectMapper.readValue(deploymentJson, ApplicationDetailsDto.class);
+            applicationDetailsDto = objectMapper.readValue(applicationJson, ApplicationDetailsDto.class);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -296,52 +296,52 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
-    public void update(Revision revision) {
+    public void updateRevision(Revision revision) {
 
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Revision> getActiveRelease(ApplicationId applicationId) {
-       List<Revision> revisions = revisionRepository.findTopByDeploymentResourceIdAndStatusOrderByLastUpdatedOnDesc(applicationId.getApplicationResourceId(), "SUCCESS", PageRequest.of(1,1));
+    public Optional<Revision> getActiveRevision(ApplicationId applicationId) {
+        List<Revision> revisions = revisionRepository.findTopByApplicationResourceIdAndStatusOrderByLastUpdatedOnDesc(applicationId.getApplicationResourceId(), "SUCCESS", PageRequest.of(1, 1));
         return revisions.stream().findFirst();
     }
 
     @Override
     @Transactional
-    public Set<Revision> listAllInDeployment(ApplicationId applicationId) {
-        return revisionRepository.findDistinctByDeploymentResourceIdOrderByCreatedOnDesc(applicationId.getApplicationResourceId());
+    public Set<Revision> listAllRevisionsInApplication(ApplicationId applicationId) {
+        return revisionRepository.findDistinctByApplicationResourceIdOrderByCreatedOnDesc(applicationId.getApplicationResourceId());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Set<Revision> listAllInProject(String projectResourceId) {
+    public Set<Revision> listAllRevisionsInProject(String projectResourceId) {
         return revisionRepository.findDistinctByProjectResourceId(projectResourceId);
     }
 
     @Override
-    public List<Revision> listRecentInProject(String projectResourceId) {
+    public List<Revision> listRecentRevisionsInProject(String projectResourceId) {
         return revisionRepository.findTop5ByProjectResourceIdOrderByLastUpdatedOnDesc(projectResourceId, PageRequest.of(1, 5));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Set<Revision> listAllInProjectWithStatus(String projectResourceId, String status) {
+    public Set<Revision> listAllRevisionsInProjectWithStatus(String projectResourceId, String status) {
         return revisionRepository.findDistinctByProjectResourceIdAndStatusOrderByLastUpdatedOnDesc(projectResourceId, status);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Set<PipelineArtifact> listAllPipelineResources(RevisionId revisionId) {
+    public Set<PipelineArtifact> listAllPipelineArtifactsInRevision(RevisionId revisionId) {
         if (revisionRepository.existsById(revisionId) == false) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Release with id %s not found.", revisionId.getRevisionResourceId()));
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Revision with id %s not found.", revisionId.getRevisionResourceId()));
         }
         return pipelineArtifactRepository.findDistinctByRevisionResourceId(revisionId.getRevisionResourceId());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PipelineArtifact getPipelineResourceById(PipelineArtifactId pipelineArtifactId) {
+    public PipelineArtifact getPipelineArtifactsById(PipelineArtifactId pipelineArtifactId) {
         return pipelineArtifactRepository
                 .findById(pipelineArtifactId)
                 .orElseThrow(() ->
@@ -556,11 +556,11 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         throw new UnexpectedException("No matching plural found for pipeline resource type : " + resourceType);
     }
 
-    private List<PipelineArtifact> generatePipelineResources_tekton_v1beta1(String pipelineType, ApplicationDetailsDto applicationDetailsDto, String releaseResourceId, String releaseVersion) {
+    private List<PipelineArtifact> generatePipelineResources_tekton_v1beta1(String pipelineType, ApplicationDetailsDto applicationDetailsDto, String revisionResourceId, String revisionVersion) {
         String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0-tekton-v1beta1/";
         String deploymentAppResourceBasePath = "classpath:/application-templates/spring-boot/";
 
-        Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(applicationDetailsDto, releaseResourceId, releaseVersion);
+        Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(applicationDetailsDto, revisionResourceId, revisionVersion);
 
         List<PipelineArtifact> resources = new ArrayList<>();
 
@@ -794,76 +794,76 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         return FileUtils.readFileToString(resource.getFile(), StandardCharsets.UTF_8);
     }
 
-    public Map<String, String> preparePipelineTemplatingVariables(ApplicationDetailsDto applicationDetailsDto, String releaseResourceId, String releaseVersion) {
-        String deploymentResourceId = applicationDetailsDto.getApplicationId().getApplicationResourceId();
+    public Map<String, String> preparePipelineTemplatingVariables(ApplicationDetailsDto applicationDetailsDto, String revisionResourceId, String revisionVersion) {
+        String applicationResourceId = applicationDetailsDto.getApplicationId().getApplicationResourceId();
         Map<String, String> args = new HashMap<>();
 
         //pipeline pvc
-        args.put("pipelinePvcName", "pipeline-pvc-".concat(releaseResourceId));
+        args.put("pipelinePvcName", "pipeline-pvc-".concat(revisionResourceId));
         args.put("pipelinePvcSize", "1Gi");
 
         //git resource
-        args.put("gitResourceName", "git-resource-".concat(releaseResourceId));
+        args.put("gitResourceName", "git-resource-".concat(revisionResourceId));
         args.put("gitRepoUrl", applicationDetailsDto.getGitRepoUrl());
         args.put("gitRepoBranchName", applicationDetailsDto.getGitRepoBranchName());
 
         //git secret
-        args.put("gitRepoSecretName", "git-secret-".concat(releaseResourceId));
+        args.put("gitRepoSecretName", "git-secret-".concat(revisionResourceId));
         args.put("gitRepoBaseUrl", "https://gitlab.com");
         args.put("gitRepoUsername", applicationDetailsDto.getGitRepoUsername());
         args.put("gitRepoPassword", applicationDetailsDto.getGitRepoPassword());
 
         //kubeconfig secret
-        args.put("kubeConfigSecretName", "kubeconfig-secret-".concat(releaseResourceId));
+        args.put("kubeConfigSecretName", "kubeconfig-secret-".concat(revisionResourceId));
         args.put("kubeConfigBase64", applicationDetailsDto.getDevKubeconfig());
 
         //service account
-        args.put("serviceAccountName", "service-account-".concat(releaseResourceId));
+        args.put("serviceAccountName", "service-account-".concat(revisionResourceId));
         //also has "gitRepoSecretName" which is already added.
 
         //App Image Pull Secret , secured local docker registries are not supported, requires certs.
-        String imagePullSecretName = "secret-app-image-pull-".concat(releaseResourceId);
+        String imagePullSecretName = "secret-app-image-pull-".concat(revisionResourceId);
         if (!"local".equalsIgnoreCase(applicationDetailsDto.getContainerRegistryType())) {
             args.put("appImagePullSecretName", imagePullSecretName);
             args.put("dockerConfigJson", getImagePullSecretConfig(applicationDetailsDto));
         }
 
         //helm values config map
-        args.put("helmValuesConfigMapName", "configmap-helm-values-".concat(releaseResourceId));
-        args.put("helmValuesYaml", getHelmValuesYaml(applicationDetailsDto, releaseVersion, imagePullSecretName));
+        args.put("helmValuesConfigMapName", "configmap-helm-values-".concat(revisionResourceId));
+        args.put("helmValuesYaml", getHelmValuesYaml(applicationDetailsDto, revisionVersion, imagePullSecretName));
 
         //makisu values config map
-        args.put("makisuValuesSecretName", "secret-makisu-values-".concat(releaseResourceId));
+        args.put("makisuValuesSecretName", "secret-makisu-values-".concat(revisionResourceId));
         args.put("makisuValuesYaml", getMakisuRegistryConfig(applicationDetailsDto));
 
 
         //task git
-        args.put("gitCloneTaskName", "task-git-clone-".concat(releaseResourceId));
+        args.put("gitCloneTaskName", "task-git-clone-".concat(revisionResourceId));
         //also has "gitRepoUrl", "gitRepoBranchName" which is already added.
 
         //task helm
-        args.put("helmDeployTaskName", "task-helm-deploy-".concat(releaseResourceId));
+        args.put("helmDeployTaskName", "task-helm-deploy-".concat(revisionResourceId));
         //also has helmValuesConfigMapName which is already added.
 
         //task makisu
-        args.put("makisuBuildImageTaskName", "task-makisu-build-".concat(releaseResourceId));
+        args.put("makisuBuildImageTaskName", "task-makisu-build-".concat(revisionResourceId));
         //also has "gitResourceName" which is already added.
 
         //pipeline
-        args.put("pipelineName", "pipeline-".concat(releaseResourceId));
-        args.put("helmReleaseName", getHelmReleaseId(deploymentResourceId));
-        args.put("helmCommand", getHelmCommand(releaseVersion));
+        args.put("pipelineName", "pipeline-".concat(revisionResourceId));
+        args.put("helmReleaseName", getHelmReleaseId(applicationResourceId));
+        args.put("helmCommand", getHelmCommand());
         args.put("helmChartUrl", "https://ashimusmani.github.io/helm-charts/basic-springboot-demo-ketchup-0.1.0.tgz");
         args.put("containerRegistryUrl", applicationDetailsDto.getContainerRegistryUrl());
 
-        String imageTag = getImageTagName(applicationDetailsDto, releaseVersion);
+        String imageTag = getImageTagName(applicationDetailsDto, revisionVersion);
         args.put("imageTag", imageTag);
 
         args.put("devKubernetesNamespace", applicationDetailsDto.getDevKubernetesNamespace());
         //also has "gitResourceName", "makisuBuildImageTaskName", "helmDeployTaskName"  which are already added.
 
         //pipeline run
-        args.put("pipelineRunName", "pipeline-run-".concat(releaseResourceId));
+        args.put("pipelineRunName", "pipeline-run-".concat(revisionResourceId));
         //also has "serviceAccountName", "pipelineName", "gitResourceName", "pipelinePvcName" which are already added.
 
         if (APP_TYPE_WEB_APPLICATION.equals(applicationDetailsDto.getApplicationType())) {
@@ -876,43 +876,43 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             throw new UnsupportedOperationException("App type not supported : " + applicationDetailsDto.getApplicationType());
         }
         //helm values config map
-        args.put("appDockerFileConfigMapName", "configmap-app-dockerfile-content-".concat(releaseResourceId));
+        args.put("appDockerFileConfigMapName", "configmap-app-dockerfile-content-".concat(revisionResourceId));
 
         return args;
     }
 
-    private Map<String, String> getMaven3BuildToolDockerFileContent(ApplicationDetailsDto deploymentDetails) {
+    private Map<String, String> getMaven3BuildToolDockerFileContent(ApplicationDetailsDto applicationDetails) {
         Map<String, String> args = new HashMap<>();
-        args.put("maven.image.name", getMaven3ImageNameForJavaPlatform(deploymentDetails));
-        args.put("jre.image.name", getJREImageNameForJavaPlatform(deploymentDetails));
+        args.put("maven.image.name", getMaven3ImageNameForJavaPlatform(applicationDetails));
+        args.put("jre.image.name", getJREImageNameForJavaPlatform(applicationDetails));
 //        args.put("app.jar.name", "ketchup-demo-basicspringboot-0.0.1-SNAPSHOT.jar"); // TODO: 23/08/20 hardcoded
-        args.put("app.port", deploymentDetails.getAppServerPort());
+        args.put("app.port", applicationDetails.getAppServerPort());
         return args;
     }
 
-    private String getJREImageNameForJavaPlatform(ApplicationDetailsDto deploymentDetails) {
-        if (isNullOrEmpty(deploymentDetails.getPlatform())) {
+    private String getJREImageNameForJavaPlatform(ApplicationDetailsDto applicationDetails) {
+        if (isNullOrEmpty(applicationDetails.getPlatform())) {
             throw new UnexpectedException("Platform cannot be null");
         }
-        switch (deploymentDetails.getPlatform()) {
+        switch (applicationDetails.getPlatform()) {
             case PLATFORM_JAVA_8:
                 return IMAGE_JRE_JAVA_8;
         }
-        throw new UnsupportedOperationException("Platform : " + deploymentDetails.getPlatform() + "not supported");
+        throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
     }
 
-    private String getMaven3ImageNameForJavaPlatform(ApplicationDetailsDto deploymentDetails) {
-        if (isNullOrEmpty(deploymentDetails.getPlatform())) {
+    private String getMaven3ImageNameForJavaPlatform(ApplicationDetailsDto applicationDetails) {
+        if (isNullOrEmpty(applicationDetails.getPlatform())) {
             throw new UnexpectedException("Platform cannot be null");
         }
-        switch (deploymentDetails.getPlatform()) {
+        switch (applicationDetails.getPlatform()) {
             case PLATFORM_JAVA_8:
                 return IMAGE_MAVEN_3_JAVA_8;
         }
-        throw new UnsupportedOperationException("Platform : " + deploymentDetails.getPlatform() + "not supported");
+        throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
     }
 
-    public String getHelmCommand(String releaseVersion) {
+    public String getHelmCommand() {
         return "upgrade";
     }
 
@@ -923,9 +923,9 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         return templatedContent;
     }
 
-    public String getHelmValuesYaml(ApplicationDetailsDto applicationDetailsDto, String releaseVersion, String imagePullSecretName) {
+    public String getHelmValuesYaml(ApplicationDetailsDto applicationDetailsDto, String revisionVersion, String imagePullSecretName) {
         LinkedHashMap<String, Object> containerRegistryValues = new LinkedHashMap<>();
-        containerRegistryValues.put("repository", getImageTagName(applicationDetailsDto, releaseVersion));
+        containerRegistryValues.put("repository", getImageTagName(applicationDetailsDto, revisionVersion));
 
         LinkedHashMap<String, Object> serviceValues = new LinkedHashMap<>();
         serviceValues.put("type", "ClusterIP");
@@ -948,32 +948,32 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         return helmConfigString;
     }
 
-    public String getImageTagName(ApplicationDetailsDto applicationDetailsDto, String releaseVersion) {
+    public String getImageTagName(ApplicationDetailsDto applicationDetailsDto, String revisionVersion) {
         String imageTag = "";
         if ("local".equalsIgnoreCase(applicationDetailsDto.getContainerRegistryType())) {
             if ("".equalsIgnoreCase(applicationDetailsDto.getContainerRepositoryName())) {
                 imageTag = applicationDetailsDto.getContainerRegistryUrl()
                         + "/" + applicationDetailsDto.getContainerImageName()
-                        + ":" + releaseVersion;
+                        + ":" + revisionVersion;
             } else {
                 imageTag = applicationDetailsDto.getContainerRegistryUrl()
                         + "/" + applicationDetailsDto.getContainerRepositoryName()
                         + "/" + applicationDetailsDto.getContainerImageName()
-                        + ":" + releaseVersion;
+                        + ":" + revisionVersion;
             }
         } else if ("docker-hub".equalsIgnoreCase(applicationDetailsDto.getContainerRegistryType())) {
             //docker hub doesnt have different images in repository, repository name and image name should be same.
             imageTag = applicationDetailsDto.getContainerRegistryUrl()
                     + "/" + applicationDetailsDto.getContainerRegistryUsername()
                     + "/" + applicationDetailsDto.getContainerImageName()
-                    + ":" + releaseVersion;
+                    + ":" + revisionVersion;
         } else if ("gcr".equalsIgnoreCase(applicationDetailsDto.getContainerRegistryType())) {
             //gcr has project id as mandatory part and no nesting is allowed not even single level.
             //repositoryName is project id.
             imageTag = applicationDetailsDto.getContainerRegistryUrl()
                     + "/" + applicationDetailsDto.getContainerRepositoryName()
                     + "/" + applicationDetailsDto.getContainerImageName()
-                    + ":" + releaseVersion;
+                    + ":" + revisionVersion;
         } else {
             throw new RuntimeException("Unknown registry type supported types are local, docker-hub, aws-ecr, gcr and azurecr.");
         }
@@ -1054,7 +1054,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     @Override
-    public Optional<Revision> refreshReleaseStatus(RevisionId revisionId) {
+    public Optional<Revision> refreshRevisionStatus(RevisionId revisionId) {
         return Optional.empty();
     }
 
@@ -1087,28 +1087,28 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     @Override
-    public ApplicationDetailsDto extractDeployment(Revision revision) {
-        String deploymentDetailsJSON = revision.getApplicationDataJson();
+    public ApplicationDetailsDto extractApplicationByRevisionId(Revision revision) {
+        String applicationDetailsJSON = revision.getApplicationDataJson();
         try {
-            return new ObjectMapper().readValue(deploymentDetailsJSON, ApplicationDetailsDto.class);
+            return new ObjectMapper().readValue(applicationDetailsJSON, ApplicationDetailsDto.class);
         } catch (IOException e) {
-            throw new UnexpectedException("Failed while parsing deployment details for release : " + revision.getId().getRevisionResourceId());
+            throw new UnexpectedException("Failed while parsing application details for revision : " + revision.getId().getRevisionResourceId());
         }
     }
 
     @Override
     @Transactional(readOnly = true)
-    public void cleanPipelineResources(RevisionId revisionId) {
+    public void cleanPipelineResourcesInRevision(RevisionId revisionId) {
         Set<PipelineArtifact> resources = pipelineArtifactRepository.findDistinctByRevisionResourceId(revisionId.getRevisionResourceId());
-        Revision revision = findById(revisionId);
+        Revision revision = findRevisionById(revisionId);
         ApplicationId applicationId = new ApplicationId(revisionId.getTenantId(), revisionId.getProjectResourceId(), revisionId.getApplicationResourceId());
-        ApplicationDetailsDto applicationDetailsDto = getDeployment(applicationId);
+        ApplicationDetailsDto applicationDetailsDto = getApplication(applicationId);
         String kubeConfig = getKubeConfig(revision.getApplicationDataJson());
         deletePipelineResources(applicationDetailsDto, resources, kubeConfig);
     }
 
-    private String getKubeConfig(String deploymentDataJson) {
-        JSONObject jo = new JSONObject(deploymentDataJson);
+    private String getKubeConfig(String applicationDataJson) {
+        JSONObject jo = new JSONObject(applicationDataJson);
         return StringUtility.decodeBase64((jo.getString("devKubeconfig")));
     }
 
@@ -1159,7 +1159,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         String domain = ConfigUtility.instance().getProperty("ketchup.base-url");
         String webhookListenerUrl = "v1-alpha/projects/"
                 + applicationId.getProjectResourceId()
-                +"/applications/"
+                + "/applications/"
                 + applicationId.getApplicationResourceId()
                 + "/git-webhook/listen?vendor="
                 + vendor
@@ -1170,40 +1170,40 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
 
-    private String getNewDeploymentId() {
+    private String getNewApplicationId() {
         return UUID.randomUUID().toString();
     }
 
     @Override
     @Transactional
-    public String createDeployment(String projectResourceId, ApplicationRequestDto applicationRequestDto) {
-        ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, getNewDeploymentId());
+    public String createApplication(String projectResourceId, ApplicationRequestDto applicationRequestDto) {
+        ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, getNewApplicationId());
         Application application = new Application();
         application.setId(applicationId);
         application.setType(applicationRequestDto.getApplicationType());
         application.setDisplayName(applicationRequestDto.getDisplayName());
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            JSONObject deploymentJson = new JSONObject(objectMapper.writeValueAsString(applicationRequestDto));
-            JSONObject deploymentIdJson = new JSONObject(objectMapper.writeValueAsString(applicationId));
-            deploymentJson.put("applicationId", deploymentIdJson);
+            JSONObject applicationJson = new JSONObject(objectMapper.writeValueAsString(applicationRequestDto));
+            JSONObject applicationIdJson = new JSONObject(objectMapper.writeValueAsString(applicationId));
+            applicationJson.put("applicationId", applicationIdJson);
 
-            //get all setting values and store it in deployment.
+            //get all setting values and store it in application.
             final KubernetesClusterSettingsResponseDto devKubernetesCluster = settingService.getKubernetesCluster(projectResourceId, applicationRequestDto.getDevKubernetesClusterSettingId());
             final ContainerRegistrySettingsResponseDto containerRegistry = settingService.getContainerRegistry(projectResourceId, applicationRequestDto.getContainerRegistrySettingId());
             final BuildToolSettingsResponseDto buildTool = settingService.getBuildTool(projectResourceId, applicationRequestDto.getBuildToolSettingId());
             //save settings for host alias settings
 
-            deploymentJson.put("devKubeconfig", devKubernetesCluster.getFileData());
-            deploymentJson.put("containerRegistryType", containerRegistry.getType());
-            deploymentJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
-            deploymentJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
-            deploymentJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
-            deploymentJson.put("containerRepositoryName", containerRegistry.getRepository());
-            deploymentJson.put("buildToolType", buildTool.getType());
-            deploymentJson.put("buildToolSettingsData", buildTool.getFileData());
+            applicationJson.put("devKubeconfig", devKubernetesCluster.getKubeconfig());
+            applicationJson.put("containerRegistryType", containerRegistry.getType());
+            applicationJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
+            applicationJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
+            applicationJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
+            applicationJson.put("containerRepositoryName", containerRegistry.getRepository());
+            applicationJson.put("buildToolType", buildTool.getType());
+            applicationJson.put("buildToolSettingsData", buildTool.getFileData());
 
-            application.setData(deploymentJson.toString());
+            application.setData(applicationJson.toString());
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -1214,8 +1214,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional(readOnly = true)
-    public ApplicationDetailsDto getDeployment(ApplicationId applicationId) {
-        Application application = applicationRepository.getByDeploymentResourceId(applicationId.getApplicationResourceId());
+    public ApplicationDetailsDto getApplication(ApplicationId applicationId) {
+        Application application = applicationRepository.getByApplicationResourceId(applicationId.getApplicationResourceId());
         ObjectMapper objectMapper = new ObjectMapper();
         ApplicationDetailsDto applicationDetailsDto = null;
         try {
@@ -1228,8 +1228,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional(readOnly = true)
-    public ApplicationResponseDto getDeploymentDetails(ApplicationId applicationId) {
-        Application application = applicationRepository.getByDeploymentResourceId(applicationId.getApplicationResourceId());
+    public ApplicationResponseDto getApplicationDetails(ApplicationId applicationId) {
+        Application application = applicationRepository.getByApplicationResourceId(applicationId.getApplicationResourceId());
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ApplicationResponseDto applicationResponseDto = null;
@@ -1242,7 +1242,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     @Override
-    public List<Application> listAllDeployments(String projectResourceId) {
+    public List<Application> listAllApplicationsInProject(String projectResourceId) {
         return applicationRepository.findAll()
                 .stream()
                 .filter(application ->
@@ -1251,35 +1251,35 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     @Override
-    public void updateDeployment(String projectResourceId, String deploymentResourceId, ApplicationRequestDto applicationRequestDto) {
-        Application deployment = applicationRepository.getByDeploymentResourceId(deploymentResourceId);
-        ApplicationId applicationId = deployment.getId();
-        deployment.setDisplayName(applicationRequestDto.getDisplayName());
+    public void updateApplication(String projectResourceId, String applicationResourceId, ApplicationRequestDto applicationRequestDto) {
+        Application application = applicationRepository.getByApplicationResourceId(applicationResourceId);
+        ApplicationId applicationId = application.getId();
+        application.setDisplayName(applicationRequestDto.getDisplayName());
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            JSONObject deploymentJson = new JSONObject(objectMapper.writeValueAsString(applicationRequestDto));
-            JSONObject deploymentIdJson = new JSONObject(objectMapper.writeValueAsString(applicationId));
-            deploymentJson.put("applicationId", deploymentIdJson);
+            JSONObject applicationJson = new JSONObject(objectMapper.writeValueAsString(applicationRequestDto));
+            JSONObject applicationIdJson = new JSONObject(objectMapper.writeValueAsString(applicationId));
+            applicationJson.put("applicationId", applicationIdJson);
 
-            //get all setting values and store it in deployment.
+            //get all setting values and store it in application.
             final KubernetesClusterSettingsResponseDto devKubernetesCluster = settingService.getKubernetesCluster(projectResourceId, applicationRequestDto.getDevKubernetesClusterSettingId());
             final ContainerRegistrySettingsResponseDto containerRegistry = settingService.getContainerRegistry(projectResourceId, applicationRequestDto.getContainerRegistrySettingId());
             final BuildToolSettingsResponseDto buildTool = settingService.getBuildTool(projectResourceId, applicationRequestDto.getBuildToolSettingId());
             //save settings for host alias settings
 
-            deploymentJson.put("devKubeconfig", devKubernetesCluster.getFileData());
-            deploymentJson.put("containerRegistryType", containerRegistry.getType());
-            deploymentJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
-            deploymentJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
-            deploymentJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
-            deploymentJson.put("containerRepositoryName", containerRegistry.getRepository());
-            deploymentJson.put("buildToolType", buildTool.getType());
-            deploymentJson.put("buildToolSettingsData", buildTool.getFileData());
+            applicationJson.put("devKubeconfig", devKubernetesCluster.getKubeconfig());
+            applicationJson.put("containerRegistryType", containerRegistry.getType());
+            applicationJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
+            applicationJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
+            applicationJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
+            applicationJson.put("containerRepositoryName", containerRegistry.getRepository());
+            applicationJson.put("buildToolType", buildTool.getType());
+            applicationJson.put("buildToolSettingsData", buildTool.getFileData());
 
-            deployment.setData(deploymentJson.toString());
+            application.setData(applicationJson.toString());
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        applicationRepository.save(deployment);
+        applicationRepository.save(application);
     }
 }

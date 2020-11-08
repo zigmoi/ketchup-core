@@ -2,6 +2,8 @@ package org.zigmoi.ketchup.application.entities;
 
 import lombok.Data;
 import org.zigmoi.ketchup.iam.entities.TenantEntity;
+import org.zigmoi.ketchup.common.validations.ValidProjectId;
+import org.zigmoi.ketchup.common.validations.ValidResourceId;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -11,12 +13,19 @@ import java.io.Serializable;
 @Embeddable
 public class PipelineArtifactId extends TenantEntity implements Serializable  {
 
+    @ValidProjectId
     @Column(length = 36)
     private String projectResourceId;
+
+    @ValidResourceId
     @Column(length = 36)
     private String applicationResourceId;
+
+    @ValidResourceId
     @Column(length = 36)
     private String revisionResourceId;
+
+    @ValidResourceId
     @Column(length = 36)
     private String pipelineArtifactResourceId;
 

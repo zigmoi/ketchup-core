@@ -2,60 +2,63 @@ package org.zigmoi.ketchup.application.controllers;
 
 import com.google.gson.Gson;
 import com.jayway.jsonpath.JsonPath;
-import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1PodList;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
 import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationResponseDto;
 import org.zigmoi.ketchup.application.dtos.GitRepoConnectionTestRequestDto;
-import org.zigmoi.ketchup.application.entities.Application;
-import org.zigmoi.ketchup.application.entities.ApplicationId;
 import org.zigmoi.ketchup.application.entities.Revision;
-import org.zigmoi.ketchup.application.entities.RevisionId;
 import org.zigmoi.ketchup.application.services.ApplicationService;
 import org.zigmoi.ketchup.common.GitUtility;
-import org.zigmoi.ketchup.common.GitWebHookParserUtility;
-import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
-import org.zigmoi.ketchup.iam.commons.AuthUtils;
-import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsRequestDto;
+import org.zigmoi.ketchup.common.validations.ValidProjectId;
 
-import java.io.IOException;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Validator;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
+@Validated
 @Slf4j
 @RestController
 public class CommonController {
 
     @Autowired
+    private Validator validator;
+
+    @Autowired
     private ApplicationService applicationService;
 
     @GetMapping("/v1-alpha/projects/{project-resource-id}/pipelines")
-    public Set<Revision> listAllRevisionPipelinesByStatus(@PathVariable("project-resource-id") String projectResourceId,
-                                                          @RequestParam("status") String status) {
-        return applicationService.listAllInProjectWithStatus(projectResourceId, status);
+    public Set<Revision> listAllRevisionPipelinesByStatus(
+            @PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+            @RequestParam("status") @NotBlank @Size(max = 100) String status) {
+        return applicationService.listAllRevisionsInProjectWithStatus(projectResourceId, status);
     }
 
     @GetMapping("/v1-alpha/projects/{project-resource-id}/pipelines/recent")
-    public List<Revision> listRecentRevisionPipelinesInProject(@PathVariable("project-resource-id") String projectResourceId) {
-        return applicationService.listRecentInProject(projectResourceId);
+    public List<Revision> listRecentRevisionPipelinesInProject(
+            @PathVariable("project-resource-id") @ValidProjectId String projectResourceId) {
+        return applicationService.listRecentRevisionsInProject(projectResourceId);
     }
 
     @PostMapping("/v1-alpha/projects/{project-resource-id}/git-repo/test-connection")
-    public Map<String, String> testGitConnectivityAndAuthentication(@PathVariable("project-resource-id") String projectResourceId,
-                                                                    @RequestBody GitRepoConnectionTestRequestDto requestDto) {
+    public Map<String, String> testGitConnectivityAndAuthentication(
+            @PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+            @RequestBody GitRepoConnectionTestRequestDto requestDto) {
+
+        Set<ConstraintViolation<GitRepoConnectionTestRequestDto>> violations = validator.validate(requestDto);
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
+        }
+
         boolean connectionSuccessful = false;
         try {
             connectionSuccessful = GitUtility.instance().testConnection(requestDto.getUsername(), requestDto.getPassword(), requestDto.getRepoUrl());
@@ -79,13 +82,13 @@ public class CommonController {
             JSONObject pipelineRunJo = inJo.getJSONObject("pipelineRun");
             if (pipelineRunJo != null) {
                 String pipelineRunName = pipelineRunJo.getJSONObject("metadata").getString("name");
-                String releaseId = pipelineRunName.substring(("pipeline-run-").length());
+                String revisionId = pipelineRunName.substring(("pipeline-run-").length());
                 Revision revision = null;
                 try {
-                    //TODO how to make this work with ReleaseId, pipeline has only releaseResourceId
-                    revision = applicationService.findByReleaseResourceId(releaseId);
+                    //TODO how to make this work with RevisionId, pipeline has only revisionResourceId
+                    revision = applicationService.findRevisionByResourceId(revisionId);
                     if (revision == null) {
-                        log.debug("Revision not found : " + releaseId);
+                        log.debug("Revision not found : " + revisionId);
                         return;
                     }
                 } catch (Exception e) {
@@ -108,15 +111,15 @@ public class CommonController {
                     }
                     revision.setStatus(getDBStatusFromJSON(parsedStatus));
                     revision.setPipelineStatusJson(parsedStatus.toString());
-                    applicationService.update(revision);
-                    log.debug("Revision status updated, release -> \n{}", revision.toString());
+                    applicationService.updateRevision(revision);
+                    log.debug("Revision status updated, revision -> \n{}", revision.toString());
                     if ("success".equalsIgnoreCase(revision.getStatus()) || "failed".equalsIgnoreCase(revision.getStatus())) {
                         try {
                             TimeUnit.SECONDS.sleep(10);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        applicationService.cleanPipelineResources(revision.getId());
+                        applicationService.cleanPipelineResourcesInRevision(revision.getId());
                         log.info("Revision resources cleaned up, revision -> \n{}", revision.toString());
                     }
                 }

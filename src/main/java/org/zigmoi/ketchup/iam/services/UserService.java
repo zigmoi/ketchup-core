@@ -1,32 +1,38 @@
 package org.zigmoi.ketchup.iam.services;
 
+import org.springframework.validation.annotation.Validated;
 import org.zigmoi.ketchup.iam.entities.User;
+import org.zigmoi.ketchup.common.validations.ValidDisplayName;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 
+@Validated
 public interface UserService {
 
 
-    void createUser(User user);
+    void createUser(@Valid User user);
 
-    void updateUser(User user);
+    void updateUser(@Valid User user);
 
-    Optional<User> getUser(String userName);
+    Optional<User> getUser(@NotBlank String userName);
 
     User getLoggedInUserDetails();
 
-    void updateUserStatus(String userName, boolean status);
+    void updateUserStatus(@NotBlank String userName, @NotNull boolean status);
 
-    void updateUserDisplayName(String userName, String displayName);
+    void updateUserDisplayName(@NotBlank String userName, @ValidDisplayName String displayName);
 
-    void updateMyDisplayName(String displayName);
+    void updateMyDisplayName(@ValidDisplayName String displayName);
 
-    void deleteUser(String userName);
+    void deleteUser(@NotBlank String userName);
 
     List<User> listAllUsers();
 
-    void addRole(String userName, String role);
+    void addRole(@NotBlank String userName, @NotBlank String role);
 
-    void removeRole(String userName, String role);
+    void removeRole(@NotBlank String userName, @NotBlank String role);
 }

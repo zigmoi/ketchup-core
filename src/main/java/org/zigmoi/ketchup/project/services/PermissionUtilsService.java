@@ -255,157 +255,91 @@ public class PermissionUtilsService {
     }
 
 
-    public void validateUserCanAddMember(String identity, String projectResourceId) {
+    public void validateUserCanCreateApplication(String identity, String projectResourceId) {
         boolean hasPermission = projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
         if (hasPermission == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
     }
 
-    public void validatePrincipalCanAddMember(String projectResourceId) {
+    public void validatePrincipalCanCreateApplication(String projectResourceId) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanAddMember(identity, projectResourceId);
+        validateUserCanCreateApplication(identity, projectResourceId);
     }
 
-    public boolean canUserAddMember(String identity, String projectResourceId) {
+    public boolean canUserCreateApplication(String identity, String projectResourceId) {
         return projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
     }
 
-    public boolean canPrincipalAddMember(String projectResourceId) {
+    public boolean canPrincipalCreateApplication(String projectResourceId) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        return canUserAddMember(identity, projectResourceId);
+        return canUserCreateApplication(identity, projectResourceId);
     }
 
 
-    public void validateUserCanRemoveMember(String identity, String projectResourceId) {
-        boolean hasPermission = projectAclService.hasProjectPermission(identity, "delete-project", projectResourceId);
+    public void validateUserCanUpdateApplication(String identity, String projectResourceId) {
+        boolean hasPermission = projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
         if (hasPermission == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
     }
 
-    public void validatePrincipalCanRemoveMember(String projectResourceId) {
+    public void validatePrincipalCanUpdateApplication(String projectResourceId) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanRemoveMember(identity, projectResourceId);
+        validateUserCanUpdateApplication(identity, projectResourceId);
     }
 
-    public boolean canUserRemoveMember(String identity, String projectResourceId) {
-        return projectAclService.hasProjectPermission(identity, "delete-project", projectResourceId);
+    public boolean canUserUpdateApplication(String identity, String projectResourceId) {
+        return projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
     }
 
-    public boolean canPrincipalRemoveMember(String projectResourceId) {
+    public boolean canPrincipalUpdateApplication(String projectResourceId) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        return canUserRemoveMember(identity, projectResourceId);
+        return canUserUpdateApplication(identity, projectResourceId);
     }
 
 
-    public void validateUserCanListMembers(String identity, String projectResourceId) {
+    public void validateUserCanReadApplication(String identity, String projectResourceId) {
         boolean hasPermission = projectAclService.hasProjectPermission(identity, "read-project", projectResourceId);
         if (hasPermission == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
     }
 
-    public void validatePrincipalCanListMembers(String projectResourceId) {
+    public void validatePrincipalCanReadApplication(String projectResourceId) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanListMembers(identity, projectResourceId);
+        validateUserCanReadApplication(identity, projectResourceId);
     }
 
-    public boolean canUserListMembers(String identity, String projectResourceId) {
+    public boolean canUserReadApplication(String identity, String projectResourceId) {
         return projectAclService.hasProjectPermission(identity, "read-project", projectResourceId);
     }
 
-    public boolean canPrincipalListMembers(String projectResourceId) {
+    public boolean canPrincipalReadApplication(String projectResourceId) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        return canUserListMembers(identity, projectResourceId);
+        return canUserReadApplication(identity, projectResourceId);
     }
 
 
-    public void validateUserCanCreateDeployment(String identity, String projectResourceId) {
-        boolean hasPermission = projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
-        if (hasPermission == false) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
-        }
-    }
-
-    public void validatePrincipalCanCreateDeployment(String projectResourceId) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanCreateDeployment(identity, projectResourceId);
-    }
-
-    public boolean canUserCreateDeployment(String identity, String projectResourceId) {
-        return projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
-    }
-
-    public boolean canPrincipalCreateDeployment(String projectResourceId) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        return canUserCreateDeployment(identity, projectResourceId);
-    }
-
-
-    public void validateUserCanUpdateDeployment(String identity, String projectResourceId) {
-        boolean hasPermission = projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
-        if (hasPermission == false) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
-        }
-    }
-
-    public void validatePrincipalCanUpdateDeployment(String projectResourceId) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanUpdateDeployment(identity, projectResourceId);
-    }
-
-    public boolean canUserUpdateDeployment(String identity, String projectResourceId) {
-        return projectAclService.hasProjectPermission(identity, "update-project", projectResourceId);
-    }
-
-    public boolean canPrincipalUpdateDeployment(String projectResourceId) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        return canUserUpdateDeployment(identity, projectResourceId);
-    }
-
-
-    public void validateUserCanReadDeployment(String identity, String projectResourceId) {
-        boolean hasPermission = projectAclService.hasProjectPermission(identity, "read-project", projectResourceId);
-        if (hasPermission == false) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
-        }
-    }
-
-    public void validatePrincipalCanReadDeployment(String projectResourceId) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanReadDeployment(identity, projectResourceId);
-    }
-
-    public boolean canUserReadDeployment(String identity, String projectResourceId) {
-        return projectAclService.hasProjectPermission(identity, "read-project", projectResourceId);
-    }
-
-    public boolean canPrincipalReadDeployment(String projectResourceId) {
-        String identity = AuthUtils.getCurrentQualifiedUsername();
-        return canUserReadDeployment(identity, projectResourceId);
-    }
-
-
-    private void validateUserCanDeleteDeployment(String identity, String projectResourceId) {
+    private void validateUserCanDeleteApplication(String identity, String projectResourceId) {
         boolean hasPermission = projectAclService.hasProjectPermission(identity, "delete-project", projectResourceId);
         if (hasPermission == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient privileges.");
         }
     }
 
-    public void validatePrincipalCanDeleteDeployment(String projectResourceId) {
+    public void validatePrincipalCanDeleteApplication(String projectResourceId) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        validateUserCanDeleteDeployment(identity, projectResourceId);
+        validateUserCanDeleteApplication(identity, projectResourceId);
     }
 
-    public boolean canUserDeleteDeployment(String identity, String projectResourceId) {
+    public boolean canUserDeleteApplication(String identity, String projectResourceId) {
         return projectAclService.hasProjectPermission(identity, "delete-project", projectResourceId);
     }
 
-    public boolean canPrincipalDeleteDeployment(String projectResourceId) {
+    public boolean canPrincipalDeleteApplication(String projectResourceId) {
         String identity = AuthUtils.getCurrentQualifiedUsername();
-        return canUserDeleteDeployment(identity, projectResourceId);
+        return canUserDeleteApplication(identity, projectResourceId);
     }
 
 }

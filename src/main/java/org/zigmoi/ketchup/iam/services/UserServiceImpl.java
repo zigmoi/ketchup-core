@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.entities.Tenant;
@@ -22,7 +23,6 @@ import org.zigmoi.ketchup.application.repositories.RevisionRepository;
 
 import javax.validation.Valid;
 import java.util.*;
-
 
 @Service("userDetailsService")
 public class UserServiceImpl implements UserDetailsService, UserService {
@@ -60,7 +60,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @Override
     @Transactional
     @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
-    public void createUser(@Valid User user) {
+    public void createUser(User user) {
         validateTenantId(user.getUsername());
 
         if (userRepository.findById(user.getUsername()).isPresent()) {
@@ -94,7 +94,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @Override
     @Transactional
     @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
-    public void updateUser(@Valid User user) {
+    public void updateUser(User user) {
         validateTenantId(user.getUsername());
         if (Arrays.asList("ROLE_TENANT_ADMIN", "ROLE_USER_ADMIN", "ROLE_USER_READER", "ROLE_USER")
                 .containsAll(user.getRoles()) == false) {

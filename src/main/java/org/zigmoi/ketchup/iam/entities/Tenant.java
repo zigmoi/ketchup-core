@@ -6,8 +6,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.zigmoi.ketchup.common.validations.ValidDisplayName;
+import org.zigmoi.ketchup.common.validations.ValidTenantId;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Data
@@ -16,10 +19,15 @@ import java.util.Date;
 @Table(name = "tenants")
 public class Tenant {
 
+    @ValidTenantId
     @Id
     @Column(length = 50)
     private String id;
+
+    @ValidDisplayName
     private String displayName;
+
+    @NotNull
     private boolean enabled;
 
     @Temporal(TemporalType.TIMESTAMP)

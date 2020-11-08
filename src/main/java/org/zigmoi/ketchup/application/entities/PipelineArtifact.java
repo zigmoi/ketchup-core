@@ -10,6 +10,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.zigmoi.ketchup.iam.entities.TenantEntity;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.util.Date;
 
 @Data
@@ -19,6 +23,7 @@ import java.util.Date;
 @Filter(name = TenantEntity.TENANT_FILTER_NAME)
 public class PipelineArtifact {
 
+    @NotNull
     @EmbeddedId
     private PipelineArtifactId id;
 
@@ -36,9 +41,18 @@ public class PipelineArtifact {
     @LastModifiedBy
     private String lastUpdatedBy;
 
+    @NotBlank
+    @Size(max = 65535)
+    @Column(columnDefinition="TEXT")
     private String resourceContent;
-    private String format; //json|yaml
-    private String resourceType; //secret|service-account|task|pipeline|pipeline-run|pipeline-resource|pipeline-pvc
+
+    @NotNull
+    @Pattern(regexp = "json|yaml")
+    private String format;
+
+    @NotNull
+    @Pattern(regexp = "configmap|secret|service-account|task|pipeline|pipeline-run|pipeline-pvc")
+    private String resourceType;
 
 
 }

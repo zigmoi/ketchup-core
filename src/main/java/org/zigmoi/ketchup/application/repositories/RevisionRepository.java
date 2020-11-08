@@ -12,14 +12,14 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface RevisionRepository extends JpaRepository<Revision, RevisionId> {
-    @Query("select r from Revision r where r.id.revisionResourceId = :releaseResourceId")
-    Optional<Revision> findByReleaseResourceId(String releaseResourceId);
+    @Query("select r from Revision r where r.id.revisionResourceId = :revisionResourceId")
+    Optional<Revision> findByRevisionResourceId(String revisionResourceId);
 
-    @Query("select distinct r from Revision r where r.id.applicationResourceId = :deploymentResourceId order by r.createdOn DESC")
-    Set<Revision> findDistinctByDeploymentResourceIdOrderByCreatedOnDesc(String deploymentResourceId);
+    @Query("select distinct r from Revision r where r.id.applicationResourceId = :applicationResourceId order by r.createdOn DESC")
+    Set<Revision> findDistinctByApplicationResourceIdOrderByCreatedOnDesc(String applicationResourceId);
 
-    @Query("select r from Revision r where r.id.applicationResourceId = :deploymentResourceId")
-    List<Revision> findAllByDeploymentResourceId(String deploymentResourceId);
+    @Query("select r from Revision r where r.id.applicationResourceId = :applicationResourceId")
+    List<Revision> findAllByApplicationResourceId(String applicationResourceId);
 
     @Query("select distinct r from Revision r where r.id.projectResourceId = :projectResourceId")
     Set<Revision> findDistinctByProjectResourceId(String projectResourceId);
@@ -30,13 +30,13 @@ public interface RevisionRepository extends JpaRepository<Revision, RevisionId> 
     @Query("select distinct r from Revision r where r.id.projectResourceId = :projectResourceId AND r.status = :status order by r.lastUpdatedOn DESC")
     Set<Revision> findDistinctByProjectResourceIdAndStatusOrderByLastUpdatedOnDesc(String projectResourceId, String status);
 
-    @Query("select count(ALL r) from Revision r where r.id.applicationResourceId = :deploymentResourceId")
-    long countAllByDeploymentResourceId(String deploymentResourceId);
+    @Query("select count(ALL r) from Revision r where r.id.applicationResourceId = :applicationResourceId")
+    long countAllByApplicationResourceId(String applicationResourceId);
 
-    @Query("select distinct r from Revision r where r.id.applicationResourceId = :deploymentResourceId AND r.status = :status order by r.lastUpdatedOn DESC")
-    List<Revision> findTopByDeploymentResourceIdAndStatusOrderByLastUpdatedOnDesc(String deploymentResourceId, String status, Pageable pageable);
+    @Query("select distinct r from Revision r where r.id.applicationResourceId = :applicationResourceId AND r.status = :status order by r.lastUpdatedOn DESC")
+    List<Revision> findTopByApplicationResourceIdAndStatusOrderByLastUpdatedOnDesc(String applicationResourceId, String status, Pageable pageable);
 
     @Modifying
-    @Query("delete from Revision r where r.id.applicationResourceId = :deploymentResourceId")
-    void deleteAllByDeploymentResourceId(String deploymentResourceId);
+    @Query("delete from Revision r where r.id.applicationResourceId = :applicationResourceId")
+    void deleteAllByApplicationResourceId(String applicationResourceId);
 }

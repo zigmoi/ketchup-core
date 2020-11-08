@@ -1,26 +1,28 @@
 package org.zigmoi.ketchup.project.services;
 
+import org.springframework.validation.annotation.Validated;
 import org.zigmoi.ketchup.project.dtos.ProjectDto;
+import org.zigmoi.ketchup.common.validations.ValidProjectId;
 import org.zigmoi.ketchup.project.entities.Project;
 import org.zigmoi.ketchup.project.entities.ProjectId;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
+@Validated
 public interface ProjectService {
 
-    void createProject(ProjectDto projectDto);
+    void createProject(@Valid ProjectDto projectDto);
 
-    void deleteProject(String projectResourceId);
+    void deleteProject(@ValidProjectId String projectResourceId);
 
-    void updateDescription(String projectResourceId, String description);
+    void updateProject(@Valid ProjectDto projectDto);
 
     List<Project> listAllProjects();
 
-    Optional<Project> findById(String projectResourceId);
+    Optional<Project> findById(@ValidProjectId String projectResourceId);
 
-    boolean validateProject(ProjectId projectId);
-
+    boolean validateProject(@Valid ProjectId projectId);
 
 }

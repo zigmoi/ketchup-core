@@ -9,7 +9,7 @@ import java.util.Set;
 
 @Getter
 @Setter
-public class UserDto {
+public class UserResponseDto {
     private String userName; //fully qualified username user@tenant example: test@zigmoi.com
     private String displayName;
     private boolean enabled;

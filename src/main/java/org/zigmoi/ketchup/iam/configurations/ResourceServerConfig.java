@@ -15,9 +15,9 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
         http
                 //  .requestMatcher(new RequestHeaderRequestMatcher("Authorization"))
                 .authorizeRequests()
-                .antMatchers("/v1-alpha/release/pipeline/tekton-events**")
+                .antMatchers("/v1-alpha/applications/revisions/pipeline/tekton-events**")
                 .access("#oauth2.hasScope('tekton-event')")
-                .antMatchers("/v1-alpha/release/git-webhook/*/listener-url/**")
+                .antMatchers("/v1-alpha/projects/*/applications/*/git-webhook/listen**")
                 .access("#oauth2.hasScope('git-webhook')")
                 .antMatchers("/**")
                 .access("#oauth2.hasScope('all')");
