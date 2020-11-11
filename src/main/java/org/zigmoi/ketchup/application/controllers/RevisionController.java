@@ -8,6 +8,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -23,6 +24,7 @@ import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.common.validations.ValidProjectId;
 import org.zigmoi.ketchup.common.validations.ValidResourceId;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
+import org.zigmoi.ketchup.project.services.PermissionUtilsService;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.ConstraintViolation;
@@ -51,7 +53,11 @@ public class RevisionController {
     @Autowired
     private ApplicationService applicationService;
 
+    @Autowired
+    private PermissionUtilsService permissionUtilsService;
+
     @PostMapping
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public Map<String, String> createRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                               @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
@@ -59,6 +65,7 @@ public class RevisionController {
     }
 
     @GetMapping("/{revision-resource-id}")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public Revision getRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                 @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                 @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) {
@@ -67,6 +74,7 @@ public class RevisionController {
     }
 
     @GetMapping
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public Set<Revision> listAllRevisions(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                           @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
@@ -74,6 +82,7 @@ public class RevisionController {
     }
 
     @GetMapping("/{revision-resource-id}/rollback")
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public void rollbackRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                  @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                  @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) {
@@ -83,6 +92,7 @@ public class RevisionController {
     }
 
     @GetMapping("/{revision-resource-id}/pipeline/status/refresh")
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public Revision refreshRevisionPipelineStatus(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                   @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                                   @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) throws IOException, ApiException {
@@ -106,6 +116,7 @@ public class RevisionController {
     }
 
     @GetMapping("/{revision-resource-id}/pipeline/stop")
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public void stopRevisionPipeline(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                      @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                      @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) {
@@ -115,6 +126,7 @@ public class RevisionController {
     }
 
     @DeleteMapping("/{revision-resource-id}/pipeline/cleanup-cluster-resources")
+    @PreAuthorize("@permissionUtilsService.canPrincipalDeleteApplication(#projectResourceId)")
     public void cleanUpRevisionPipelineResourcesInCluster(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                           @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                                           @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) {
@@ -123,6 +135,7 @@ public class RevisionController {
     }
 
     @GetMapping("/{revision-resource-id}/pipeline/status/stream")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public SseEmitter streamRevisionPipelineStatus(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                    @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                                    @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) {
@@ -165,6 +178,7 @@ public class RevisionController {
     }
 
     @GetMapping(value = "/{revision-resource-id}/pipeline/logs/stream/direct")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public void streamRevisionPipelineLogsDirect(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                  @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                                  @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId,
@@ -183,6 +197,7 @@ public class RevisionController {
     }
 
     @GetMapping(value = "/{revision-resource-id}/pipeline/logs/stream/sse")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public SseEmitter streamRevisionPipelineLogsSSE(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                     @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                                     @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId,
@@ -207,6 +222,7 @@ public class RevisionController {
     }
 
     @GetMapping(value = "/active/application-logs/stream")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public void streamAppLogsForActiveRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                                @RequestParam("podName") @NotBlank @Size(max = 250) String podName,

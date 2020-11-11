@@ -27,23 +27,27 @@ public class TenantController {
     private TenantService tenantService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
     public void createTenant(@Valid @RequestBody TenantDto tenantDto) {
         tenantService.createTenant(tenantDto);
     }
 
     @PutMapping("/{id}/enable/{status}")
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
     public void updateTenantStatus(@ValidTenantId @PathVariable("id") String tenantId,
                                    @NotNull @PathVariable("status") boolean status) {
         tenantService.updateTenantStatus(tenantId, status);
     }
 
     @PutMapping("/{id}/display-name/{display-name}")
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
     public void updateTenantDisplayName(@ValidTenantId @PathVariable("id") String tenantId,
                                         @ValidDisplayName @PathVariable("display-name") String displayName) {
         tenantService.updateTenantDisplayName(tenantId, displayName);
     }
 
     @PutMapping("/my/display-name/{display-name}")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN','ROLE_TENANT_ADMIN')")
     public void updateMyTenantDisplayName(@ValidTenantId @PathVariable("display-name") String displayName) {
         tenantService.updateMyTenantDisplayName(displayName);
     }
@@ -57,16 +61,19 @@ public class TenantController {
     }
 
     @GetMapping("/my/profile")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN','ROLE_TENANT_ADMIN')")
     public Tenant getTenant() {
         return tenantService.getMyTenantDetails();
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
     public void deleteTenant(@ValidTenantId @PathVariable("id") String tenantId) {
         tenantService.deleteTenant(tenantId);
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
     public List<Tenant> listAllTenants() {
         return tenantService.listAllTenants()
                 .stream()

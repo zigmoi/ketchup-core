@@ -3,6 +3,7 @@ package org.zigmoi.ketchup.iam.controllers;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,6 +30,7 @@ public class UserController {
     private UserService userService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void createUser(@RequestBody @Valid UserRequestDto userRequestDto) {
         User user = new User();
         user.setUserName(userRequestDto.getUserName());
@@ -43,6 +45,7 @@ public class UserController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void updateUser(@RequestBody @Valid UserRequestDto userRequestDto) {
         User user = new User();
         String userName = userRequestDto.getUserName();
@@ -57,6 +60,7 @@ public class UserController {
     }
 
     @GetMapping("/{username}")
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_USER_READER')")
     public UserResponseDto getUser(@NotBlank @PathVariable("username") String userName) {
         User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
         return prepareUserResponseDto(user);
@@ -69,26 +73,31 @@ public class UserController {
     }
 
     @DeleteMapping("/{username}")
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void deleteUser(@NotBlank @PathVariable("username") String userName) {
         userService.deleteUser(userName);
     }
 
     @PutMapping("/{username}/enable/{status}")
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void updateUserStatus(@NotBlank @PathVariable("username") String userName, @NotBlank @PathVariable("status") boolean status) {
         userService.updateUserStatus(userName, status);
     }
 
     @PutMapping("/{username}/display-name/{display-name}")
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void updateUserDisplayName(@NotBlank @PathVariable("username") String userName, @ValidDisplayName @PathVariable("display-name") String displayName) {
         userService.updateUserDisplayName(userName, displayName);
     }
 
     @PutMapping("/{username}/roles/{role-name}/add")
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void addRole(@NotBlank @PathVariable("username") String userName, @NotBlank @PathVariable("role-name") String roleName) {
         userService.addRole(userName, roleName);
     }
 
     @PutMapping("/{username}/roles/{role-name}/remove")
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
     public void removeRole(@NotBlank @PathVariable("username") String userName, @NotBlank @PathVariable("role-name") String roleName) {
         userService.removeRole(userName, roleName);
     }
@@ -99,6 +108,7 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_USER_READER')")
     public List<UserResponseDto> listUsers() {
         return userService.listAllUsers().stream()
                 .map(user -> {
@@ -109,6 +119,7 @@ public class UserController {
     }
 
     @GetMapping("/{username}/roles")
+    @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_USER_READER')")
     public Set<String> listUserRoles(@NotBlank @PathVariable("username") String userName) {
         User user = userService.getUser(userName).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("User with username %s not found", userName)));
         return user.getRoles();

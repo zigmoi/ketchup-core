@@ -36,8 +36,8 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
-    @Autowired
-    private RevisionRepository revisionRepository;
+//    @Autowired
+//    private RevisionRepository revisionRepository;
 
 
     @Override

@@ -2,6 +2,8 @@ package org.zigmoi.ketchup.project.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PostFilter;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -45,16 +47,19 @@ public class ProjectController {
     private PermissionUtilsService permissionUtilsService;
 
     @PostMapping
+    @PreAuthorize("@permissionUtilsService.canPrincipalCreateProject(#projectDto.projectResourceId)")
     public void createProject(@Valid @RequestBody ProjectDto projectDto) {
         projectService.createProject(projectDto);
     }
 
     @DeleteMapping("/{project-name}")
+    @PreAuthorize("@permissionUtilsService.canPrincipalDeleteProject(#projectName)")
     public void deleteProject(@PathVariable("project-name") @ValidProjectId String projectName) {
         projectService.deleteProject(projectName);
     }
 
     @PutMapping("/{project-name}")
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateProjectDetails(#projectName)")
     public void updateProject(@PathVariable("project-name") String projectName,
                               @RequestBody ProjectUpdateDto requestDto) {
         ProjectDto projectDto = new ProjectDto();
@@ -68,11 +73,13 @@ public class ProjectController {
     }
 
     @GetMapping
+    @PostFilter("@permissionUtilsService.canPrincipalReadProjectDetails(filterObject.getId().getResourceId())")
     public List<Project> listAllProjects() {
         return projectService.listAllProjects();
     }
 
     @GetMapping("/{project-name}")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails(#projectName)")
     public Project getProject(@PathVariable("project-name") @ValidProjectId String projectName) {
         return projectService.findById(projectName).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));

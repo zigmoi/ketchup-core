@@ -5,6 +5,7 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,6 +22,7 @@ import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.common.validations.ValidProjectId;
 import org.zigmoi.ketchup.common.validations.ValidResourceId;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
+import org.zigmoi.ketchup.project.services.PermissionUtilsService;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -48,7 +50,11 @@ public class ApplicationController {
     @Autowired
     private ApplicationService applicationService;
 
+    @Autowired
+    private PermissionUtilsService permissionUtilsService;
+
     @PostMapping
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public void createApplication(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                   @RequestBody ApplicationRequestDto applicationRequestDto) {
         Set<ConstraintViolation<ApplicationRequestDto>> violations = validator.validate(applicationRequestDto);
@@ -59,6 +65,7 @@ public class ApplicationController {
     }
 
     @GetMapping("/{application-resource-id}")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public ApplicationResponseDto getApplication(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                  @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
         ApplicationId id = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
@@ -66,6 +73,7 @@ public class ApplicationController {
     }
 
     @PutMapping("/{application-resource-id}")
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public void updateApplication(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                   @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                   @RequestBody ApplicationRequestDto applicationRequestDto) {
@@ -78,6 +86,7 @@ public class ApplicationController {
     }
 
     @DeleteMapping("/{application-resource-id}")
+    @PreAuthorize("@permissionUtilsService.canPrincipalDeleteApplication(#projectResourceId)")
     public void deleteApplication(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                   @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
         ApplicationId id = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
@@ -85,11 +94,13 @@ public class ApplicationController {
     }
 
     @GetMapping
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public List<Application> listAllApplicationsInProject(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId) {
         return applicationService.listAllApplicationsInProject(projectResourceId);
     }
 
     @GetMapping("/{application-resource-id}/instances")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public List<String> getApplicationInstances(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                 @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
         //TODO find active version of application and use its kubeconfig to get instances.
@@ -108,6 +119,7 @@ public class ApplicationController {
     }
 
     @GetMapping("/{application-resource-id}/active-revision")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public Revision getActiveRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                       @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
@@ -116,6 +128,7 @@ public class ApplicationController {
     }
 
     @PostMapping(value = "/{application-resource-id}/git-webhook/listen")
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public void handleGitWebHookRequests(@PathVariable("project-resource-id") String projectResourceId,
                                          @PathVariable("application-resource-id") String applicationResourceId,
                                          @RequestParam("vendor") String vendor,
@@ -144,6 +157,7 @@ public class ApplicationController {
     }
 
     @GetMapping(value = "/{application-resource-id}/git-webhook/listener-url")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public Map<String, String> generateGitWebHookListenerURL(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                              @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                                              @RequestParam("vendor") @NotBlank String vendor) {

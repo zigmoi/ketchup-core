@@ -7,6 +7,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
@@ -16,6 +17,7 @@ import org.zigmoi.ketchup.application.services.ApplicationService;
 import org.zigmoi.ketchup.common.GitUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.common.validations.ValidProjectId;
+import org.zigmoi.ketchup.project.services.PermissionUtilsService;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -36,7 +38,11 @@ public class CommonController {
     @Autowired
     private ApplicationService applicationService;
 
+    @Autowired
+    private PermissionUtilsService permissionUtilsService;
+
     @GetMapping("/v1-alpha/projects/{project-resource-id}/pipelines")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public Set<Revision> listAllRevisionPipelinesByStatus(
             @PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
             @RequestParam("status") @NotBlank @Size(max = 100) String status) {
@@ -44,12 +50,14 @@ public class CommonController {
     }
 
     @GetMapping("/v1-alpha/projects/{project-resource-id}/pipelines/recent")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public List<Revision> listRecentRevisionPipelinesInProject(
             @PathVariable("project-resource-id") @ValidProjectId String projectResourceId) {
         return applicationService.listRecentRevisionsInProject(projectResourceId);
     }
 
     @PostMapping("/v1-alpha/projects/{project-resource-id}/git-repo/test-connection")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public Map<String, String> testGitConnectivityAndAuthentication(
             @PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
             @RequestBody GitRepoConnectionTestRequestDto requestDto) {
@@ -87,6 +95,7 @@ public class CommonController {
                 try {
                     //TODO how to make this work with RevisionId, pipeline has only revisionResourceId
                     revision = applicationService.findRevisionByResourceId(revisionId);
+                    permissionUtilsService.validatePrincipalCanUpdateApplication(revision.getId().getProjectResourceId());
                     if (revision == null) {
                         log.debug("Revision not found : " + revisionId);
                         return;
