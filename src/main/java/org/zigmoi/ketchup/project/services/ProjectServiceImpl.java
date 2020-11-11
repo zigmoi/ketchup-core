@@ -41,7 +41,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
     @Override
     @Transactional
-    @PreAuthorize("@permissionUtilsService.canPrincipalCreateProject('#projectDto.projectResourceId')")
+    @PreAuthorize("@permissionUtilsService.canPrincipalCreateProject(#projectDto.projectResourceId)")
     public void createProject(ProjectDto projectDto) {
 //        permissionUtilsService.validatePrincipalCanCreateProject(projectDto.getProjectResourceId());
 
@@ -61,7 +61,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
     @Override
     @Transactional
-    @PreAuthorize("@permissionUtilsService.canPrincipalDeleteProject('#projectResourceId')")
+    @PreAuthorize("@permissionUtilsService.canPrincipalDeleteProject(#projectResourceId)")
     public void deleteProject(String projectResourceId) {
         // permissionUtilsService.validatePrincipalCanDeleteProject(projectResourceId);
 
@@ -77,7 +77,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
     @Override
     @Transactional
-    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateProjectDetails('#projectDto.projectResourceId')")
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateProjectDetails(#projectDto.projectResourceId)")
     public void updateProject(ProjectDto projectDto) {
 //        permissionUtilsService.validatePrincipalCanUpdateProjectDetails(projectDto.getProjectResourceId());
 
@@ -102,7 +102,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails('#projectResourceId')")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails(#projectResourceId)")
     public Optional<Project> findById(String projectResourceId) {
 //        permissionUtilsService.validatePrincipalCanReadProjectDetails(projectResourceId);
 
@@ -115,7 +115,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails('#projectId.resourceId')")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails(#projectId.resourceId)")
     public boolean validateProject(ProjectId projectId) {
         if (projectId.getTenantId().equalsIgnoreCase(AuthUtils.getCurrentTenantId()) == false) {
             return false;

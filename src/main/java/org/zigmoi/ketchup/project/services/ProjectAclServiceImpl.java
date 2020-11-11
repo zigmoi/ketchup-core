@@ -3,6 +3,7 @@ package org.zigmoi.ketchup.project.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.exception.InvalidAclException;
@@ -41,6 +42,7 @@ public class ProjectAclServiceImpl extends TenantProviderService implements Proj
 
     @Override
     @Transactional
+    @PreAuthorize("isAuthenticated()")
     public void assignPermission(ProjectAclDto projectAclDto) {
         //validate each permission is valid project permission.
 
@@ -96,6 +98,7 @@ public class ProjectAclServiceImpl extends TenantProviderService implements Proj
 
     @Override
     @Transactional
+    @PreAuthorize("isAuthenticated()")
     public void revokePermission(ProjectAclDto projectAclDto) {
         //validate each permission is valid project permission.
         String currentUser = AuthUtils.getCurrentQualifiedUsername();
@@ -138,6 +141,7 @@ public class ProjectAclServiceImpl extends TenantProviderService implements Proj
     //This function allows to check if user has permission on a specific project (single not *).
     @Override
     @Transactional
+    @PreAuthorize("isAuthenticated()")
     public boolean hasProjectPermission(String identity, String permission, String projectResourceId) {
         //validate project id should be single instance only for create-project, assign-create-project it can be star.
         String allProjectsResourceId = "*";

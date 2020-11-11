@@ -18,7 +18,7 @@ public class ContainerRegistrySettingsRequestDto {
     private String displayName;
 
     @NotBlank
-    @Pattern(regexp = "container-registry")
+    @Pattern(regexp = "local|docker-hub|gcr")
     private String type;
 
     @NotBlank

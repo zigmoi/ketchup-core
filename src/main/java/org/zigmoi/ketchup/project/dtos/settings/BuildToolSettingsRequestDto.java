@@ -20,7 +20,7 @@ public class BuildToolSettingsRequestDto {
 
 
     @NotBlank
-    @Pattern(regexp = "build-tool")
+    @Pattern(regexp = "maven-3.3|gradle-5.5")
     private String type;
 
     @NotBlank

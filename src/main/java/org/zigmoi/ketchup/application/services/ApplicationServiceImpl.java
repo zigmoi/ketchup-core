@@ -15,6 +15,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -133,6 +135,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#applicationId.projectResourceId)")
     public String createRevision(ApplicationId applicationId) {
         //validate and fetch applicationId.
         //get projectId from application.
@@ -181,6 +184,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#revisionId.projectResourceId)")
     public void rollbackRevision(RevisionId revisionId) {
         Revision revision = revisionRepository.findById(revisionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -196,6 +200,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#revisionId.projectResourceId)")
     public void stopRevisionPipeline(RevisionId revisionId) {
         Revision revision = revisionRepository.findById(revisionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -241,6 +246,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#revisionId.projectResourceId)")
     public Revision findRevisionById(RevisionId revisionId) {
         return revisionRepository.findById(revisionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -248,6 +254,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @PostAuthorize("@permissionUtilsService.canPrincipalReadApplication(returnObject.id.projectResourceId)")
     public Revision findRevisionByResourceId(String revisionResourceId) {
         return revisionRepository.findByRevisionResourceId(revisionResourceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -256,6 +264,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
+    @PreAuthorize("@permissionUtilsService.canPrincipalDeleteApplication(#revisionId.projectResourceId)")
     public void deleteRevision(RevisionId revisionId) {
         if (revisionRepository.existsById(revisionId) == false) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Revision with id %s not found.", revisionId.getRevisionResourceId()));
@@ -266,6 +275,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
+    @PreAuthorize("@permissionUtilsService.canPrincipalDeleteApplication(#applicationId.projectResourceId)")
     public void deleteApplication(ApplicationId applicationId) {
         Optional<Revision> activeRevision = getActiveRevision(applicationId);
         if (activeRevision.isPresent()) {
@@ -296,42 +306,50 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#revision.id.projectResourceId)")
     public void updateRevision(Revision revision) {
 
     }
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#applicationId.projectResourceId)")
     public Optional<Revision> getActiveRevision(ApplicationId applicationId) {
         List<Revision> revisions = revisionRepository.findTopByApplicationResourceIdAndStatusOrderByLastUpdatedOnDesc(applicationId.getApplicationResourceId(), "SUCCESS", PageRequest.of(1, 1));
         return revisions.stream().findFirst();
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#applicationId.projectResourceId)")
     public Set<Revision> listAllRevisionsInApplication(ApplicationId applicationId) {
         return revisionRepository.findDistinctByApplicationResourceIdOrderByCreatedOnDesc(applicationId.getApplicationResourceId());
     }
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public Set<Revision> listAllRevisionsInProject(String projectResourceId) {
         return revisionRepository.findDistinctByProjectResourceId(projectResourceId);
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public List<Revision> listRecentRevisionsInProject(String projectResourceId) {
         return revisionRepository.findTop5ByProjectResourceIdOrderByLastUpdatedOnDesc(projectResourceId, PageRequest.of(1, 5));
     }
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public Set<Revision> listAllRevisionsInProjectWithStatus(String projectResourceId, String status) {
         return revisionRepository.findDistinctByProjectResourceIdAndStatusOrderByLastUpdatedOnDesc(projectResourceId, status);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#revisionId.projectResourceId)")
     public Set<PipelineArtifact> listAllPipelineArtifactsInRevision(RevisionId revisionId) {
         if (revisionRepository.existsById(revisionId) == false) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Revision with id %s not found.", revisionId.getRevisionResourceId()));
@@ -341,6 +359,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#pipelineArtifactId.projectResourceId)")
     public PipelineArtifact getPipelineArtifactsById(PipelineArtifactId pipelineArtifactId) {
         return pipelineArtifactRepository
                 .findById(pipelineArtifactId)
@@ -1054,6 +1073,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     @Override
+    @Transactional
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#revisionId.projectResourceId)")
     public Optional<Revision> refreshRevisionStatus(RevisionId revisionId) {
         return Optional.empty();
     }
@@ -1087,6 +1108,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#revision.id.projectResourceId)")
     public ApplicationDetailsDto extractApplicationByRevisionId(Revision revision) {
         String applicationDetailsJSON = revision.getApplicationDataJson();
         try {
@@ -1098,6 +1121,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalDeleteApplication(#revisionId.projectResourceId)")
     public void cleanPipelineResourcesInRevision(RevisionId revisionId) {
         Set<PipelineArtifact> resources = pipelineArtifactRepository.findDistinctByRevisionResourceId(revisionId.getRevisionResourceId());
         Revision revision = findRevisionById(revisionId);
@@ -1176,6 +1200,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public String createApplication(String projectResourceId, ApplicationRequestDto applicationRequestDto) {
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, getNewApplicationId());
         Application application = new Application();
@@ -1191,7 +1216,6 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             //get all setting values and store it in application.
             final KubernetesClusterSettingsResponseDto devKubernetesCluster = settingService.getKubernetesCluster(projectResourceId, applicationRequestDto.getDevKubernetesClusterSettingId());
             final ContainerRegistrySettingsResponseDto containerRegistry = settingService.getContainerRegistry(projectResourceId, applicationRequestDto.getContainerRegistrySettingId());
-            final BuildToolSettingsResponseDto buildTool = settingService.getBuildTool(projectResourceId, applicationRequestDto.getBuildToolSettingId());
             //save settings for host alias settings
 
             applicationJson.put("devKubeconfig", devKubernetesCluster.getKubeconfig());
@@ -1200,8 +1224,13 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             applicationJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
             applicationJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
             applicationJson.put("containerRepositoryName", containerRegistry.getRepository());
-            applicationJson.put("buildToolType", buildTool.getType());
-            applicationJson.put("buildToolSettingsData", buildTool.getFileData());
+
+            String buildToolSettingId = applicationRequestDto.getBuildToolSettingId();
+            if(buildToolSettingId != null && buildToolSettingId != "") {
+                final BuildToolSettingsResponseDto buildTool = settingService.getBuildTool(projectResourceId, applicationRequestDto.getBuildToolSettingId());
+                applicationJson.put("buildToolType", buildTool.getType());
+                applicationJson.put("buildToolSettingsData", buildTool.getFileData());
+            }
 
             application.setData(applicationJson.toString());
         } catch (JsonProcessingException e) {
@@ -1214,6 +1243,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#applicationId.projectResourceId)")
     public ApplicationDetailsDto getApplication(ApplicationId applicationId) {
         Application application = applicationRepository.getByApplicationResourceId(applicationId.getApplicationResourceId());
         ObjectMapper objectMapper = new ObjectMapper();
@@ -1228,6 +1258,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#applicationId.projectResourceId)")
     public ApplicationResponseDto getApplicationDetails(ApplicationId applicationId) {
         Application application = applicationRepository.getByApplicationResourceId(applicationId.getApplicationResourceId());
         ObjectMapper objectMapper = new ObjectMapper();
@@ -1242,6 +1273,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public List<Application> listAllApplicationsInProject(String projectResourceId) {
         return applicationRepository.findAll()
                 .stream()
@@ -1251,6 +1284,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     @Override
+    @Transactional
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public void updateApplication(String projectResourceId, String applicationResourceId, ApplicationRequestDto applicationRequestDto) {
         Application application = applicationRepository.getByApplicationResourceId(applicationResourceId);
         ApplicationId applicationId = application.getId();
@@ -1264,7 +1299,6 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             //get all setting values and store it in application.
             final KubernetesClusterSettingsResponseDto devKubernetesCluster = settingService.getKubernetesCluster(projectResourceId, applicationRequestDto.getDevKubernetesClusterSettingId());
             final ContainerRegistrySettingsResponseDto containerRegistry = settingService.getContainerRegistry(projectResourceId, applicationRequestDto.getContainerRegistrySettingId());
-            final BuildToolSettingsResponseDto buildTool = settingService.getBuildTool(projectResourceId, applicationRequestDto.getBuildToolSettingId());
             //save settings for host alias settings
 
             applicationJson.put("devKubeconfig", devKubernetesCluster.getKubeconfig());
@@ -1273,8 +1307,13 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             applicationJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
             applicationJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
             applicationJson.put("containerRepositoryName", containerRegistry.getRepository());
-            applicationJson.put("buildToolType", buildTool.getType());
-            applicationJson.put("buildToolSettingsData", buildTool.getFileData());
+
+            String buildToolSettingId = applicationRequestDto.getBuildToolSettingId();
+            if(buildToolSettingId != null && buildToolSettingId != "") {
+                final BuildToolSettingsResponseDto buildTool = settingService.getBuildTool(projectResourceId, applicationRequestDto.getBuildToolSettingId());
+                applicationJson.put("buildToolType", buildTool.getType());
+                applicationJson.put("buildToolSettingsData", buildTool.getFileData());
+            }
 
             application.setData(applicationJson.toString());
         } catch (JsonProcessingException e) {

@@ -79,7 +79,7 @@ public class ApplicationRequestDto {
     @Size(max = 250)
     private String baseBuildPath;
 
-    @Size(min = 36, max = 36) //can be null or blank as its optional.
+//    @Size(min = 36, max = 36) //can be null or blank as its optional.
     private String buildToolSettingId;
 
     @NotNull
@@ -93,7 +93,7 @@ public class ApplicationRequestDto {
     @Size(max=100)
     private String devKubernetesNamespace;
 
-    @Size(min = 36, max = 36) //can be null or blank as its optional.
+//    @Size(min = 36, max = 36) //can be null or blank as its optional.
     private String prodKubernetesClusterSettingId;
 
     @Size(max = 100) //can be null or blank as its optional.
