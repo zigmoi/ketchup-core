@@ -39,4 +39,7 @@ public interface RevisionRepository extends JpaRepository<Revision, RevisionId> 
     @Modifying
     @Query("delete from Revision r where r.id.applicationResourceId = :applicationResourceId")
     void deleteAllByApplicationResourceId(String applicationResourceId);
+
+    @Query("select count(ALL r) from Revision r where r.id.projectResourceId = :projectResourceId")
+    long countAllRevisionsInProject(String projectResourceId);
 }

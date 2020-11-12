@@ -11,6 +11,7 @@ import org.zigmoi.ketchup.common.validations.ValidResourceId;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -64,4 +65,6 @@ public interface ApplicationService {
     List<Application> listAllApplicationsInProject(@ValidProjectId String projectResourceId);
 
     void updateApplication(@ValidProjectId String projectResourceId, @ValidResourceId String applicationResourceId, @Valid ApplicationRequestDto applicationRequestDto);
+
+    Map<String, Long> getDashboardDataForProject(@ValidProjectId String projectResourceId);
 }

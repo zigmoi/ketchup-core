@@ -1226,7 +1226,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             applicationJson.put("containerRepositoryName", containerRegistry.getRepository());
 
             String buildToolSettingId = applicationRequestDto.getBuildToolSettingId();
-            if(buildToolSettingId != null && buildToolSettingId != "") {
+            if (buildToolSettingId != null && buildToolSettingId != "") {
                 final BuildToolSettingsResponseDto buildTool = settingService.getBuildTool(projectResourceId, applicationRequestDto.getBuildToolSettingId());
                 applicationJson.put("buildToolType", buildTool.getType());
                 applicationJson.put("buildToolSettingsData", buildTool.getFileData());
@@ -1309,7 +1309,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             applicationJson.put("containerRepositoryName", containerRegistry.getRepository());
 
             String buildToolSettingId = applicationRequestDto.getBuildToolSettingId();
-            if(buildToolSettingId != null && buildToolSettingId != "") {
+            if (buildToolSettingId != null && buildToolSettingId != "") {
                 final BuildToolSettingsResponseDto buildTool = settingService.getBuildTool(projectResourceId, applicationRequestDto.getBuildToolSettingId());
                 applicationJson.put("buildToolType", buildTool.getType());
                 applicationJson.put("buildToolSettingsData", buildTool.getFileData());
@@ -1320,5 +1320,22 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             e.printStackTrace();
         }
         applicationRepository.save(application);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails(#projectResourceId)")
+    public Map<String, Long> getDashboardDataForProject(String projectResourceId) {
+        long totalApplicationsInProject = applicationRepository.getAllApplicationsByProjectResourceId(projectResourceId);
+        long totalDeploymentsInProject = revisionRepository.countAllRevisionsInProject(projectResourceId);
+        long totalKubernetesClustersInProject = settingService.countAllKubernetesClustersInProject(projectResourceId);
+        long totalContainerRegistriesInProject = settingService.countAllContainerRegistryInProject(projectResourceId);
+
+        Map<String, Long> result = new HashMap<>();
+        result.put("totalApplicationsCount", totalApplicationsInProject);
+        result.put("totalDeploymentsCount", totalDeploymentsInProject);
+        result.put("totalKubernetesClusterCount", totalKubernetesClustersInProject);
+        result.put("totalContainerRegistriesCount", totalContainerRegistriesInProject);
+        return result;
     }
 }

@@ -134,6 +134,13 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         settingRepository.delete(settingsEntityOpt.get());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadSetting(#projectResourceId)")
+    public long countAllContainerRegistryInProject(String projectResourceId) {
+        return settingRepository.countAllByProjectResourceIdAndType(projectResourceId, SettingType.CONTAINER_REGISTRY.toString());
+    }
+
     private void convertToDto(Setting settingsEntity, ContainerRegistrySettingsResponseDto settingsDto) {
         JSONObject jo = new JSONObject(settingsEntity.getData());
         settingsDto.setType(jo.getString("type"));
@@ -253,6 +260,13 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                             settingResourceId, projectResourceId));
         }
         settingRepository.delete(settingsEntityOpt.get());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadSetting(#projectResourceId)")
+    public long countAllKubernetesClustersInProject(String projectResourceId) {
+        return settingRepository.countAllByProjectResourceIdAndType(projectResourceId, SettingType.KUBERNETES_CLUSTER.toString());
     }
 
     private void convertToDto(Setting settingsEntity, KubernetesClusterSettingsResponseDto settingsDto) {

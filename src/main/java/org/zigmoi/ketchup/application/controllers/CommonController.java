@@ -41,16 +41,23 @@ public class CommonController {
     @Autowired
     private PermissionUtilsService permissionUtilsService;
 
+    @GetMapping("/v1-alpha/projects/{project-resource-id}/dashboard-data")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails(#projectResourceId)")
+    public Map<String, Long> getDashboardDataForProject(
+            @PathVariable("project-resource-id") @ValidProjectId String projectResourceId) {
+        return applicationService.getDashboardDataForProject(projectResourceId);
+    }
+
     @GetMapping("/v1-alpha/projects/{project-resource-id}/pipelines")
-    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public Set<Revision> listAllRevisionPipelinesByStatus(
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails(#projectResourceId)")
+    public Set<Revision> listAllRevisionPipelinesByStatusInProject(
             @PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
             @RequestParam("status") @NotBlank @Size(max = 100) String status) {
         return applicationService.listAllRevisionsInProjectWithStatus(projectResourceId, status);
     }
 
     @GetMapping("/v1-alpha/projects/{project-resource-id}/pipelines/recent")
-    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails(#projectResourceId)")
     public List<Revision> listRecentRevisionPipelinesInProject(
             @PathVariable("project-resource-id") @ValidProjectId String projectResourceId) {
         return applicationService.listRecentRevisionsInProject(projectResourceId);
