@@ -11,15 +11,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
+import org.zigmoi.ketchup.iam.dtos.UserUpdateRequestDto;
 import org.zigmoi.ketchup.iam.entities.Tenant;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.exceptions.TenantInActiveException;
 import org.zigmoi.ketchup.iam.exceptions.TenantNotFoundException;
 import org.zigmoi.ketchup.iam.repositories.UserRepository;
-import org.zigmoi.ketchup.application.repositories.RevisionRepository;
 
 import javax.validation.Valid;
 import java.util.*;
@@ -94,16 +93,16 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @Override
     @Transactional
     @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
-    public void updateUser(User user) {
-        validateTenantId(user.getUsername());
+    public void updateUser(String userName, UserUpdateRequestDto userUpdateRequestDto) {
+        validateTenantId(userName);
         if (Arrays.asList("ROLE_TENANT_ADMIN", "ROLE_USER_ADMIN", "ROLE_USER_READER", "ROLE_USER")
-                .containsAll(user.getRoles()) == false) {
+                .containsAll(userUpdateRequestDto.getRoles()) == false) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role found!");
         }
 
-        User currentUser = userRepository.findById(user.getUsername()).orElseThrow(() ->
+        User currentUser = userRepository.findById(userName).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        String.format("User with username %s not found.", user.getUsername())));
+                        String.format("User with username %s not found.", userName)));
 
         String loggedInUserName = AuthUtils.getCurrentQualifiedUsername();
         User loggedInUser = userRepository.findById(loggedInUserName).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
@@ -112,13 +111,19 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         //check if role ROLE_TENANT_ADMIN is assigned or removed
         // or if user already has ROLE_TENANT_ADMIN,
         // than logged in user should have role ROLE_TENANT_ADMIN.
-        if ((user.getRoles().contains("ROLE_TENANT_ADMIN") || currentUser.getRoles().contains("ROLE_TENANT_ADMIN"))
+        if ((userUpdateRequestDto.getRoles().contains("ROLE_TENANT_ADMIN") || currentUser.getRoles().contains("ROLE_TENANT_ADMIN"))
                 && loggedInUser.getRoles().contains("ROLE_TENANT_ADMIN") == false) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient privileges to assign Role ROLE_TENANT_ADMIN!");
         }
 
-        user.setPassword(currentUser.getPassword()); //keep existing password as it is, do not update it.
-        userRepository.save(user);
+        currentUser.setDisplayName(userUpdateRequestDto.getDisplayName());
+        currentUser.setFirstName(userUpdateRequestDto.getFirstName());
+        currentUser.setLastName(userUpdateRequestDto.getLastName());
+        currentUser.setEmail(userUpdateRequestDto.getEmail());
+        currentUser.setEnabled(userUpdateRequestDto.isEnabled());
+        currentUser.setRoles(userUpdateRequestDto.getRoles());
+        //keep existing password as it is, do not update it.
+        userRepository.save(currentUser);
     }
 
     @Override

@@ -7,13 +7,18 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
 import org.zigmoi.ketchup.iam.dtos.UserResponseDto;
-import org.zigmoi.ketchup.iam.dtos.UserRequestDto;
+import org.zigmoi.ketchup.iam.dtos.UserCreateRequestDto;
+import org.zigmoi.ketchup.iam.dtos.UserUpdateRequestDto;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.iam.services.UserService;
 import org.zigmoi.ketchup.common.validations.ValidDisplayName;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
+import javax.validation.Validator;
 import javax.validation.constraints.NotBlank;
 import java.util.Comparator;
 import java.util.List;
@@ -29,34 +34,33 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private Validator validator;
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
-    public void createUser(@RequestBody @Valid UserRequestDto userRequestDto) {
+    public void createUser(@RequestBody @Valid UserCreateRequestDto userCreateRequestDto) {
         User user = new User();
-        user.setUserName(userRequestDto.getUserName());
-        user.setDisplayName(userRequestDto.getDisplayName());
-        user.setPassword(userRequestDto.getPassword());
-        user.setEmail(userRequestDto.getEmail());
-        user.setFirstName(userRequestDto.getFirstName());
-        user.setLastName(userRequestDto.getLastName());
-        user.setEnabled(userRequestDto.isEnabled());
-        user.setRoles(userRequestDto.getRoles());
+        user.setUserName(userCreateRequestDto.getUserName());
+        user.setDisplayName(userCreateRequestDto.getDisplayName());
+        user.setPassword(userCreateRequestDto.getPassword());
+        user.setEmail(userCreateRequestDto.getEmail());
+        user.setFirstName(userCreateRequestDto.getFirstName());
+        user.setLastName(userCreateRequestDto.getLastName());
+        user.setEnabled(userCreateRequestDto.isEnabled());
+        user.setRoles(userCreateRequestDto.getRoles());
         userService.createUser(user);
     }
 
-    @PutMapping
+    @PutMapping("/{username}")
     @PreAuthorize("hasAnyRole('ROLE_TENANT_ADMIN', 'ROLE_USER_ADMIN')")
-    public void updateUser(@RequestBody @Valid UserRequestDto userRequestDto) {
-        User user = new User();
-        String userName = userRequestDto.getUserName();
-        user.setUserName(userName);
-        user.setDisplayName(userRequestDto.getDisplayName());
-        user.setEmail(userRequestDto.getEmail());
-        user.setFirstName(userRequestDto.getFirstName());
-        user.setLastName(userRequestDto.getLastName());
-        user.setEnabled(userRequestDto.isEnabled());
-        user.setRoles(userRequestDto.getRoles());
-        userService.updateUser(user);
+    public void updateUser(@NotBlank @PathVariable("username") String userName,
+                           @RequestBody UserUpdateRequestDto userUpdateRequestDto) {
+        Set<ConstraintViolation<UserUpdateRequestDto>> violations = validator.validate(userUpdateRequestDto);
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
+        }
+        userService.updateUser(userName, userUpdateRequestDto);
     }
 
     @GetMapping("/{username}")

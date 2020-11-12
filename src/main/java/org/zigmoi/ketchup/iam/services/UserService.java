@@ -1,6 +1,7 @@
 package org.zigmoi.ketchup.iam.services;
 
 import org.springframework.validation.annotation.Validated;
+import org.zigmoi.ketchup.iam.dtos.UserUpdateRequestDto;
 import org.zigmoi.ketchup.iam.entities.User;
 import org.zigmoi.ketchup.common.validations.ValidDisplayName;
 
@@ -16,7 +17,7 @@ public interface UserService {
 
     void createUser(@Valid User user);
 
-    void updateUser(@Valid User user);
+    void updateUser(@NotBlank String userName, @Valid UserUpdateRequestDto userUpdateRequestDto);
 
     Optional<User> getUser(@NotBlank String userName);
 

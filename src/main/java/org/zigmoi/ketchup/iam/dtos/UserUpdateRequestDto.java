@@ -10,15 +10,7 @@ import java.util.Set;
 
 @Getter
 @Setter
-public class UserRequestDto {
-    @NotBlank(message = "Please provide fully qualified user name with tenant id, example: user@tenant_id.")
-    @Size(max = 100)
-    private String userName; //fully qualified username user@tenant example: test@zigmoi.com
-
-    @NotBlank
-    @Size(max = 100)
-    private String password;
-
+public class UserUpdateRequestDto {
     @ValidDisplayName
     private String displayName;
 
