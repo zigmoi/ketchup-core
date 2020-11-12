@@ -1,6 +1,8 @@
 package org.zigmoi.ketchup.project.services;
 
 import org.springframework.validation.annotation.Validated;
+import org.zigmoi.ketchup.common.validations.ValidProjectId;
+import org.zigmoi.ketchup.common.validations.ValidTenantId;
 import org.zigmoi.ketchup.project.dtos.ProjectAclDto;
 
 import javax.validation.Valid;
@@ -19,4 +21,6 @@ public interface ProjectAclService {
                                           "assign-create-project|assign-read-project|" +
                                           "assign-update-project|assign-delete-project") String permission,
                                   @NotBlank @Size(max = 20) String projectResourceId);
+     void deleteAllPermissionEntriesForProject(@ValidProjectId String projectResourceId);
+     void deleteAllPermissionEntriesForTenant();
 }

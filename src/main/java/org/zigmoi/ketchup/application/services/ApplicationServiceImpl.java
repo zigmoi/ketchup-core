@@ -290,7 +290,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         List<Revision> revisions = revisionRepository.findAllByApplicationResourceId(applicationId.getApplicationResourceId());
         revisions.forEach(revision -> pipelineArtifactRepository.deleteAllByRevisionResourceId(revision.getId().getRevisionResourceId()));
         revisionRepository.deleteAllByApplicationResourceId(applicationId.getApplicationResourceId());
-//        deploymentRepository.deleteById(deploymentId);
+        applicationRepository.deleteById(applicationId);
     }
 
     public ApplicationDetailsDto applicationJsonToDto(String applicationJson) {

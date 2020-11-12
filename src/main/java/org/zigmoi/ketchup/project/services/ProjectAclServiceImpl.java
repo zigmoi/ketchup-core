@@ -164,6 +164,24 @@ public class ProjectAclServiceImpl extends TenantProviderService implements Proj
         }
     }
 
+    @Override
+    @Transactional
+    public void deleteAllPermissionEntriesForProject(String projectResourceId) {
+        if(hasProjectPermission(AuthUtils.getCurrentQualifiedUsername(), "read-project", projectResourceId)){
+            projectAclRepository.deleteAllEntriesForProject(projectResourceId);
+        }else{
+            throw new AccessDeniedException("User does not have required permissions for this operation.");
+        }
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_TENANT_ADMIN')")
+    public void deleteAllPermissionEntriesForTenant() {
+            //super admin cannot delete these settings for specific tenant as it automatically gets current tenantId.
+            projectAclRepository.deleteAllEntriesForTenant();
+    }
+
     private ProjectAcl buildProjectAcl(String identity, String permission, String
             projectResourceId, String effect) {
         String aclId = UUID.randomUUID().toString();

@@ -50,16 +50,24 @@ public class PermissionUtilsService {
         projectAclDto.setIdentity(identity);
         projectAclDto.setProjectResourceId(projectResourceId);
         Set<String> permissions = new HashSet<>();
-        permissions.add("");
-        permissions.add("");
-        permissions.add("");
-        permissions.add("");
-        permissions.add("");
-        permissions.add("");
-        permissions.add("");
-        permissions.add("");
+        permissions.add("create-project");
+        permissions.add("read-project");
+        permissions.add("update-project");
+        permissions.add("delete-project");
+        permissions.add("assign-create-project");
+        permissions.add("assign-read-project");
+        permissions.add("assign-update-project");
+        permissions.add("assign-delete-project");
         projectAclDto.setPermissions(permissions);
         projectAclService.revokePermission(projectAclDto);
+    }
+
+    public void deleteAllPermissionEntriesForProject(String projectResourceId) {
+        projectAclService.deleteAllPermissionEntriesForProject(projectResourceId);
+    }
+
+    public void deleteAllPermissionEntriesForTenant() {
+        projectAclService.deleteAllPermissionEntriesForTenant();
     }
 
     public void validateUserCanListPermissions(String identity, String projectResourceId) {

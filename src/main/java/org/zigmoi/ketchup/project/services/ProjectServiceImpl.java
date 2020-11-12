@@ -1,27 +1,24 @@
 package org.zigmoi.ketchup.project.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ResponseStatusException;
+import org.zigmoi.ketchup.application.services.ApplicationService;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.services.TenantProviderService;
-import org.zigmoi.ketchup.iam.services.UserService;
 import org.zigmoi.ketchup.project.dtos.ProjectDto;
 import org.zigmoi.ketchup.project.entities.Project;
 import org.zigmoi.ketchup.project.entities.ProjectId;
 import org.zigmoi.ketchup.project.repositories.ProjectRepository;
 
-import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class ProjectServiceImpl extends TenantProviderService implements ProjectService {
@@ -30,21 +27,26 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
 
     private PermissionUtilsService permissionUtilsService;
 
-    private UserService userService;
+    private ApplicationService applicationService;
+
+    private SettingService settingService;
+
 
     @Autowired
-    public ProjectServiceImpl(ProjectRepository projectRepository, PermissionUtilsService permissionUtilsService, UserService userService) {
+    public ProjectServiceImpl(ProjectRepository projectRepository,
+                              PermissionUtilsService permissionUtilsService,
+                              @Lazy ApplicationService applicationService,
+                              @Lazy SettingService settingService) {
         this.projectRepository = projectRepository;
         this.permissionUtilsService = permissionUtilsService;
-        this.userService = userService;
+        this.applicationService = applicationService;
+        this.settingService = settingService;
     }
 
     @Override
     @Transactional
     @PreAuthorize("@permissionUtilsService.canPrincipalCreateProject(#projectDto.projectResourceId)")
     public void createProject(ProjectDto projectDto) {
-//        permissionUtilsService.validatePrincipalCanCreateProject(projectDto.getProjectResourceId());
-
         ProjectId projectId = new ProjectId();
         projectId.setResourceId(projectDto.getProjectResourceId());
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
@@ -63,8 +65,6 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
     @Transactional
     @PreAuthorize("@permissionUtilsService.canPrincipalDeleteProject(#projectResourceId)")
     public void deleteProject(String projectResourceId) {
-        // permissionUtilsService.validatePrincipalCanDeleteProject(projectResourceId);
-
         ProjectId projectId = new ProjectId();
         projectId.setResourceId(projectResourceId);
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
@@ -72,6 +72,31 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
         if (projectRepository.existsById(projectId) == false) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.", projectResourceId));
         }
+
+        //delete all applications (revisions, artifacts etc.) and uninstall app from cluster.
+        applicationService.listAllApplicationsInProject(projectResourceId)
+                .parallelStream()
+                .forEach(application -> applicationService.deleteApplication(application.getId()));
+
+        //delete all settings.
+        settingService.listAllBuildTool(projectResourceId)
+                .parallelStream()
+                .forEach(dto -> settingService.deleteBuildTool(dto.getProjectResourceId(), dto.getSettingResourceId()));
+
+        settingService.listAllContainerRegistry(projectResourceId)
+                .parallelStream()
+                .forEach(dto -> settingService.deleteContainerRegistry(dto.getProjectResourceId(), dto.getSettingResourceId()));
+
+        settingService.listAllKubernetesHostAlias(projectResourceId)
+                .parallelStream()
+                .forEach(dto -> settingService.deleteKubernetesHostAlias(dto.getProjectResourceId(), dto.getSettingResourceId()));
+
+        settingService.listAllKubernetesCluster(projectResourceId)
+                .parallelStream()
+                .forEach(dto -> settingService.deleteKubernetesCluster(dto.getProjectResourceId(), dto.getSettingResourceId()));
+
+        //delete all permission entries for that project.
+        permissionUtilsService.deleteAllPermissionEntriesForProject(projectResourceId);
         projectRepository.deleteById(projectId);
     }
 
@@ -79,8 +104,6 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
     @Transactional
     @PreAuthorize("@permissionUtilsService.canPrincipalUpdateProjectDetails(#projectDto.projectResourceId)")
     public void updateProject(ProjectDto projectDto) {
-//        permissionUtilsService.validatePrincipalCanUpdateProjectDetails(projectDto.getProjectResourceId());
-
         ProjectId projectId = new ProjectId();
         projectId.setResourceId(projectDto.getProjectResourceId());
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
@@ -95,17 +118,12 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
     public List<Project> listAllProjects() {
         Sort sort = new Sort(Sort.Direction.ASC, "id.resourceId");
         return projectRepository.findAll(sort);
-//                .stream()
-//                .filter(project -> permissionUtilsService.canPrincipalReadProjectDetails(project.getId().getResourceId()))
-//                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails(#projectResourceId)")
     public Optional<Project> findById(String projectResourceId) {
-//        permissionUtilsService.validatePrincipalCanReadProjectDetails(projectResourceId);
-
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
         projectId.setResourceId(projectResourceId);
