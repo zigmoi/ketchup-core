@@ -33,6 +33,8 @@ import org.yaml.snakeyaml.Yaml;
 import org.zigmoi.ketchup.common.ConfigUtility;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
+import org.zigmoi.ketchup.helm.dtos.ReleaseStatusResponseDto;
+import org.zigmoi.ketchup.helm.exceptions.CommandFailureException;
 import org.zigmoi.ketchup.project.dtos.settings.BuildToolSettingsResponseDto;
 import org.zigmoi.ketchup.project.dtos.settings.ContainerRegistrySettingsResponseDto;
 import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsResponseDto;
@@ -141,8 +143,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         //get projectId from application.
         //handle duplicate pipeline resources error in k8s.
         ApplicationDetailsDto applicationDetailsDto = getApplication(applicationId);
-        long noOfRevisions = revisionRepository.countAllByApplicationResourceId(applicationId.getApplicationResourceId());
-        String revisionVersion = "v".concat(String.valueOf(noOfRevisions + 1));
+        String revisionVersion = getNextRevisionVersion(applicationId.getApplicationResourceId());
 
         Revision r = new Revision();
         String revisionResourceId = UUID.randomUUID().toString();
@@ -150,6 +151,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         r.setId(revisionId);
         r.setHelmReleaseId(getHelmReleaseId(applicationId.getApplicationResourceId()));
         r.setVersion(revisionVersion);
+        r.setRollback(false);
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -173,6 +175,12 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         return revisionResourceId;
     }
 
+    private String getNextRevisionVersion(String applicationResourceId) {
+        long noOfRevisions = revisionRepository.countAllByApplicationResourceId(applicationResourceId);
+        String revisionVersion = "v".concat(String.valueOf(noOfRevisions + 1));
+        return revisionVersion;
+    }
+
     private void queueAndDeployPipelineResources(List<PipelineArtifact> pipelineArtifacts, String kubeConfig,
                                                  ApplicationDetailsDto applicationDetailsDto, Revision r) {
         deployPipelineResources(pipelineArtifacts, kubeConfig, applicationDetailsDto, r);
@@ -185,7 +193,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Override
     @Transactional
     @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#revisionId.projectResourceId)")
-    public void rollbackRevision(RevisionId revisionId) {
+    public void rollbackToRevision(RevisionId revisionId) {
         Revision revision = revisionRepository.findById(revisionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         String.format("Revision with id %s not found.", revisionId.getRevisionResourceId())));
@@ -193,9 +201,39 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         ApplicationDetailsDto applicationDetails = getApplication(applicationId);
         String namespace = applicationDetails.getDevKubernetesNamespace();
         String kubeConfig = StringUtility.decodeBase64(applicationDetails.getDevKubeconfig());
-        String helmReleaseName = getHelmReleaseId(applicationDetails.getApplicationId().getApplicationResourceId());
-        String helmReleaseVersionNumber = "1"; //TODO fetch it from revision.
-        helmService.rollbackRelease(helmReleaseName, helmReleaseVersionNumber, namespace, kubeConfig);
+        String helmReleaseName = revision.getHelmReleaseId();
+        String helmReleaseVersionNumber = revision.getHelmReleaseVersion();
+        try {
+            helmService.rollbackRelease(helmReleaseName, helmReleaseVersionNumber, namespace, kubeConfig);
+            ReleaseStatusResponseDto releaseStatus = helmService.getReleaseStatus(getHelmReleaseId(revisionId.getApplicationResourceId()), namespace, kubeConfig);
+            String latestReleaseVersion = String.valueOf(releaseStatus.getVersion());
+            cloneAndSaveRevision(revision, latestReleaseVersion);
+        } catch (CommandFailureException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Operation failed.");
+        }
+    }
+
+    private void cloneAndSaveRevision(Revision revision, String latestReleaseVersion) {
+        Revision clonedRevision = new Revision();
+        RevisionId id = new RevisionId();
+        id.setTenantId(AuthUtils.getCurrentTenantId());
+        id.setProjectResourceId(revision.getId().getProjectResourceId());
+        id.setApplicationResourceId(revision.getId().getApplicationResourceId());
+        id.setRevisionResourceId(UUID.randomUUID().toString());
+
+        clonedRevision.setId(id);
+        clonedRevision.setVersion(getNextRevisionVersion(revision.getId().getApplicationResourceId()));
+        clonedRevision.setStatus("SUCCESS");
+        clonedRevision.setErrorMessage(null);
+        clonedRevision.setPipelineStatusJson(null);
+        clonedRevision.setCommitId(revision.getCommitId());
+        clonedRevision.setHelmChartId(revision.getHelmChartId());
+        clonedRevision.setHelmReleaseId(getHelmReleaseId(revision.getId().getApplicationResourceId()));
+        clonedRevision.setRollback(true);
+        clonedRevision.setHelmReleaseVersion(latestReleaseVersion);
+        clonedRevision.setOriginalRevisionVersionId(revision.getVersion());
+        clonedRevision.setApplicationDataJson(revision.getApplicationDataJson());
+        revisionRepository.save(clonedRevision);
     }
 
     @Override
@@ -282,7 +320,11 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             ApplicationDetailsDto applicationDetailsDto = applicationJsonToDto(activeRevision.get().getApplicationDataJson());
             String namespace = applicationDetailsDto.getDevKubernetesNamespace();
             String kubeConfig = StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig());
-            helmService.uninstallChart("app-" + applicationId.getApplicationResourceId(), namespace, kubeConfig);
+            try {
+                helmService.uninstallChart("app-" + applicationId.getApplicationResourceId(), namespace, kubeConfig);
+            } catch (CommandFailureException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Operation failed.");
+            }
         } else {
             System.out.println("No active revision found to uninstall.");
         }

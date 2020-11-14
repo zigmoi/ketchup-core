@@ -20,7 +20,7 @@ public interface ApplicationService {
 
     String createRevision(@Valid ApplicationId applicationId);
 
-    void rollbackRevision(@Valid RevisionId revisionId); //rollback current release to specified version.
+    void rollbackToRevision(@Valid RevisionId revisionId); //rollback current release to specified version.
 
     void stopRevisionPipeline(@Valid RevisionId revisionId);
 

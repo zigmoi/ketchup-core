@@ -4,9 +4,11 @@ import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.validator.constraints.Range;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.zigmoi.ketchup.common.validations.ValidResourceId;
 import org.zigmoi.ketchup.iam.entities.TenantEntity;
 
 import javax.persistence.*;
@@ -63,6 +65,16 @@ public class Revision {
 
     @Size(max = 100)
     private String helmReleaseId;
+
+
+    @Range(min = 1, max = 10000)
+    private String helmReleaseVersion;
+
+    @NotNull
+    private boolean rollback;
+
+    @Size(max = 36)
+    private String originalRevisionVersionId;
 
     @NotBlank
     @Size(max = 65535)

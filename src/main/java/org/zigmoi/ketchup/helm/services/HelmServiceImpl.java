@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
 public class HelmServiceImpl implements HelmService {
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws CommandFailureException {
 
         String chartName = "bitnami/tomcat";
         String releaseName = "tomcat-101";
@@ -32,8 +32,8 @@ public class HelmServiceImpl implements HelmService {
 //        ChartInstallResponseDto installResponse = new HelmServiceImpl().installChart(chartName, releaseName, "/Users/neo/Downloads/helm/config.yaml");
 //        log.info("response: " + installResponse);
 
-        ReleaseStatusResponseDto response = new HelmServiceImpl().getReleaseStatus(releaseName);
-        log.info("response: " + response.toString());
+//        ReleaseStatusResponseDto response = new HelmServiceImpl().getReleaseStatus(releaseName);
+//        log.info("response: " + response.toString());
 
         List<ListAllChartsResponseDto> response1 = new HelmServiceImpl().listAllCharts();
         response1.stream().forEach(a -> log.info(a.toString()));
@@ -58,7 +58,7 @@ public class HelmServiceImpl implements HelmService {
     }
 
     @Override
-    public ChartInstallResponseDto installChart(String chartName, String releaseName, String valuesYamlLocation) {
+    public ChartInstallResponseDto installChart(String chartName, String releaseName, String valuesYamlLocation) throws CommandFailureException {
         //Release name is name given to this instance of chart being deployed.
         //Version no is also present to identify it.
         Map<String, String> args = new HashMap<>();
@@ -88,7 +88,7 @@ public class HelmServiceImpl implements HelmService {
     }
 
     @Override
-    public ChartInstallResponseDto installChart(String chartName, String releaseName) {
+    public ChartInstallResponseDto installChart(String chartName, String releaseName) throws CommandFailureException {
         //Release name is name given to this instance of chart being deployed.
         //Version no is also present to identify it.
         Map<String, String> args = new HashMap<>();
@@ -117,7 +117,7 @@ public class HelmServiceImpl implements HelmService {
     }
 
     @Override
-    public ChartInstallResponseDto installChart(String chartName) {
+    public ChartInstallResponseDto installChart(String chartName) throws CommandFailureException {
         //Release name is name given to this instance of chart being deployed.
         //Version no is also present to identify it.
         Map<String, String> args = new HashMap<>();
@@ -145,11 +145,19 @@ public class HelmServiceImpl implements HelmService {
     }
 
     @Override
-    public ReleaseStatusResponseDto getReleaseStatus(String releaseName) {
+    public ReleaseStatusResponseDto getReleaseStatus(String releaseName, String namespace, String kubeConfig) throws CommandFailureException {
+        String kubeConfigPath = "";
+        try {
+            kubeConfigPath = createTempKubeconfig(kubeConfig);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         Map<String, String> args = new HashMap<>();
         args.put("releaseName", releaseName);
+        args.put("namespace", namespace);
+        args.put("kubeConfigPath", kubeConfigPath);
         StrSubstitutor sub = new StrSubstitutor(args, "${", "}");
-        String command = sub.replace("helm status ${releaseName} -o json");
+        String command = sub.replace("helm status ${releaseName} --namespace=${namespace} --kubeconfig=${kubeConfigPath} -o json");
         String output = "";
         try {
             output = new ProcessExecutor().commandSplit(command)
@@ -171,7 +179,7 @@ public class HelmServiceImpl implements HelmService {
     }
 
     @Override
-    public List<ListAllChartsResponseDto> listAllCharts() {
+    public List<ListAllChartsResponseDto> listAllCharts() throws CommandFailureException {
         String command = "helm list -o json";
         String output;
         try {
@@ -199,7 +207,7 @@ public class HelmServiceImpl implements HelmService {
     }
 
     @Override
-    public void uninstallChart(String releaseName, String namespace, String kubeConfig) {
+    public void uninstallChart(String releaseName, String namespace, String kubeConfig) throws CommandFailureException {
         String kubeConfigPath = "";
         try {
             kubeConfigPath = createTempKubeconfig(kubeConfig);
@@ -231,7 +239,7 @@ public class HelmServiceImpl implements HelmService {
     }
 
     @Override
-    public void rollbackRelease(String releaseName, String revision, String namespace, String kubeConfig) {
+    public void rollbackRelease(String releaseName, String revision, String namespace, String kubeConfig) throws CommandFailureException {
         String kubeConfigPath = "";
         try {
             kubeConfigPath = createTempKubeconfig(kubeConfig);

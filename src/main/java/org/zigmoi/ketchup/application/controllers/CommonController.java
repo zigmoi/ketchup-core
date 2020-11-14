@@ -3,6 +3,7 @@ package org.zigmoi.ketchup.application.controllers;
 import com.google.gson.Gson;
 import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,9 +122,21 @@ public class CommonController {
                 } else if (getDBStatusFromJSON(parsedStatus).equalsIgnoreCase(revision.getStatus())) {
                     return;
                 } else {
-                    String commitId = getCommitIdFromJSON(parsedStatus);
-                    if (commitId != null) {
-                        revision.setCommitId(commitId);
+                    try {
+                        String commitId = getCommitIdFromJSON(parsedStatus);
+                        if (commitId != null) {
+                            revision.setCommitId(commitId);
+                        }
+                    } catch (Exception e) {
+                        log.error("Error in getting commitId, ", e);
+                    }
+                    try {
+                        String helmReleaseVersion = getHelmReleaseVersionFromJSON(parsedStatus);
+                        if (helmReleaseVersion != null) {
+                            revision.setHelmReleaseVersion(helmReleaseVersion);
+                        }
+                    } catch (Exception e) {
+                        log.error("Error in getting helm release version, ", e);
                     }
                     revision.setStatus(getDBStatusFromJSON(parsedStatus));
                     revision.setPipelineStatusJson(parsedStatus.toString());
@@ -250,6 +263,8 @@ public class CommonController {
                 taskJson.put("steps", stepDetails);
             } else if ("deploy-chart-in-cluster".equalsIgnoreCase(taskBaseName)) {
                 taskJson.put("order", 3);
+                String taskResult = getData(taskRunJson, "$.status.taskResults[0].value");
+                taskJson.put("taskResult", taskResult);
                 JSONArray stepDetails = new JSONArray();
                 for (Object stepEntry : steps) {
                     JSONObject step = (JSONObject) stepEntry;
@@ -320,6 +335,21 @@ public class CommonController {
             JSONObject task = (JSONObject) oTask;
             if ("fetch-source-code".equalsIgnoreCase(task.getString("baseName"))) {
                 return task.getString("commitId");
+            }
+        }
+        return null;
+    }
+
+    private String getHelmReleaseVersionFromJSON(JSONObject parsedStatus) {
+        JSONArray tasks = parsedStatus.getJSONArray("tasks");
+        for (Object oTask : tasks) {
+            JSONObject task = (JSONObject) oTask;
+            if ("deploy-chart-in-cluster".equalsIgnoreCase(task.getString("baseName"))) {
+                String taskResult = task.getString("taskResult");
+                System.out.println("taskResult: " + taskResult);
+                String helmReleaseVersion = StringUtils.substringBetween(taskResult, "REVISION: ", "NOTES:").trim();
+                System.out.println("helmReleaseVersion: " + helmReleaseVersion);
+                return helmReleaseVersion;
             }
         }
         return null;

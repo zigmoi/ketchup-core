@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
 import org.zigmoi.ketchup.application.entities.ApplicationId;
 import org.zigmoi.ketchup.application.entities.Revision;
 import org.zigmoi.ketchup.application.entities.RevisionId;
@@ -27,9 +26,6 @@ import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.project.services.PermissionUtilsService;
 
 import javax.servlet.http.HttpServletResponse;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.io.BufferedReader;
@@ -88,7 +84,7 @@ public class RevisionController {
                                  @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) {
         //rollback current application to revision version as in revisionResourceId.
         RevisionId targetRevisionId = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
-        applicationService.rollbackRevision(targetRevisionId);
+        applicationService.rollbackToRevision(targetRevisionId);
     }
 
     @GetMapping("/{revision-resource-id}/pipeline/status/refresh")

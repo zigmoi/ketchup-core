@@ -25,25 +25,21 @@ spec:
   - name: HELM_COMMAND
     description: Helm command to run install or upgrade
     default: install
-
+  results:
+    - name: helmResponse
+      description: Json response for helm upgrade command.
   steps:
   - name: install-app-in-cluster
     image: $(params.HELM_IMAGE)
-    args:
-    - $(params.HELM_COMMAND)
-    - --install
-    - $(params.HELM_CHART_RELEASE_NAME)
-    - $(params.HELM_CHART_URL)
-    - -f
-    - /var/configmap/helmConfig
-    - -n
-    - $(params.KUBERNETES_NAMESPACE)
-    - --create-namespace
-    - --wait
-    - --timeout
-    - 90s
-    - --kubeconfig
-    - /var/kubeconfig-secret/kubeconfig
+    script: |
+        RESULT="$(helm $(params.HELM_COMMAND) --install $(params.HELM_CHART_RELEASE_NAME) $(params.HELM_CHART_URL) -f /var/configmap/helmConfig -n $(params.KUBERNETES_NAMESPACE) --create-namespace --wait --timeout 90s --kubeconfig /var/kubeconfig-secret/kubeconfig)"
+        EXIT_CODE="$?"
+        if [ "$EXIT_CODE" != 0 ]
+        then
+          exit $EXIT_CODE
+        fi
+        set +x
+        echo -n "$RESULT" > $(results.helmResponse.path)
     volumeMounts:
       - name: config-volume
         mountPath: /var/configmap
