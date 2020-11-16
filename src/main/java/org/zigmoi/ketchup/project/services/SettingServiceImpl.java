@@ -91,6 +91,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                             settingResourceId, projectResourceId));
         }
         Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.CONTAINER_REGISTRY.toString());
         ContainerRegistrySettingsResponseDto settingsDto = new ContainerRegistrySettingsResponseDto();
         settingsDto.setProjectResourceId(settingsEntity.getProjectResourceId());
         settingsDto.setSettingResourceId(settingsEntity.getSettingResourceId());
@@ -101,6 +102,13 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
         return settingsDto;
+    }
+
+    private void validateSettingType(Setting setting, String type) {
+        if (type.equalsIgnoreCase(setting.getType()) == false) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    String.format("Setting with id : %s not found.", setting.getSettingResourceId()));
+        }
     }
 
     @Override
@@ -115,6 +123,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                             settingId, projectResourceId));
         }
         Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.CONTAINER_REGISTRY.toString());
         settingsEntity.setDisplayName(dto.getDisplayName());
         convertToEntity(dto, settingsEntity);
         settingRepository.save(settingsEntity);
@@ -131,6 +140,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                     String.format("Setting id : %s not found for Project : %s",
                             settingResourceId, projectResourceId));
         }
+        validateSettingType(settingsEntityOpt.get(), SettingType.CONTAINER_REGISTRY.toString());
         settingRepository.delete(settingsEntityOpt.get());
     }
 
@@ -219,6 +229,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                             settingResourceId, projectResourceId));
         }
         Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.KUBERNETES_CLUSTER.toString());
         KubernetesClusterSettingsResponseDto settingsDto = new KubernetesClusterSettingsResponseDto();
         settingsDto.setProjectResourceId(settingsEntity.getProjectResourceId());
         settingsDto.setSettingResourceId(settingsEntity.getSettingResourceId());
@@ -243,6 +254,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                             settingResourceId, projectResourceId));
         }
         Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.KUBERNETES_CLUSTER.toString());
         settingsEntity.setDisplayName(dto.getDisplayName());
         convertToEntity(dto, settingsEntity);
         settingRepository.save(settingsEntity);
@@ -259,7 +271,9 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                     String.format("Setting id : %s not found for Project : %s",
                             settingResourceId, projectResourceId));
         }
-        settingRepository.delete(settingsEntityOpt.get());
+        Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.KUBERNETES_CLUSTER.toString());
+        settingRepository.delete(settingsEntity);
     }
 
     @Override
@@ -343,6 +357,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                             settingResourceId, projectResourceId));
         }
         Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.BUILD_TOOL.toString());
         BuildToolSettingsResponseDto settingsDto = new BuildToolSettingsResponseDto();
         settingsDto.setProjectResourceId(settingsEntity.getProjectResourceId());
         settingsDto.setSettingResourceId(settingsEntity.getSettingResourceId());
@@ -367,6 +382,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                             settingResourceId, projectResourceId));
         }
         Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.BUILD_TOOL.toString());
         settingsEntity.setDisplayName(dto.getDisplayName());
         convertToEntity(dto, settingsEntity);
         settingRepository.save(settingsEntity);
@@ -383,7 +399,9 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                     String.format("Setting id : %s not found for Project : %s",
                             settingResourceId, projectResourceId));
         }
-        settingRepository.delete(settingsEntityOpt.get());
+        Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.BUILD_TOOL.toString());
+        settingRepository.delete(settingsEntity);
     }
 
     private void convertToDto(Setting settingsEntity, BuildToolSettingsResponseDto settingsDto) {
@@ -461,6 +479,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                             settingResourceId, projectResourceId));
         }
         Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.K8S_HOST_ALIAS.toString());
         KubernetesHostAliasSettingsResponseDto settingsDto = new KubernetesHostAliasSettingsResponseDto();
         settingsDto.setProjectResourceId(settingsEntity.getProjectResourceId());
         settingsDto.setSettingResourceId(settingsEntity.getSettingResourceId());
@@ -485,6 +504,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                             settingResourceId, projectResourceId));
         }
         Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.K8S_HOST_ALIAS.toString());
         settingsEntity.setDisplayName(dto.getDisplayName());
         convertToEntity(dto, settingsEntity);
         settingRepository.save(settingsEntity);
@@ -501,7 +521,9 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
                     String.format("Setting id : %s not found for Project : %s",
                             settingResourceId, projectResourceId));
         }
-        settingRepository.delete(settingsEntityOpt.get());
+        Setting settingsEntity = settingsEntityOpt.get();
+        validateSettingType(settingsEntity, SettingType.K8S_HOST_ALIAS.toString());
+        settingRepository.delete(settingsEntity);
     }
 
     private void convertToDto(Setting settingsEntity, KubernetesHostAliasSettingsResponseDto settingsDto) {

@@ -135,7 +135,7 @@ public class SettingController {
         try {
             String kubeConfig = StringUtility.decodeBase64(requestDto.getKubeconfig());
             connectionSuccessful = KubernetesUtility.testConnection(kubeConfig);
-        } catch (ApiException | IOException e) {
+        } catch (Exception e) {
             connectionSuccessful = false;
         }
         Map<String, String> status = new HashMap<>();
