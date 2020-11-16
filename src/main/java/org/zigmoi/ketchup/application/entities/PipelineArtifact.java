@@ -29,9 +29,11 @@ public class PipelineArtifact {
 
     @Temporal(TemporalType.TIMESTAMP)
     @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private Date createdOn;
 
     @CreatedBy
+    @Column(nullable = false, updatable = false)
     private String createdBy;
 
     @Temporal(TemporalType.TIMESTAMP)

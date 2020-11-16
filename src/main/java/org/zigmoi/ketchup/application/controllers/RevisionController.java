@@ -182,6 +182,7 @@ public class RevisionController {
                                                  @RequestParam("containerName") @NotBlank @Size(max = 250) String containerName,
                                                  @RequestParam(value = "tailLines", required = false) Integer tailLines,
                                                  HttpServletResponse response) throws IOException, ApiException {
+        validatePipelinePodLogAccess(revisionResourceId, podName);
         RevisionId revisionId = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
         if ("1".equalsIgnoreCase(containerName)) {
             containerName = null;
@@ -189,6 +190,20 @@ public class RevisionController {
         try (InputStream logStream = getLogsInputStream(revisionId, podName, containerName, tailLines)) {
             //noinspection UnstableApiUsage
             ByteStreams.copy(logStream, response.getOutputStream());
+        }
+    }
+
+    private void validateApplicationPodLogAccess(String applicationResourceId, String podName) {
+        String releaseName = "app-" + applicationResourceId;
+        if(podName.startsWith(releaseName) == false){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied, pod should belong to requested application.");
+        }
+    }
+
+    private void validatePipelinePodLogAccess(String revisionResourceId, String podName) {
+        String releaseName = "pipeline-run-" + revisionResourceId;
+        if(podName.startsWith(releaseName) == false){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied, pod should belong to this requested pipeline.");
         }
     }
 
@@ -200,6 +215,7 @@ public class RevisionController {
                                                     @RequestParam("podName") @NotBlank @Size(max = 250) String podName,
                                                     @RequestParam("containerName") @NotBlank @Size(max = 250) String containerName,
                                                     @RequestParam(value = "tailLines", required = false) Integer tailLines) {
+        validatePipelinePodLogAccess(revisionResourceId, podName);
         RevisionId revisionId = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
         SseEmitter emitter = new SseEmitter();
         nonBlockingService.execute(() -> {
@@ -226,6 +242,7 @@ public class RevisionController {
                                                @RequestParam(value = "tailLines", required = false) Integer tailLines,
                                                HttpServletResponse response) throws IOException, ApiException {
 
+        validateApplicationPodLogAccess(applicationResourceId, podName);
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
         Revision revision = applicationService.getActiveRevision(applicationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No Active revision found for application with ID: " + applicationResourceId));

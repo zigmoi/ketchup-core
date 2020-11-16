@@ -203,17 +203,25 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         String kubeConfig = StringUtility.decodeBase64(applicationDetails.getDevKubeconfig());
         String helmReleaseName = revision.getHelmReleaseId();
         String helmReleaseVersionNumber = revision.getHelmReleaseVersion();
+        if (isNullOrEmpty(helmReleaseVersionNumber)) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Operation failed, did not find required helm release version to rollback to.");
+        }
+        Revision clonedRevision = cloneAndSaveRevision(revision);
         try {
             helmService.rollbackRelease(helmReleaseName, helmReleaseVersionNumber, namespace, kubeConfig);
             ReleaseStatusResponseDto releaseStatus = helmService.getReleaseStatus(getHelmReleaseId(revisionId.getApplicationResourceId()), namespace, kubeConfig);
             String latestReleaseVersion = String.valueOf(releaseStatus.getVersion());
-            cloneAndSaveRevision(revision, latestReleaseVersion);
+            clonedRevision.setHelmReleaseVersion(latestReleaseVersion);
+            clonedRevision.setStatus("SUCCESS");
+            revisionRepository.save(clonedRevision);
         } catch (CommandFailureException e) {
+            clonedRevision.setStatus("FAILED");
+            revisionRepository.save(clonedRevision);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Operation failed.");
         }
     }
 
-    private void cloneAndSaveRevision(Revision revision, String latestReleaseVersion) {
+    private Revision cloneAndSaveRevision(Revision revision) {
         Revision clonedRevision = new Revision();
         RevisionId id = new RevisionId();
         id.setTenantId(AuthUtils.getCurrentTenantId());
@@ -223,17 +231,18 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
         clonedRevision.setId(id);
         clonedRevision.setVersion(getNextRevisionVersion(revision.getId().getApplicationResourceId()));
-        clonedRevision.setStatus("SUCCESS");
+        clonedRevision.setStatus("IN PROGRESS");
         clonedRevision.setErrorMessage(null);
         clonedRevision.setPipelineStatusJson(null);
         clonedRevision.setCommitId(revision.getCommitId());
         clonedRevision.setHelmChartId(revision.getHelmChartId());
         clonedRevision.setHelmReleaseId(getHelmReleaseId(revision.getId().getApplicationResourceId()));
         clonedRevision.setRollback(true);
-        clonedRevision.setHelmReleaseVersion(latestReleaseVersion);
+        clonedRevision.setHelmReleaseVersion(null);
         clonedRevision.setOriginalRevisionVersionId(revision.getVersion());
         clonedRevision.setApplicationDataJson(revision.getApplicationDataJson());
-        revisionRepository.save(clonedRevision);
+        revisionRepository.saveAndFlush(clonedRevision);
+        return clonedRevision;
     }
 
     @Override
@@ -991,7 +1000,6 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         LinkedHashMap<String, Object> serviceValues = new LinkedHashMap<>();
         serviceValues.put("type", "ClusterIP");
         serviceValues.put("port", Long.valueOf(applicationDetailsDto.getAppServerPort()));
-
 
         LinkedHashMap<String, Object> helmConfigValues = new LinkedHashMap<>();
         helmConfigValues.put("replicaCount", Long.valueOf(applicationDetailsDto.getReplicas()));
