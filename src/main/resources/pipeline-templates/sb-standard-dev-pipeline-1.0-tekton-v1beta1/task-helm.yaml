@@ -32,7 +32,7 @@ spec:
   - name: install-app-in-cluster
     image: $(params.HELM_IMAGE)
     script: |
-        RESULT="$(helm $(params.HELM_COMMAND) --install $(params.HELM_CHART_RELEASE_NAME) $(params.HELM_CHART_URL) -f /var/configmap/helmConfig -n $(params.KUBERNETES_NAMESPACE) --create-namespace --wait --timeout 90s --kubeconfig /var/kubeconfig-secret/kubeconfig)"
+        RESULT="$(helm $(params.HELM_COMMAND) --install $(params.HELM_CHART_RELEASE_NAME) $(params.HELM_CHART_URL) -f /var/configmap/helmConfig --history-max 0 -n $(params.KUBERNETES_NAMESPACE) --create-namespace --wait --timeout 90s --kubeconfig /var/kubeconfig-secret/kubeconfig)"
         EXIT_CODE="$?"
         if [ "$EXIT_CODE" != 0 ]
         then

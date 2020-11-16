@@ -42,7 +42,7 @@ public interface ApplicationService {
 
     Set<Revision> listAllRevisionsInProject(@ValidProjectId String projectResourceId);
 
-    List<Revision> listRecentRevisionsInProject(@ValidProjectId String projectResourceId);
+    List<Revision> listRecentRevisionPipelinesInProject(@ValidProjectId String projectResourceId);
 
     Set<PipelineArtifact> listAllPipelineArtifactsInRevision(@Valid RevisionId revisionId);
 

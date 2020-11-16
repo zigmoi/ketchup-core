@@ -53,6 +53,8 @@ import org.zigmoi.ketchup.application.repositories.PipelineArtifactRepository;
 import org.zigmoi.ketchup.application.repositories.RevisionRepository;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -214,7 +216,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             clonedRevision.setHelmReleaseVersion(latestReleaseVersion);
             clonedRevision.setStatus("SUCCESS");
             revisionRepository.save(clonedRevision);
-        } catch (CommandFailureException e) {
+        } catch (Exception e) {
             clonedRevision.setStatus("FAILED");
             revisionRepository.save(clonedRevision);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Operation failed.");
@@ -387,8 +389,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public List<Revision> listRecentRevisionsInProject(String projectResourceId) {
-        return revisionRepository.findTop5ByProjectResourceIdOrderByLastUpdatedOnDesc(projectResourceId, PageRequest.of(1, 5));
+    public List<Revision> listRecentRevisionPipelinesInProject(String projectResourceId) {
+        return revisionRepository.listRecentRevisionPipelinesInProject(projectResourceId, PageRequest.of(1, 5));
     }
 
     @Override
@@ -879,7 +881,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
         //git secret
         args.put("gitRepoSecretName", "git-secret-".concat(revisionResourceId));
-        args.put("gitRepoBaseUrl", "https://gitlab.com");
+        args.put("gitRepoBaseUrl", applicationDetailsDto.getGitRepoUrl());
         args.put("gitRepoUsername", applicationDetailsDto.getGitRepoUsername());
         args.put("gitRepoPassword", applicationDetailsDto.getGitRepoPassword());
 

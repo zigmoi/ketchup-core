@@ -24,8 +24,8 @@ public interface RevisionRepository extends JpaRepository<Revision, RevisionId> 
     @Query("select distinct r from Revision r where r.id.projectResourceId = :projectResourceId")
     Set<Revision> findDistinctByProjectResourceId(String projectResourceId);
 
-    @Query("select distinct r from Revision r where r.id.projectResourceId = :projectResourceId order by r.lastUpdatedOn DESC")
-    List<Revision> findTop5ByProjectResourceIdOrderByLastUpdatedOnDesc(String projectResourceId, Pageable pageable);
+    @Query("select distinct r from Revision r where r.id.projectResourceId = :projectResourceId and r.rollback = false order by r.lastUpdatedOn DESC")
+    List<Revision> listRecentRevisionPipelinesInProject(String projectResourceId, Pageable pageable);
 
     @Query("select distinct r from Revision r where r.id.projectResourceId = :projectResourceId AND r.status = :status order by r.lastUpdatedOn DESC")
     Set<Revision> findDistinctByProjectResourceIdAndStatusOrderByLastUpdatedOnDesc(String projectResourceId, String status);

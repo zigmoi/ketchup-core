@@ -94,6 +94,10 @@ public class RevisionController {
                                                   @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) throws IOException, ApiException {
         RevisionId id = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
         Revision revision = applicationService.findRevisionById(id);
+        if (revision.isRollback()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Operation not supported, cannot refresh status of rollback revision.");
+        }
+
         String pipelineRunName = "pipeline-run-".concat(revisionResourceId);
         String kubeConfig = getKubeConfig(revision.getApplicationDataJson());
         String namespace = getKubernetesNamespace(revision.getApplicationDataJson());
@@ -135,11 +139,14 @@ public class RevisionController {
     public SseEmitter streamRevisionPipelineStatus(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                    @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                                    @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) {
+        SseEmitter emitter = new SseEmitter();
         RevisionId revisionId = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
         Revision revision = applicationService.findRevisionById(revisionId);
+        if (revision.isRollback()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Operation not supported, no pipeline is associated with rollback revision.");
+        }
         String kubeConfig = getKubeConfig(revision.getApplicationDataJson());
         String namespace = getKubernetesNamespace(revision.getApplicationDataJson());
-        SseEmitter emitter = new SseEmitter();
         if ("SUCCESS".equalsIgnoreCase(revision.getStatus()) || "FAILED".equalsIgnoreCase(revision.getStatus())) {
             nonBlockingService.execute(() -> {
                 try {
@@ -195,14 +202,14 @@ public class RevisionController {
 
     private void validateApplicationPodLogAccess(String applicationResourceId, String podName) {
         String releaseName = "app-" + applicationResourceId;
-        if(podName.startsWith(releaseName) == false){
+        if (podName.startsWith(releaseName) == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied, pod should belong to requested application.");
         }
     }
 
     private void validatePipelinePodLogAccess(String revisionResourceId, String podName) {
         String releaseName = "pipeline-run-" + revisionResourceId;
-        if(podName.startsWith(releaseName) == false){
+        if (podName.startsWith(releaseName) == false) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied, pod should belong to this requested pipeline.");
         }
     }

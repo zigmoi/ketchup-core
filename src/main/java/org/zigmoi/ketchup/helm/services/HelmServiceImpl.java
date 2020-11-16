@@ -252,7 +252,7 @@ public class HelmServiceImpl implements HelmService {
         args.put("namespace", namespace);
         args.put("kubeConfigPath", kubeConfigPath);
         StrSubstitutor sub = new StrSubstitutor(args, "${", "}");
-        String command = sub.replace("helm rollback ${releaseName} ${revision} --wait --namespace=${namespace} --kubeconfig=${kubeConfigPath}"); //-o json is not supported in this.
+        String command = sub.replace("helm rollback ${releaseName} ${revision} --wait --history-max 0 --namespace=${namespace} --kubeconfig=${kubeConfigPath}"); //-o json is not supported in this.
         String output = "";
         try {
             output = new ProcessExecutor().commandSplit(command)

@@ -11,7 +11,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
 import org.zigmoi.ketchup.application.dtos.GitRepoConnectionTestRequestDto;
 import org.zigmoi.ketchup.application.entities.Revision;
 import org.zigmoi.ketchup.application.services.ApplicationService;
@@ -61,7 +60,7 @@ public class CommonController {
     @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails(#projectResourceId)")
     public List<Revision> listRecentRevisionPipelinesInProject(
             @PathVariable("project-resource-id") @ValidProjectId String projectResourceId) {
-        return applicationService.listRecentRevisionsInProject(projectResourceId);
+        return applicationService.listRecentRevisionPipelinesInProject(projectResourceId);
     }
 
     @PostMapping("/v1-alpha/projects/{project-resource-id}/git-repo/test-connection")
