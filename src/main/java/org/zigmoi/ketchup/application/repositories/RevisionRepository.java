@@ -34,7 +34,7 @@ public interface RevisionRepository extends JpaRepository<Revision, RevisionId> 
     long countAllByApplicationResourceId(String applicationResourceId);
 
     @Query("select distinct r from Revision r where r.id.applicationResourceId = :applicationResourceId AND r.status = :status order by r.lastUpdatedOn DESC")
-    List<Revision> findTopByApplicationResourceIdAndStatusOrderByLastUpdatedOnDesc(String applicationResourceId, String status, Pageable pageable);
+    List<Revision> findActiveRevision(String applicationResourceId, String status, Pageable pageable);
 
     @Modifying
     @Query("delete from Revision r where r.id.applicationResourceId = :applicationResourceId")

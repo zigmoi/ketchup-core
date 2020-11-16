@@ -53,8 +53,6 @@ import org.zigmoi.ketchup.application.repositories.PipelineArtifactRepository;
 import org.zigmoi.ketchup.application.repositories.RevisionRepository;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -368,7 +366,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#applicationId.projectResourceId)")
     public Optional<Revision> getActiveRevision(ApplicationId applicationId) {
-        List<Revision> revisions = revisionRepository.findTopByApplicationResourceIdAndStatusOrderByLastUpdatedOnDesc(applicationId.getApplicationResourceId(), "SUCCESS", PageRequest.of(1, 1));
+        String applicationResourceId = applicationId.getApplicationResourceId();
+        List<Revision> revisions = revisionRepository.findActiveRevision(applicationResourceId, "SUCCESS", PageRequest.of(0, 1));
         return revisions.stream().findFirst();
     }
 
@@ -390,7 +389,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public List<Revision> listRecentRevisionPipelinesInProject(String projectResourceId) {
-        return revisionRepository.listRecentRevisionPipelinesInProject(projectResourceId, PageRequest.of(1, 5));
+        return revisionRepository.listRecentRevisionPipelinesInProject(projectResourceId, PageRequest.of(0, 5));
     }
 
     @Override
