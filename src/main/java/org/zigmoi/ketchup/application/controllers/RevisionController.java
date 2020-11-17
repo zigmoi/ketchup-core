@@ -139,7 +139,7 @@ public class RevisionController {
     public SseEmitter streamRevisionPipelineStatus(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                    @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                                    @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) {
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(300_000L); //server will break connection after 300 sec.
         RevisionId revisionId = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
         Revision revision = applicationService.findRevisionById(revisionId);
         if (revision.isRollback()) {
@@ -224,7 +224,7 @@ public class RevisionController {
                                                     @RequestParam(value = "tailLines", required = false) Integer tailLines) {
         validatePipelinePodLogAccess(revisionResourceId, podName);
         RevisionId revisionId = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(300_000L); //server will break connection after 300 sec.
         nonBlockingService.execute(() -> {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(getLogsInputStream(revisionId, podName, containerName, tailLines)))) {
                 String response;

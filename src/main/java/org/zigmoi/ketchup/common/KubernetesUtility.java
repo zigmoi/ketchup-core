@@ -251,16 +251,22 @@ public class KubernetesUtility {
         String plural = "pipelineruns"; // String | the custom object's plural name. For TPRs this would be lowercase plural kind.
         String fieldSelector = "metadata.name=".concat(pipelineRunName);
 
+        //read timeout is after success connection to wait for no of seconds till no data is received.
+        //for longer pipelines this needs to be high
+        // or else connection breaks at client level and it needs to retry.
         OkHttpClient httpClient =
-                client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build();
+                client.getHttpClient().newBuilder().readTimeout(300, TimeUnit.SECONDS).build();
         client.setHttpClient(httpClient);
+        System.out.println(client.getHttpClient().readTimeoutMillis());
 
+        //timeout: this connection will last for max timeoutSeconds
+        // and break irrespective data being received or not.
         Watch<Object> watch =
                 Watch.createWatch(
                         client,
                         apiInstance.listNamespacedCustomObjectCall(group, version, namespace,
                                 plural, null, null, fieldSelector, null,
-                                5, null, 30, true, null),
+                                20, null, 300, true, null),
                         new TypeToken<Watch.Response<Object>>() {
                         }.getType());
 
