@@ -3,7 +3,6 @@ package org.zigmoi.ketchup.application.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.internal.LinkedTreeMap;
 import io.kubernetes.client.openapi.ApiException;
 import org.apache.commons.collections.map.SingletonMap;
 import org.apache.commons.io.FileUtils;
@@ -274,17 +273,9 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         }
         String kubeConfig = StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig());
         try {
-            LinkedTreeMap<String, Object> latestPipelineRun = KubernetesUtility.getCRD(resourceName, namespace, "tekton.dev", "v1beta1", "pipelineruns", kubeConfig);
-            ((LinkedTreeMap<String, Object>) latestPipelineRun.get("spec")).put("status", "PipelineRunCancelled");
-
-            DumperOptions options = new DumperOptions();
-            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-            options.setPrettyFlow(true);
-            Yaml updatedYaml = new Yaml(options);
-            String cancelledPipelineRun = updatedYaml.dump(latestPipelineRun);
-            System.out.println(cancelledPipelineRun);
-
-            KubernetesUtility.updateCRDUsingYamlContent(resourceName, cancelledPipelineRun, namespace, "tekton.dev", "v1beta1", "pipelineruns", kubeConfig);
+            String jsonPatchContent =
+                    "[{\"op\":\"add\",\"path\":\"/spec/status\",\"value\":\"PipelineRunCancelled\"}]";
+            KubernetesUtility.patchCRDUsingYamlContent(resourceName, jsonPatchContent, namespace, "tekton.dev", "v1beta1", "pipelineruns", kubeConfig);
         } catch (IOException | ApiException e) {
             logger.error("Failed to cancel pipeline, ", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to cancel pipeline.");

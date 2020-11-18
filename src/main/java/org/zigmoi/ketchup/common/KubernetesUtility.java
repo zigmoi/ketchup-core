@@ -6,6 +6,7 @@ import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.jayway.jsonpath.JsonPath;
 import io.kubernetes.client.PodLogs;
+import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
@@ -13,11 +14,14 @@ import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.*;
+import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Yaml;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.entity.ContentType;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -332,15 +336,16 @@ public class KubernetesUtility {
         System.out.println(result);
     }
 
-    public static void updateCRDUsingYamlContent(String resourceName, String resourceYaml, String namespace, String group, String version, String plural, String kubeConfig) throws IOException, ApiException {
+    public static void patchCRDUsingYamlContent(String resourceName, String jsonPatchContent, String namespace, String group, String version, String plural, String kubeConfig) throws IOException, ApiException {
         ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
 //        client.setWriteTimeout(15000);
 //        client.setConnectTimeout(15000);
 //        client.setReadTimeout(15000);
+        client.selectHeaderContentType(new String[]{V1Patch.PATCH_FORMAT_JSON_PATCH});
         Configuration.setDefaultApiClient(client);
-        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
 
-        Object result = apiInstance.replaceNamespacedCustomObject(group, version, namespace, plural, resourceName, resourceYaml, null, null);
+        CustomObjectsApi apiInstance = new CustomObjectsApi(client);
+        Object result = apiInstance.patchNamespacedCustomObject(group, version, namespace, plural, resourceName, new V1Patch(jsonPatchContent), null, null,null);
         System.out.println(result);
     }
 
