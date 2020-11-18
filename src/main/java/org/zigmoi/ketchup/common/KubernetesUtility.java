@@ -44,16 +44,15 @@ public class KubernetesUtility {
 
     public static void main(String[] args) throws IOException, ApiException {
         //create pipeline resources in order. (createPipelineRun should be last.)
-        String kubeconfig = FileUtility.readDataFromFile(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
-        String baseResourcePath = ConfigUtility.instance().getProperty("ketchup.test.default-pipeline-config");
-        createCustomResource(kubeconfig, baseResourcePath.concat("resource.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineresources", "false");
-        createCustomResource(kubeconfig, baseResourcePath.concat("task-makisu.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
-        createCustomResource(kubeconfig, baseResourcePath.concat("task-helm.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
-        createCustomResource(kubeconfig, baseResourcePath.concat("pipeline.yaml"), "default", "tekton.dev", "v1alpha1", "pipelines", "false");
-        createSecret("default", kubeconfig, baseResourcePath.concat("secrets.yaml"));
-        createServiceAccount("default", kubeconfig, baseResourcePath.concat("service-account.yaml"));
-
-        createCustomResource(kubeconfig, baseResourcePath.concat("pipeline-run.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineruns", "false");
+//        String kubeconfig = FileUtility.readDataFromFile(ConfigUtility.instance().getProperty("ketchup.test.default-kubeconfig"));
+//        String baseResourcePath = ConfigUtility.instance().getProperty("ketchup.test.default-pipeline-config");
+//        createCustomResource(kubeconfig, baseResourcePath.concat("resource.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineresources", "false");
+//        createCustomResource(kubeconfig, baseResourcePath.concat("task-makisu.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
+//        createCustomResource(kubeconfig, baseResourcePath.concat("task-helm.yaml"), "default", "tekton.dev", "v1alpha1", "tasks", "false");
+//        createCustomResource(kubeconfig, baseResourcePath.concat("pipeline.yaml"), "default", "tekton.dev", "v1alpha1", "pipelines", "false");
+//        createSecret("default", kubeconfig, baseResourcePath.concat("secrets.yaml"));
+//        createServiceAccount("default", kubeconfig, baseResourcePath.concat("service-account.yaml"));
+//        createCustomResource(kubeconfig, baseResourcePath.concat("pipeline-run.yaml"), "default", "tekton.dev", "v1alpha1", "pipelineruns", "false");
 
 //        createPipelineResource(baseResourcePath.concat("resource.yaml"));
 //        createPipelineTask(baseResourcePath.concat("task-makisu.yaml"));
