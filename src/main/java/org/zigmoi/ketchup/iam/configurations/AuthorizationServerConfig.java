@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
@@ -60,9 +61,10 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
 	@Bean
 	protected JwtAccessTokenConverter jwtTokenConverter() {
-		String pwd = environment.getProperty("keystore.password");
-		KeyStoreKeyFactory keyStoreKeyFactory = new KeyStoreKeyFactory(new ClassPathResource("ketchupjwt.jks"),
-				pwd.toCharArray());
+		String keystoreLocation = environment.getProperty("keystore.location");
+		String keystorePassword = environment.getProperty("keystore.password");
+		KeyStoreKeyFactory keyStoreKeyFactory = new KeyStoreKeyFactory(new FileSystemResource(keystoreLocation),
+				keystorePassword.toCharArray());
 		JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
 		converter.setKeyPair(keyStoreKeyFactory.getKeyPair("ketchupjwt"));
 		return converter;
