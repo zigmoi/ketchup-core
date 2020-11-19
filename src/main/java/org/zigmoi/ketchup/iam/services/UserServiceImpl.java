@@ -291,26 +291,4 @@ public class UserServiceImpl implements UserDetailsService, UserService {
                     String.format("Invalid Organization Id in fully qualified user name, expecting %s.", currentTenantId));
         }
     }
-
-//    @Scheduled(cron = "${pipeline.cleanup.cron}")
-//    @Transactional
-//    public void cleanupPipelineJob() {
-//        SecurityContext context = SecurityContextHolder.createEmptyContext();
-//        Authentication authentication =
-//                new UsernamePasswordAuthenticationToken("admin@zigmoi.com", "doesnotmatter", AuthorityUtils.createAuthorityList("ROLE_SUPER_ADMIN"));
-//        context.setAuthentication(authentication);
-//
-//        SimpleAsyncTaskExecutor delegateExecutor = new SimpleAsyncTaskExecutor();
-//        DelegatingSecurityContextExecutor executor = new DelegatingSecurityContextExecutor(delegateExecutor, context);
-//
-//        Runnable originalRunnable = new Runnable() {
-//            public void run() {
-//                System.out.println("test");
-//               // System.out.println("count : " + releaseRepository.countAllByDeploymentResourceId("a0fcbb27-7e2f-44e0-b205-4b28249a7594"));
-//                System.out.println("count: " + tenantService.listAllTenants().size());
-//                //cleanPipelineResources(new ReleaseId("", ""));
-//            }
-//        };
-//        executor.execute(originalRunnable);
-//    }
 }
