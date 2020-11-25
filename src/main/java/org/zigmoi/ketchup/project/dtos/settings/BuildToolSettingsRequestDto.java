@@ -12,9 +12,6 @@ import javax.validation.constraints.Size;
 @Data
 public class BuildToolSettingsRequestDto {
 
-    @ValidProjectId
-    private String projectResourceId;
-
     @ValidDisplayName
     private String displayName;
 

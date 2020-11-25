@@ -13,9 +13,6 @@ import java.util.Map;
 @Data
 public class KubernetesHostAliasSettingsRequestDto {
 
-    @ValidProjectId
-    private String projectResourceId;
-
     @ValidDisplayName
     private String displayName;
 

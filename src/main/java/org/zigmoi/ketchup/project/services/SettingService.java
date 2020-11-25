@@ -14,7 +14,8 @@ public interface SettingService {
     /* container-registry services starts */
     List<ContainerRegistrySettingsResponseDto> listAllContainerRegistry(@ValidProjectId String projectResourceId);
 
-    void createContainerRegistry(@Valid ContainerRegistrySettingsRequestDto dto);
+    void createContainerRegistry(@ValidProjectId String projectResourceId,
+                                 @Valid ContainerRegistrySettingsRequestDto dto);
 
     ContainerRegistrySettingsResponseDto getContainerRegistry(@ValidProjectId String projectResourceId,
                                                               @ValidResourceId String settingResourceId);
@@ -32,7 +33,8 @@ public interface SettingService {
     /* kubernetes-cluster services starts */
     List<KubernetesClusterSettingsResponseDto> listAllKubernetesCluster(@ValidProjectId String projectResourceId);
 
-    void createKubernetesCluster(@Valid KubernetesClusterSettingsRequestDto dto);
+    void createKubernetesCluster(@ValidProjectId String projectResourceId,
+                                 @Valid KubernetesClusterSettingsRequestDto dto);
 
     KubernetesClusterSettingsResponseDto getKubernetesCluster(@ValidProjectId String projectResourceId,
                                                               @ValidResourceId String settingResourceId);
@@ -50,7 +52,8 @@ public interface SettingService {
     /* build-tool services starts */
     List<BuildToolSettingsResponseDto> listAllBuildTool(@ValidProjectId String projectResourceId);
 
-    void createBuildTool(@Valid BuildToolSettingsRequestDto dto);
+    void createBuildTool(@ValidProjectId String projectResourceId,
+                         @Valid BuildToolSettingsRequestDto dto);
 
     BuildToolSettingsResponseDto getBuildTool(@ValidProjectId String projectResourceId,
                                               @ValidResourceId String settingResourceId);
@@ -66,7 +69,8 @@ public interface SettingService {
     /* hostname-ip-mapping services starts */
     List<KubernetesHostAliasSettingsResponseDto> listAllKubernetesHostAlias(@ValidProjectId String projectResourceId);
 
-    void createKubernetesHostAlias(@Valid KubernetesHostAliasSettingsRequestDto dto);
+    void createKubernetesHostAlias(@ValidProjectId String projectResourceId,
+                                   @Valid KubernetesHostAliasSettingsRequestDto dto);
 
     KubernetesHostAliasSettingsResponseDto getKubernetesHostAlias(@ValidProjectId String projectResourceId,
                                                                   @ValidResourceId String settingResourceId);

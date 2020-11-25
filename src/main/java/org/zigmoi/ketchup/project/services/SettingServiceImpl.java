@@ -58,11 +58,11 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
 
     @Override
     @Transactional
-    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateSetting(#dto.projectResourceId)")
-    public void createContainerRegistry(ContainerRegistrySettingsRequestDto dto) {
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateSetting(#projectResourceId)")
+    public void createContainerRegistry(String projectResourceId, ContainerRegistrySettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
-        projectId.setResourceId(dto.getProjectResourceId());
+        projectId.setResourceId(projectResourceId);
         if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
@@ -70,7 +70,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         Setting settingsEntity = new Setting();
         SettingId settingId = new SettingId();
         settingId.setTenantId(AuthUtils.getCurrentTenantId());
-        settingId.setProjectResourceId(dto.getProjectResourceId());
+        settingId.setProjectResourceId(projectResourceId);
         settingId.setSettingResourceId(getNewSettingId());
         settingsEntity.setId(settingId);
         settingsEntity.setDisplayName(dto.getDisplayName());
@@ -196,11 +196,11 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
 
     @Override
     @Transactional
-    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateSetting(#dto.projectResourceId)")
-    public void createKubernetesCluster(KubernetesClusterSettingsRequestDto dto) {
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateSetting(#projectResourceId)")
+    public void createKubernetesCluster(String projectResourceId, KubernetesClusterSettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
-        projectId.setResourceId(dto.getProjectResourceId());
+        projectId.setResourceId(projectResourceId);
         if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
@@ -208,7 +208,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         Setting settingsEntity = new Setting();
         SettingId settingId = new SettingId();
         settingId.setTenantId(AuthUtils.getCurrentTenantId());
-        settingId.setProjectResourceId(dto.getProjectResourceId());
+        settingId.setProjectResourceId(projectResourceId);
         settingId.setSettingResourceId(getNewSettingId());
         settingsEntity.setId(settingId);
         settingsEntity.setDisplayName(dto.getDisplayName());
@@ -324,11 +324,11 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
 
     @Override
     @Transactional
-    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateSetting(#dto.projectResourceId)")
-    public void createBuildTool(BuildToolSettingsRequestDto dto) {
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateSetting(#projectResourceId)")
+    public void createBuildTool(String projectResourceId, BuildToolSettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
-        projectId.setResourceId(dto.getProjectResourceId());
+        projectId.setResourceId(projectResourceId);
         if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
@@ -336,7 +336,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         Setting settingsEntity = new Setting();
         SettingId settingId = new SettingId();
         settingId.setTenantId(AuthUtils.getCurrentTenantId());
-        settingId.setProjectResourceId(dto.getProjectResourceId());
+        settingId.setProjectResourceId(projectResourceId);
         settingId.setSettingResourceId(getNewSettingId());
         settingsEntity.setId(settingId);
         settingsEntity.setDisplayName(dto.getDisplayName());
@@ -446,10 +446,10 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
     @Override
     @Transactional
     @PreAuthorize("@permissionUtilsService.canPrincipalUpdateSetting(#dto.projectResourceId)")
-    public void createKubernetesHostAlias(KubernetesHostAliasSettingsRequestDto dto) {
+    public void createKubernetesHostAlias(String projectResourceId, KubernetesHostAliasSettingsRequestDto dto) {
         ProjectId projectId = new ProjectId();
         projectId.setTenantId(AuthUtils.getCurrentTenantId());
-        projectId.setResourceId(dto.getProjectResourceId());
+        projectId.setResourceId(projectResourceId);
         if (!projectService.validateProject(projectId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Project with id %s not found.",
                     projectId.getResourceId()));
@@ -457,7 +457,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         Setting settingsEntity = new Setting();
         SettingId settingId = new SettingId();
         settingId.setTenantId(AuthUtils.getCurrentTenantId());
-        settingId.setProjectResourceId(dto.getProjectResourceId());
+        settingId.setProjectResourceId(projectResourceId);
         settingId.setSettingResourceId(getNewSettingId());
         settingsEntity.setId(settingId);
         settingsEntity.setDisplayName(dto.getDisplayName());

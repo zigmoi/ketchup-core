@@ -1,6 +1,5 @@
 package org.zigmoi.ketchup.project.controllers;
 
-import io.kubernetes.client.openapi.ApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +16,7 @@ import org.zigmoi.ketchup.project.services.SettingService;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
-import javax.validation.Valid;
 import javax.validation.Validator;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,10 +40,16 @@ public class SettingController {
 
     /* container-registry api starts */
     @PostMapping("/container-registry-settings")
-    @PreAuthorize("@permissionUtilsService.canPrincipalCreateSetting(#dto.projectResourceId)")
-    public void createContainerRegistry(@RequestBody @Valid ContainerRegistrySettingsRequestDto dto) {
-        settingService.createContainerRegistry(dto);
+    @PreAuthorize("@permissionUtilsService.canPrincipalCreateSetting(#projectResourceId)")
+    public void createContainerRegistry(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                        @RequestBody ContainerRegistrySettingsRequestDto dto) {
+        Set<ConstraintViolation<ContainerRegistrySettingsRequestDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
+        }
+        settingService.createContainerRegistry(projectResourceId, dto);
     }
+
 
     @GetMapping("/container-registry-settings")
     @PreAuthorize("@permissionUtilsService.canPrincipalReadSetting(#projectResourceId)")
@@ -84,9 +87,14 @@ public class SettingController {
 
     /* kubernetes-cluster api starts */
     @PostMapping("/kubernetes-cluster-settings")
-    @PreAuthorize("@permissionUtilsService.canPrincipalCreateSetting(#dto.projectResourceId)")
-    public void createKubernetesCluster(@RequestBody @Valid KubernetesClusterSettingsRequestDto dto) {
-        settingService.createKubernetesCluster(dto);
+    @PreAuthorize("@permissionUtilsService.canPrincipalCreateSetting(#projectResourceId)")
+    public void createKubernetesCluster(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                        @RequestBody KubernetesClusterSettingsRequestDto dto) {
+        Set<ConstraintViolation<KubernetesClusterSettingsRequestDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
+        }
+        settingService.createKubernetesCluster(projectResourceId, dto);
     }
 
     @GetMapping("/kubernetes-cluster-settings")
@@ -147,9 +155,14 @@ public class SettingController {
 
     /* build-tool api starts */
     @PostMapping("/build-tool-settings")
-    @PreAuthorize("@permissionUtilsService.canPrincipalCreateSetting(#dto.projectResourceId)")
-    public void createBuildTool(@RequestBody @Valid BuildToolSettingsRequestDto dto) {
-        settingService.createBuildTool(dto);
+    @PreAuthorize("@permissionUtilsService.canPrincipalCreateSetting(#projectResourceId)")
+    public void createBuildTool(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                @RequestBody BuildToolSettingsRequestDto dto) {
+        Set<ConstraintViolation<BuildToolSettingsRequestDto>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
+        }
+        settingService.createBuildTool(projectResourceId, dto);
     }
 
     @GetMapping("/build-tool-settings")
@@ -184,36 +197,4 @@ public class SettingController {
         settingService.deleteBuildTool(projectResourceId, settingResourceId);
     }
     /* build-tool api ends */
-
-
-    /* k8s-host-alias api starts */
-//    @PostMapping("/kubernetes-host-alias-settings")
-//    public void createKubernetesHostAlias(@RequestBody @Valid KubernetesHostAliasSettingsRequestDto dto) {
-//        settingService.createKubernetesHostAlias(dto);
-//    }
-//
-//    @GetMapping("/kubernetes-host-alias-settings")
-//    public List<KubernetesHostAliasSettingsResponseDto> listAllKubernetesHostAlias(@PathVariable("project-resource-id") String projectResourceId) {
-//        return settingService.listAllKubernetesHostAlias(projectResourceId);
-//    }
-//
-//    @GetMapping("/kubernetes-host-alias-settings/{setting-resource-id}")
-//    public KubernetesHostAliasSettingsResponseDto getKubernetesHostAlias(@PathVariable("project-resource-id") String projectResourceId,
-//                                                                         @PathVariable("setting-resource-id") String settingResourceId) {
-//        return settingService.getKubernetesHostAlias(projectResourceId, settingResourceId);
-//    }
-//
-//    @PutMapping("/kubernetes-host-alias-settings/{setting-resource-id}")
-//    public void updateKubernetesHostAlias(@PathVariable("project-resource-id") String projectResourceId,
-//                                          @PathVariable("setting-resource-id") String settingResourceId,
-//                                          @RequestBody @Valid KubernetesHostAliasSettingsRequestDto dto) {
-//        settingService.updateKubernetesHostAlias(projectResourceId, settingResourceId, dto);
-//    }
-//
-//    @DeleteMapping("/kubernetes-host-alias-settings/{setting-resource-id}")
-//    public void deleteKubernetesHostAlias(@PathVariable("project-resource-id") String projectResourceId,
-//                                          @PathVariable("setting-resource-id") String settingResourceId) {
-//        settingService.deleteKubernetesHostAlias(projectResourceId, settingResourceId);
-//    }
-    /* k8s-host-alias api ends */
 }

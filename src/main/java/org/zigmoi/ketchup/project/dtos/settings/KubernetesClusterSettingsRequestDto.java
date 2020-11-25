@@ -10,9 +10,6 @@ import javax.validation.constraints.Size;
 @Data
 public class KubernetesClusterSettingsRequestDto {
 
-    @ValidProjectId
-    private String projectResourceId;
-
     @ValidDisplayName
     private String displayName;
 

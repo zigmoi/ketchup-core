@@ -9,7 +9,7 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 @Data
-public class ContainerRegistrySettingsRequestDto {
+public class ContainerRegistryApiRequestDto {
 
     @ValidDisplayName
     private String displayName;
@@ -30,5 +30,4 @@ public class ContainerRegistrySettingsRequestDto {
 
     @Size(max=5000)
     private String registryPassword;
-
 }
