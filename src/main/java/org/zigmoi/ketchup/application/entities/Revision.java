@@ -51,6 +51,10 @@ public class Revision {
     @Pattern(regexp = "IN PROGRESS|SUCCESS|FAILED")
     private String status;
 
+    @NotBlank
+    @Pattern(regexp = "GIT WEBHOOK|MANUAL")
+    private String deploymentTriggerType;
+
     @Size(max = 65535)
     @Column(columnDefinition="TEXT")
     private String errorMessage;

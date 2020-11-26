@@ -15,7 +15,7 @@ spec:
     - name: "git-url"
       value: "${gitRepoUrl}"
     - name: "git-revision"
-      value: "${gitRepoBranchName}"
+      value: "${gitRevision}"
     - name: "makisu-image-name"
       value: "gcr.io/uber-container-tools/makisu:v0.1.14"
     - name: "image-registry-url"

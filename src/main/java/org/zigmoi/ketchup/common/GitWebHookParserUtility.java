@@ -1,5 +1,6 @@
 package org.zigmoi.ketchup.common;
 
+import com.google.gson.JsonObject;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,13 +23,18 @@ public class GitWebHookParserUtility {
     }
 
     private static WebhookEvent parseGitlabWebhookEvent(String msg) {
+        System.out.println("webhook event: " + msg);
         JSONObject jo = new JSONObject(msg);
-        return new WebhookEvent(jo.getString("event_name"), getGitlabBranchName(jo));
+        return new WebhookEvent(jo.getString("event_name"), getGitlabBranchName(jo), getCommitId(jo));
+    }
+
+    private static String getCommitId(JSONObject jsonObject){
+        return jsonObject.getString("after");
     }
 
     private static String getGitlabBranchName(JSONObject jo) {
         String[] refs = jo.getString("ref").split("/");
-        return refs[refs.length-1];
+        return refs[refs.length - 1];
     }
 
     public static boolean isPushEvent(WebhookEvent event) {
@@ -43,10 +49,17 @@ public class GitWebHookParserUtility {
         private String deploymentId; // push, tag, etc
         private String eventName; // push, tag, etc
         private String branchName;
+        private String commitId;
 
         public WebhookEvent(String eventName, String branchName) {
             this.eventName = eventName;
             this.branchName = branchName;
+        }
+
+        public WebhookEvent(String eventName, String branchName, String commitId) {
+            this.eventName = eventName;
+            this.branchName = branchName;
+            this.commitId = commitId;
         }
     }
 }

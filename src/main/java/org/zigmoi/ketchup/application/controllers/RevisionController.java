@@ -18,6 +18,7 @@ import org.zigmoi.ketchup.application.entities.ApplicationId;
 import org.zigmoi.ketchup.application.entities.Revision;
 import org.zigmoi.ketchup.application.entities.RevisionId;
 import org.zigmoi.ketchup.application.services.ApplicationService;
+import org.zigmoi.ketchup.application.services.DeploymentTriggerType;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.common.validations.ValidProjectId;
@@ -57,7 +58,9 @@ public class RevisionController {
     public Map<String, String> createRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                               @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
-        return Collections.singletonMap("revisionResourceId", applicationService.createRevision(applicationId));
+        String commitId = "";
+        return Collections.singletonMap("revisionResourceId",
+                applicationService.createRevision(DeploymentTriggerType.MANUAL.toString(), commitId, applicationId));
     }
 
     @GetMapping("/{revision-resource-id}")

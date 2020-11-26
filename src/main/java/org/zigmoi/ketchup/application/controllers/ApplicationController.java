@@ -16,6 +16,7 @@ import org.zigmoi.ketchup.application.entities.Application;
 import org.zigmoi.ketchup.application.entities.ApplicationId;
 import org.zigmoi.ketchup.application.entities.Revision;
 import org.zigmoi.ketchup.application.services.ApplicationService;
+import org.zigmoi.ketchup.application.services.DeploymentTriggerType;
 import org.zigmoi.ketchup.common.GitWebHookParserUtility;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
@@ -145,7 +146,8 @@ public class ApplicationController {
             if (GitWebHookParserUtility.isPushEvent(event)
                     && applicationDetailsDto.getGitRepoBranchName().equalsIgnoreCase(event.getBranchName())) {
                 try {
-                    applicationService.createRevision(id);
+                    String commitId = event.getCommitId();
+                    applicationService.createRevision(DeploymentTriggerType.GIT_WEBHOOK.toString(), commitId, id);
                     log.info("Invoked redeploy for Webhook Event : " + event.toString());
                 } catch (Exception e) {
                     log.error("Failed redeploy for Webhook Event : " + event.toString(), e);
@@ -156,7 +158,7 @@ public class ApplicationController {
         });
     }
 
-    @GetMapping(value = "/{application-resource-id}/git-webhook/listener-url")
+    @GetMapping(value = "/{application-resource-id}/git-webhook/generate/listener-url")
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public Map<String, String> generateGitWebHookListenerURL(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                              @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,

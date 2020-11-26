@@ -137,7 +137,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Override
     @Transactional
     @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#applicationId.projectResourceId)")
-    public String createRevision(ApplicationId applicationId) {
+    public String createRevision(String trigger, String commitId, ApplicationId applicationId) {
         //validate and fetch applicationId.
         //get projectId from application.
         //handle duplicate pipeline resources error in k8s.
@@ -151,18 +151,38 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         r.setHelmReleaseId(getHelmReleaseId(applicationId.getApplicationResourceId()));
         r.setVersion(revisionVersion);
         r.setRollback(false);
+        r.setDeploymentTriggerType(trigger);
+
+        if (DeploymentTriggerType.GIT_WEBHOOK.toString().equalsIgnoreCase(trigger)) {
+            if (StringUtility.isNullOrEmpty(commitId)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "GIT WEBHOOK initiated deployments should have valid commit id.");
+            } else {
+                r.setCommitId(commitId);
+            }
+        } else if (DeploymentTriggerType.MANUAL.toString().equalsIgnoreCase(trigger)) {
+            if (StringUtility.isNullOrEmpty(commitId)) {
+                r.setCommitId("");
+            } else {
+                r.setCommitId(commitId);
+            }
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown deployment trigger type., " + trigger);
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             r.setApplicationDataJson(objectMapper.writeValueAsString(applicationDetailsDto));
-        } catch (JsonProcessingException e) {
+        } catch (
+                JsonProcessingException e) {
             e.printStackTrace();
         }
 
         //generate pipeline all resources and save them, name can be parsed from them directly.
         List<PipelineArtifact> pipelineArtifacts = generatePipelineResources_tekton_v1beta1("sb-standard-dev-1.0",
-                applicationDetailsDto, revisionResourceId, revisionVersion);
-        pipelineArtifacts.forEach(pipelineArtifact -> {
+                applicationDetailsDto, revisionResourceId, revisionVersion, commitId);
+        pipelineArtifacts.forEach(pipelineArtifact ->
+
+        {
             PipelineArtifactId pipelineArtifactId = new PipelineArtifactId(revisionId, UUID.randomUUID().toString());
             pipelineArtifact.setId(pipelineArtifactId);
         });
@@ -170,6 +190,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         revisionRepository.saveAndFlush(r);
 
         String kubeConfig = StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig());
+
         queueAndDeployPipelineResources(pipelineArtifacts, kubeConfig, applicationDetailsDto, r);
         return revisionResourceId;
     }
@@ -618,11 +639,15 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         throw new UnexpectedException("No matching plural found for pipeline resource type : " + resourceType);
     }
 
-    private List<PipelineArtifact> generatePipelineResources_tekton_v1beta1(String pipelineType, ApplicationDetailsDto applicationDetailsDto, String revisionResourceId, String revisionVersion) {
+    private List<PipelineArtifact> generatePipelineResources_tekton_v1beta1(String pipelineType,
+                                                                            ApplicationDetailsDto applicationDetailsDto,
+                                                                            String revisionResourceId,
+                                                                            String revisionVersion,
+                                                                            String commitId) {
         String baseResourcePath = "classpath:/pipeline-templates/sb-standard-dev-pipeline-1.0-tekton-v1beta1/";
         String deploymentAppResourceBasePath = "classpath:/application-templates/spring-boot/";
 
-        Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(applicationDetailsDto, revisionResourceId, revisionVersion);
+        Map<String, String> pipelineTemplatingVariables = preparePipelineTemplatingVariables(applicationDetailsDto, revisionResourceId, revisionVersion, commitId);
 
         List<PipelineArtifact> resources = new ArrayList<>();
 
@@ -856,18 +881,13 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         return FileUtils.readFileToString(resource.getFile(), StandardCharsets.UTF_8);
     }
 
-    public Map<String, String> preparePipelineTemplatingVariables(ApplicationDetailsDto applicationDetailsDto, String revisionResourceId, String revisionVersion) {
+    public Map<String, String> preparePipelineTemplatingVariables(ApplicationDetailsDto applicationDetailsDto, String revisionResourceId, String revisionVersion, String commitId) {
         String applicationResourceId = applicationDetailsDto.getApplicationId().getApplicationResourceId();
         Map<String, String> args = new HashMap<>();
 
         //pipeline pvc
         args.put("pipelinePvcName", "pipeline-pvc-".concat(revisionResourceId));
         args.put("pipelinePvcSize", "1Gi");
-
-        //git resource
-        args.put("gitResourceName", "git-resource-".concat(revisionResourceId));
-        args.put("gitRepoUrl", applicationDetailsDto.getGitRepoUrl());
-        args.put("gitRepoBranchName", applicationDetailsDto.getGitRepoBranchName());
 
         //git secret
         args.put("gitRepoSecretName", "git-secret-".concat(revisionResourceId));
@@ -901,7 +921,13 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
         //task git
         args.put("gitCloneTaskName", "task-git-clone-".concat(revisionResourceId));
-        //also has "gitRepoUrl", "gitRepoBranchName" which is already added.
+        args.put("gitResourceName", "git-resource-".concat(revisionResourceId));
+        args.put("gitRepoUrl", applicationDetailsDto.getGitRepoUrl());
+        if(StringUtility.isNullOrEmpty(commitId)){
+            args.put("gitRevision", applicationDetailsDto.getGitRepoBranchName());
+        }else{
+            args.put("gitRevision", commitId);
+        }
 
         //task helm
         args.put("helmDeployTaskName", "task-helm-deploy-".concat(revisionResourceId));

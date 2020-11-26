@@ -10,6 +10,8 @@ import org.zigmoi.ketchup.common.validations.ValidResourceId;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -18,7 +20,9 @@ import java.util.Set;
 @Validated
 public interface ApplicationService {
 
-    String createRevision(@Valid ApplicationId applicationId);
+    String createRevision( @NotBlank @Pattern(regexp = "GIT WEBHOOK|MANUAL")String trigger,
+                           @Size(max = 100) String commitId,
+                           @Valid ApplicationId applicationId);
 
     void rollbackToRevision(@Valid RevisionId revisionId); //rollback current release to specified version.
 
@@ -38,7 +42,8 @@ public interface ApplicationService {
 
     Set<Revision> listAllRevisionsInApplication(@Valid ApplicationId applicationId);
 
-    Set<Revision> listAllRevisionsInProjectWithStatus(@ValidProjectId String projectResourceId, @NotBlank String status);
+    Set<Revision> listAllRevisionsInProjectWithStatus(@ValidProjectId String projectResourceId,
+                                                      @NotBlank  @Pattern(regexp = "IN PROGRESS|SUCCESS|FAILED") String status);
 
     Set<Revision> listAllRevisionsInProject(@ValidProjectId String projectResourceId);
 
