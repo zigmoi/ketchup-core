@@ -27,8 +27,8 @@ public interface RevisionRepository extends JpaRepository<Revision, RevisionId> 
     @Query("select distinct r from Revision r where r.id.projectResourceId = :projectResourceId and r.rollback = false order by r.lastUpdatedOn DESC")
     List<Revision> listRecentRevisionPipelinesInProject(String projectResourceId, Pageable pageable);
 
-    @Query("select distinct r from Revision r where r.id.projectResourceId = :projectResourceId AND r.status = :status order by r.lastUpdatedOn DESC")
-    Set<Revision> findDistinctByProjectResourceIdAndStatusOrderByLastUpdatedOnDesc(String projectResourceId, String status);
+    @Query("select distinct r from Revision r where r.id.projectResourceId = :projectResourceId AND r.rollback = false and r.status = :status order by r.lastUpdatedOn DESC")
+    Set<Revision> listAllRevisionPipelinesInProjectWithStatus(String projectResourceId, String status);
 
     @Query("select count(ALL r) from Revision r where r.id.applicationResourceId = :applicationResourceId")
     long countAllByApplicationResourceId(String applicationResourceId);
@@ -42,4 +42,7 @@ public interface RevisionRepository extends JpaRepository<Revision, RevisionId> 
 
     @Query("select count(ALL r) from Revision r where r.id.projectResourceId = :projectResourceId")
     long countAllRevisionsInProject(String projectResourceId);
+
+    @Query("select count(ALL r) from Revision r where r.id.projectResourceId = :projectResourceId and r.rollback = false")
+    long countAllRevisionPipelinesInProject(String projectResourceId);
 }

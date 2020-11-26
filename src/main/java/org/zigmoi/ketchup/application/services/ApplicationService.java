@@ -42,8 +42,8 @@ public interface ApplicationService {
 
     Set<Revision> listAllRevisionsInApplication(@Valid ApplicationId applicationId);
 
-    Set<Revision> listAllRevisionsInProjectWithStatus(@ValidProjectId String projectResourceId,
-                                                      @NotBlank  @Pattern(regexp = "IN PROGRESS|SUCCESS|FAILED") String status);
+    Set<Revision> listAllRevisionPipelinesInProjectWithStatus(@ValidProjectId String projectResourceId,
+                                                              @NotBlank  @Pattern(regexp = "IN PROGRESS|SUCCESS|FAILED") String status);
 
     Set<Revision> listAllRevisionsInProject(@ValidProjectId String projectResourceId);
 

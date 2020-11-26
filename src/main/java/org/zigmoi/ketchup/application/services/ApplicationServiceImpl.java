@@ -77,6 +77,9 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Value("${ketchup.base-url}")
     private String ketchupBaseUrl;
 
+    @Value("${ketchup.tekton-event-sink-api-path}")
+    private String ketchupTektonEventSinkApiPath;
+
     public ApplicationServiceImpl(RevisionRepository revisionRepository, PipelineArtifactRepository pipelineArtifactRepository, PermissionUtilsService permissionUtilsService, ResourceLoader resourceLoader, AuthorizationServerTokenServices jwtTokenServices, HelmService helmService, ApplicationRepository applicationRepository, SettingService settingService) {
         this.revisionRepository = revisionRepository;
         this.pipelineArtifactRepository = pipelineArtifactRepository;
@@ -405,14 +408,14 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public List<Revision> listRecentRevisionPipelinesInProject(String projectResourceId) {
-        return revisionRepository.listRecentRevisionPipelinesInProject(projectResourceId, PageRequest.of(0, 5));
+        return revisionRepository.listRecentRevisionPipelinesInProject(projectResourceId, PageRequest.of(0, 12));
     }
 
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public Set<Revision> listAllRevisionsInProjectWithStatus(String projectResourceId, String status) {
-        return revisionRepository.findDistinctByProjectResourceIdAndStatusOrderByLastUpdatedOnDesc(projectResourceId, status);
+    public Set<Revision> listAllRevisionPipelinesInProjectWithStatus(String projectResourceId, String status) {
+        return revisionRepository.listAllRevisionPipelinesInProjectWithStatus(projectResourceId, status);
     }
 
     @Override
@@ -528,7 +531,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     private String buildTektonCloudEventSinkURL(Revision revision) {
         String domain = ketchupBaseUrl;
-        String tektonEventSink = ConfigUtility.instance().getProperty("ketchup.tekton-event-sink-api-path");
+        String tektonEventSink = ketchupTektonEventSinkApiPath;
         String accessToken = generateForeverActiveToken(jwtTokenServices, "tekton-event");
         return domain + "/" + tektonEventSink + "?access_token=" + accessToken;
     }
@@ -1399,7 +1402,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @PreAuthorize("@permissionUtilsService.canPrincipalReadProjectDetails(#projectResourceId)")
     public Map<String, Long> getDashboardDataForProject(String projectResourceId) {
         long totalApplicationsInProject = applicationRepository.getAllApplicationsByProjectResourceId(projectResourceId);
-        long totalDeploymentsInProject = revisionRepository.countAllRevisionsInProject(projectResourceId);
+        long totalDeploymentsInProject = revisionRepository.countAllRevisionPipelinesInProject(projectResourceId);
         long totalKubernetesClustersInProject = settingService.countAllKubernetesClustersInProject(projectResourceId);
         long totalContainerRegistriesInProject = settingService.countAllContainerRegistryInProject(projectResourceId);
 

@@ -53,7 +53,7 @@ public class CommonController {
     public Set<Revision> listAllRevisionPipelinesByStatusInProject(
             @PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
             @RequestParam("status") @NotBlank @Size(max = 100) String status) {
-        return applicationService.listAllRevisionsInProjectWithStatus(projectResourceId, status);
+        return applicationService.listAllRevisionPipelinesInProjectWithStatus(projectResourceId, status);
     }
 
     @GetMapping("/v1-alpha/projects/{project-resource-id}/pipelines/recent")
