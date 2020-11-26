@@ -10,6 +10,7 @@ import org.apache.commons.lang.text.StrSubstitutor;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.domain.PageRequest;
@@ -72,6 +73,9 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     private final HelmService helmService;
     private final ApplicationRepository applicationRepository;
     private SettingService settingService;
+
+    @Value("${ketchup.base-url}")
+    private String ketchupBaseUrl;
 
     public ApplicationServiceImpl(RevisionRepository revisionRepository, PipelineArtifactRepository pipelineArtifactRepository, PermissionUtilsService permissionUtilsService, ResourceLoader resourceLoader, AuthorizationServerTokenServices jwtTokenServices, HelmService helmService, ApplicationRepository applicationRepository, SettingService settingService) {
         this.revisionRepository = revisionRepository;
@@ -523,7 +527,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     private String buildTektonCloudEventSinkURL(Revision revision) {
-        String domain = ConfigUtility.instance().getProperty("ketchup.base-url");
+        String domain = ketchupBaseUrl;
         String tektonEventSink = ConfigUtility.instance().getProperty("ketchup.tekton-event-sink-api-path");
         String accessToken = generateForeverActiveToken(jwtTokenServices, "tekton-event");
         return domain + "/" + tektonEventSink + "?access_token=" + accessToken;
@@ -1248,7 +1252,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     public String generateGitWebhookListenerURL(String vendor, ApplicationId applicationId) {
-        String domain = ConfigUtility.instance().getProperty("ketchup.base-url");
+        String domain = ketchupBaseUrl;
         String webhookListenerUrl = "v1-alpha/projects/"
                 + applicationId.getProjectResourceId()
                 + "/applications/"
