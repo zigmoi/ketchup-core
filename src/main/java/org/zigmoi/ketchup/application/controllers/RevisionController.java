@@ -243,19 +243,19 @@ public class RevisionController {
         return emitter;
     }
 
-    @GetMapping(value = "/active/application-logs/stream")
+    @GetMapping(value = "/current/application-logs/stream")
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public void streamAppLogsForActiveRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
-                                               @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
-                                               @RequestParam("podName") @NotBlank @Size(max = 250) String podName,
-                                               @RequestParam("containerName") @NotBlank @Size(max = 250) String containerName,
-                                               @RequestParam(value = "tailLines", required = false) Integer tailLines,
-                                               HttpServletResponse response) throws IOException, ApiException {
+    public void streamAppLogsForCurrentRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                                @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
+                                                @RequestParam("podName") @NotBlank @Size(max = 250) String podName,
+                                                @RequestParam("containerName") @NotBlank @Size(max = 250) String containerName,
+                                                @RequestParam(value = "tailLines", required = false) Integer tailLines,
+                                                HttpServletResponse response) throws IOException, ApiException {
 
         validateApplicationPodLogAccess(applicationResourceId, podName);
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
-        Revision revision = applicationService.getActiveRevision(applicationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No Active revision found for application with ID: " + applicationResourceId));
+        Revision revision = applicationService.getCurrentRevision(applicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Current revision not found for application with ID: " + applicationResourceId));
 
         if (!podName.startsWith("app-" + applicationResourceId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You dont have sufficient access to fetch logs for this revision.");

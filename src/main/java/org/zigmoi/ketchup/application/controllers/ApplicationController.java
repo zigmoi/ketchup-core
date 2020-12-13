@@ -119,13 +119,13 @@ public class ApplicationController {
         }
     }
 
-    @GetMapping("/{application-resource-id}/active-revision")
+    @GetMapping("/{application-resource-id}/current-revision")
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public Revision getActiveRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
-                                      @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
+    public Revision getCurrentRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                       @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
-        return applicationService.getActiveRevision(applicationId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active revision not found."));
+        return applicationService.getCurrentRevision(applicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Current revision not found."));
     }
 
     @PostMapping(value = "/{application-resource-id}/git-webhook/listen")

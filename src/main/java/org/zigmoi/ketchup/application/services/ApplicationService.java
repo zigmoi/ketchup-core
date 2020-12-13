@@ -38,7 +38,7 @@ public interface ApplicationService {
 
     void updateRevision(@Valid Revision revision);
 
-    Optional<Revision> getActiveRevision(@Valid ApplicationId applicationId);
+    Optional<Revision> getCurrentRevision(@Valid ApplicationId applicationId);
 
     Set<Revision> listAllRevisionsInApplication(@Valid ApplicationId applicationId);
 

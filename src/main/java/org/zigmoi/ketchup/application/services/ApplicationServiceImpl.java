@@ -30,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
-import org.zigmoi.ketchup.common.ConfigUtility;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.helm.dtos.ReleaseStatusResponseDto;
@@ -199,6 +198,11 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         String kubeConfig = StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig());
 
         queueAndDeployPipelineResources(pipelineArtifacts, kubeConfig, applicationDetailsDto, r);
+        try {
+            KubernetesUtility.startDeploymentInformer(kubeConfig);
+        } catch (IOException e) {
+            logger.error("Failed to start informers.");
+        }
         return revisionResourceId;
     }
 
@@ -343,7 +347,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Transactional
     @PreAuthorize("@permissionUtilsService.canPrincipalDeleteApplication(#applicationId.projectResourceId)")
     public void deleteApplication(ApplicationId applicationId) {
-        Optional<Revision> activeRevision = getActiveRevision(applicationId);
+        Optional<Revision> activeRevision = getCurrentRevision(applicationId);
         if (activeRevision.isPresent()) {
             ApplicationDetailsDto applicationDetailsDto = applicationJsonToDto(activeRevision.get().getApplicationDataJson());
             String namespace = applicationDetailsDto.getDevKubernetesNamespace();
@@ -384,9 +388,9 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#applicationId.projectResourceId)")
-    public Optional<Revision> getActiveRevision(ApplicationId applicationId) {
+    public Optional<Revision> getCurrentRevision(ApplicationId applicationId) {
         String applicationResourceId = applicationId.getApplicationResourceId();
-        List<Revision> revisions = revisionRepository.findActiveRevision(applicationResourceId, "SUCCESS", PageRequest.of(0, 1));
+        List<Revision> revisions = revisionRepository.findCurrentRevision(applicationResourceId, PageRequest.of(0, 1));
         return revisions.stream().findFirst();
     }
 
@@ -1027,6 +1031,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         serviceValues.put("port", Long.valueOf(applicationDetailsDto.getAppServerPort()));
 
         LinkedHashMap<String, Object> helmConfigValues = new LinkedHashMap<>();
+        helmConfigValues.put("applicationRevisionId", revisionVersion);
         helmConfigValues.put("replicaCount", Long.valueOf(applicationDetailsDto.getReplicas()));
         helmConfigValues.put("image", containerRegistryValues);
         helmConfigValues.put("service", serviceValues);

@@ -7,6 +7,8 @@ import com.google.gson.reflect.TypeToken;
 import com.jayway.jsonpath.JsonPath;
 import io.kubernetes.client.PodLogs;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.informer.SharedIndexInformer;
+import io.kubernetes.client.informer.SharedInformerFactory;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
@@ -14,19 +16,15 @@ import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.*;
-import io.kubernetes.client.util.ClientBuilder;
-import io.kubernetes.client.util.Config;
-import io.kubernetes.client.util.Watch;
-import io.kubernetes.client.util.Yaml;
-import okhttp3.MediaType;
+import io.kubernetes.client.util.*;
 import okhttp3.OkHttpClient;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.entity.ContentType;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.zigmoi.ketchup.application.services.DeploymentResourceEventHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -219,6 +217,39 @@ public class KubernetesUtility {
 //            System.err.println("Response headers: " + e.getResponseHeaders());
 //            e.printStackTrace();
 //        }
+    }
+
+
+    public static void startDeploymentInformer(String kubeConfig) throws IOException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+//        client.setWriteTimeout(15000);
+//        client.setConnectTimeout(15000);
+        client.setReadTimeout(0);
+        Configuration.setDefaultApiClient(client);
+
+        SharedInformerFactory factory = new SharedInformerFactory();
+        AppsV1Api appsV1Api = new AppsV1Api(client);
+        // Node informer
+        SharedIndexInformer<V1Deployment> nodeInformer =
+                factory.sharedIndexInformerFor(
+                        (CallGeneratorParams params) -> {
+                            return appsV1Api.listDeploymentForAllNamespacesCall(
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    params.resourceVersion,
+                                    params.timeoutSeconds,
+                                    params.watch,
+                                    null);
+                        },
+                        V1Deployment.class,
+                        V1DeploymentList.class);
+
+        nodeInformer.addEventHandler(new DeploymentResourceEventHandler());
+        factory.startAllRegisteredInformers();
     }
 
     public static JSONObject getPipelineRunStatus(String kubeConfig, String namespace, String pipelineRunName) throws IOException, ApiException {
