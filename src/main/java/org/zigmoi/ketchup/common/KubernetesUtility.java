@@ -24,16 +24,15 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
 import org.zigmoi.ketchup.application.services.DeploymentResourceEventHandler;
+import org.zigmoi.ketchup.application.services.PipelineUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class KubernetesUtility {
@@ -219,6 +218,71 @@ public class KubernetesUtility {
 //        }
     }
 
+    public static V1DeploymentList getDeploymentStatus(String kubeConfig, String namespace, String deploymentName) throws IOException, ApiException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        Configuration.setDefaultApiClient(client);
+
+        String fieldSelector = "metadata.name=".concat(deploymentName);
+        String labelSelector = "app.kubernetes.io/instance=".concat(deploymentName);
+        AppsV1Api api = new AppsV1Api(client);
+        V1DeploymentList deployments = api.listNamespacedDeployment(namespace,
+                null,
+                null,
+                null,
+                null,
+                labelSelector,
+                1,
+                null,
+                30,
+                false);
+
+        String responseJson = deployments.toString();
+        System.out.println("Deployments: " + responseJson);
+        return deployments;
+    }
+
+    public static DeploymentStatus getDeploymentStatusDetails(V1Deployment deployment) {
+        DeploymentStatus deploymentStatus = new DeploymentStatus();
+
+        int requiredReplicas = deployment.getStatus().getReplicas();
+        int availableReplicas = deployment.getStatus().getAvailableReplicas();
+        int uptoDateReplicas = deployment.getStatus().getUpdatedReplicas();
+        int readyReplicas = deployment.getStatus().getReadyReplicas();
+
+        deploymentStatus.setRevisionVersionNo(deployment.getMetadata().getLabels().get("applicationRevisionId"));
+        deploymentStatus.setRequiredReplicas(requiredReplicas);
+        deploymentStatus.setAvailableReplicas(availableReplicas);
+        deploymentStatus.setUptoDateReplicas(uptoDateReplicas);
+        deploymentStatus.setReadyReplicas(readyReplicas);
+
+        V1DeploymentCondition finalCondition = deployment.getStatus().getConditions().stream().max(Comparator.comparing(V1DeploymentCondition::getLastTransitionTime)).get();
+        String type = finalCondition.getType();
+        String status = finalCondition.getStatus();
+        String reason = finalCondition.getReason();
+        if ("Available".equalsIgnoreCase(type) && "True".equalsIgnoreCase(status)) {
+            deploymentStatus.setStatus("Success");
+            deploymentStatus.setReason(reason);
+            deploymentStatus.setHealthy(true);
+        } else if ("Progressing".equalsIgnoreCase(type) && "True".equalsIgnoreCase(status)) {
+            deploymentStatus.setStatus("In-Progress");
+            deploymentStatus.setReason(reason);
+            if (availableReplicas >= requiredReplicas) {
+                deploymentStatus.setHealthy(true);
+            } else {
+                deploymentStatus.setHealthy(false);
+            }
+        } else {
+            deploymentStatus.setStatus("Failed");
+            deploymentStatus.setReason(reason);
+            if (availableReplicas >= requiredReplicas) {
+                deploymentStatus.setHealthy(true);
+            } else {
+                deploymentStatus.setHealthy(false);
+            }
+        }
+        return deploymentStatus;
+    }
+
 
     public static void startDeploymentInformer(String kubeConfig) throws IOException {
         ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
@@ -272,7 +336,7 @@ public class KubernetesUtility {
         List items = (List) itemMap.get("items");
         String responseJson = new Gson().toJson(items.get(0));
         System.out.println(responseJson);
-        return parsePipelineRunResponse(responseJson);
+        return PipelineUtils.parsePipelineRunResponse(responseJson);
     }
 
     public static void watchAndStreamPipelineRunStatus(String kubeConfig, String namespace, String pipelineRunName, SseEmitter emitter) throws IOException, ApiException {
@@ -308,7 +372,8 @@ public class KubernetesUtility {
             for (Watch.Response<Object> item : watch) {
                 String responseJson = new Gson().toJson(item.object);
                 System.out.println(responseJson);
-                SseEmitter.SseEventBuilder eventBuilderDataStream = SseEmitter.event().name("data").data(parsePipelineRunResponse(responseJson).toString());
+                SseEmitter.SseEventBuilder eventBuilderDataStream =
+                        SseEmitter.event().name("data").data(PipelineUtils.parsePipelineRunResponse(responseJson).toString());
                 emitter.send(eventBuilderDataStream);
                 //  System.out.printf("%s : %s%n", item.type, item.object.toString());
             }
@@ -375,7 +440,7 @@ public class KubernetesUtility {
         Configuration.setDefaultApiClient(client);
 
         CustomObjectsApi apiInstance = new CustomObjectsApi(client);
-        Object result = apiInstance.patchNamespacedCustomObject(group, version, namespace, plural, resourceName, new V1Patch(jsonPatchContent), null, null,null);
+        Object result = apiInstance.patchNamespacedCustomObject(group, version, namespace, plural, resourceName, new V1Patch(jsonPatchContent), null, null, null);
         System.out.println(result);
     }
 
@@ -565,123 +630,7 @@ public class KubernetesUtility {
 //        }
 //    }
 
-    public static JSONObject parsePipelineRunResponse(String responseJson) {
-        System.out.println("Raw Status Details: " + responseJson);
-        JSONObject details = new JSONObject();
-        String startTime = getData(responseJson, "$.status.startTime");
-        details.put("startTime", startTime);
-        String status = getData(responseJson, "$.status.conditions[0].status");
-        details.put("status", status);
-        String reason = getData(responseJson, "$.status.conditions[0].reason");
-        details.put("reason", reason);
-        String message = getData(responseJson, "$.status.conditions[0].message");
-        details.put("message", message);
-        String completionTime = getData(responseJson, "$.status.completionTime");
-        details.put("completionTime", completionTime);
-
-        //jsonpath getting parent field using conditions on child.
-//        List<Object> test = JsonPath.read(responseJson, "$.status[?(@.taskRuns[?(@.pipelineTaskName == 'build-image')])].taskRuns");
-//        System.out.println("test: " + test.get(0).toString());
-
-        JSONArray taskDetails = new JSONArray();
-        LinkedHashMap<String, Object> taskRuns = new LinkedHashMap<>();
-        try {
-            taskRuns = JsonPath.read(responseJson, "$.status.taskRuns");
-        } catch (Exception e) {
-            logger.debug("exception in getting taskruns, ", e);
-            details.put("tasks", taskDetails);
-            System.out.println("Details: " + details);
-            return details;
-        }
-
-        for (Map.Entry<String, Object> tr : taskRuns.entrySet()) {
-            String taskName = tr.getKey();
-            System.out.println("Setting values for task: " + taskName);
-            System.out.println("Raw Task Details: " + tr.toString());
-            String taskRunJson = new Gson().toJson(tr.getValue());
-            System.out.println("Raw Task Details JSON: " + taskRunJson);
-            String taskBaseName = getData(taskRunJson, "$.pipelineTaskName");
-            String podName = getData(taskRunJson, "$.status.podName");
-            String taskStartTime = getData(taskRunJson, "$.status.startTime");
-            String taskCompletionTime = getData(taskRunJson, "$.status.completionTime");
-            System.out.println("Setting completionTime: " + taskCompletionTime);
-            String taskStatus = getData(taskRunJson, "$.status.conditions[0].status");
-            System.out.println("Setting status: " + taskStatus);
-            String taskReason = getData(taskRunJson, "$.status.conditions[0].reason");
-            System.out.println("Setting reason: " + taskReason);
-            String taskMessage = getData(taskRunJson, "$.status.conditions[0].message");
-            System.out.println("Setting message: " + taskMessage);
-
-            JSONObject taskJson = new JSONObject();
-            taskJson.put("name", taskName);
-            taskJson.put("baseName", taskBaseName);
-            taskJson.put("podName", podName);
-            taskJson.put("startTime", taskStartTime);
-            taskJson.put("completionTime", taskCompletionTime);
-            taskJson.put("status", taskStatus);
-            taskJson.put("reason", taskReason);
-            taskJson.put("message", taskMessage);
-
-            JSONArray steps;
-            try {
-                steps = new JSONArray(JsonPath.read(taskRunJson, "$.status.steps").toString());
-            } catch (Exception e) {
-                logger.error("Error in getting steps. ", e);
-                taskJson.put("steps", new JSONArray());
-                continue;
-            }
-
-            System.out.println(steps.length());
-            if ("fetch-source-code".equalsIgnoreCase(taskBaseName)) {
-                taskJson.put("order", 1);
-                String commitId = getData(taskRunJson, "$.status.taskResults[0].value");
-                taskJson.put("commitId", commitId);
-                JSONArray stepDetails = new JSONArray();
-                for (Object stepEntry : steps) {
-                    JSONObject step = (JSONObject) stepEntry;
-                    String stepName = step.getString("name");
-                    if ("clone".equalsIgnoreCase(stepName)) {
-                        int order = 1;
-                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
-                    }
-                }
-                taskJson.put("steps", stepDetails);
-            } else if ("build-image".equalsIgnoreCase(taskBaseName)) {
-                taskJson.put("order", 2);
-                JSONArray stepDetails = new JSONArray();
-                for (Object stepEntry : steps) {
-                    JSONObject step = (JSONObject) stepEntry;
-                    String stepName = step.getString("name");
-                    if ("build-and-push".equalsIgnoreCase(stepName)) {
-                        int order = 1;
-                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
-                    }
-                }
-                taskJson.put("steps", stepDetails);
-            } else if ("deploy-chart-in-cluster".equalsIgnoreCase(taskBaseName)) {
-                taskJson.put("order", 3);
-                JSONArray stepDetails = new JSONArray();
-                for (Object stepEntry : steps) {
-                    JSONObject step = (JSONObject) stepEntry;
-                    String stepName = step.getString("name");
-                    if ("install-app-in-cluster".equalsIgnoreCase(stepName)) {
-                        int order = 1;
-                        stepDetails.put(parseStepDetails(tr, taskBaseName, podName, step, stepName, order));
-                    }
-                }
-                taskJson.put("steps", stepDetails);
-            }
-            taskDetails.put(taskJson);
-            System.out.println("Parsed Task Details: " + taskDetails.toString());
-        }
-        //details.put("steps", stepDetails);
-        details.put("tasks", taskDetails);
-        System.out.println("Details: " + details);
-        return details;
-
-    }
-
-    private static String getData(String inputJson, String jsonPath) {
+    public static String getData(String inputJson, String jsonPath) {
         String response = "";
         try {
             response = JsonPath.read(inputJson, jsonPath);
@@ -689,49 +638,6 @@ public class KubernetesUtility {
             logger.debug("Exception in reading value at specified json path not found. ", e);
         }
         return response;
-    }
-
-    private static JSONObject parseStepDetails(Map.Entry<String, Object> tr, String taskBaseName, String podName, JSONObject step, String stepName, int order) {
-        JSONObject stepJson = new JSONObject();
-        System.out.println(stepJson);
-        stepJson.put("order", order);
-        stepJson.put("podName", podName);
-        stepJson.put("taskName", tr.getKey());
-        stepJson.put("taskBaseName", taskBaseName);
-        stepJson.put("stepName", stepName);
-        stepJson.put("containerName", step.getString("container"));
-        if (step.has("waiting")) {
-            stepJson.put("state", "Waiting");
-            String stepWaitingReason = step.getJSONObject("waiting").getString("reason");
-            stepJson.put("reason", stepWaitingReason);
-        } else if (step.has("running")) {
-            stepJson.put("state", "Running");
-            stepJson.put("reason", "");
-            String stepStartTime = step.getJSONObject("running").getString("startedAt");
-            stepJson.put("startTime", stepStartTime);
-        } else if (step.has("terminated")) {
-            stepJson.put("state", "Terminated");
-            String stepTerminationReason = step.getJSONObject("terminated").getString("reason");
-            stepJson.put("reason", stepTerminationReason);
-            try {
-                String stepTerminationMessage = step.getJSONObject("terminated").getString("message");
-                stepJson.put("message", stepTerminationMessage);
-            } catch (Exception e) {
-                stepJson.put("message", "");
-            }
-            String stepStartTime = step.getJSONObject("terminated").getString("startedAt");
-            stepJson.put("startTime", stepStartTime);
-            String stepCompletionTime = step.getJSONObject("terminated").getString("finishedAt");
-            stepJson.put("completionTime", stepCompletionTime);
-            int stepExitCode = step.getJSONObject("terminated").getInt("exitCode");
-            stepJson.put("exitCode", stepExitCode);
-            if (stepExitCode == 0) {
-                stepJson.put("status", "True");
-            } else {
-                stepJson.put("status", "False");
-            }
-        }
-        return stepJson;
     }
 
     public static void watchListPods(String namespace, String kubeConfig) throws IOException, ApiException {

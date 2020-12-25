@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1Deployment;
+import io.kubernetes.client.openapi.models.V1DeploymentList;
 import org.apache.commons.collections.map.SingletonMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
@@ -30,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.helm.dtos.ReleaseStatusResponseDto;
@@ -51,6 +54,7 @@ import org.zigmoi.ketchup.application.repositories.ApplicationRepository;
 import org.zigmoi.ketchup.application.repositories.PipelineArtifactRepository;
 import org.zigmoi.ketchup.application.repositories.RevisionRepository;
 
+import javax.validation.Valid;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -228,6 +232,9 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         Revision revision = revisionRepository.findById(revisionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         String.format("Revision with id %s not found.", revisionId.getRevisionResourceId())));
+        if(!"SUCCESS".equalsIgnoreCase(revision.getStatus())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rollback is only supported for versions which were successfully deployed.");
+        }
         ApplicationId applicationId = new ApplicationId(revisionId.getTenantId(), revisionId.getProjectResourceId(), revisionId.getApplicationResourceId());
         ApplicationDetailsDto applicationDetails = getApplication(applicationId);
         String namespace = applicationDetails.getDevKubernetesNamespace();
@@ -247,7 +254,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             revisionRepository.save(clonedRevision);
         } catch (Exception e) {
             clonedRevision.setStatus("FAILED");
-            revisionRepository.save(clonedRevision);
+            revisionRepository.saveAndFlush(clonedRevision);
+            logger.error("Rollback failed.", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Operation failed.");
         }
     }
@@ -272,6 +280,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         clonedRevision.setHelmReleaseVersion(null);
         clonedRevision.setOriginalRevisionVersionId(revision.getVersion());
         clonedRevision.setApplicationDataJson(revision.getApplicationDataJson());
+        clonedRevision.setDeploymentTriggerType(DeploymentTriggerType.MANUAL.toString());
         revisionRepository.saveAndFlush(clonedRevision);
         return clonedRevision;
     }
@@ -391,6 +400,15 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     public Optional<Revision> getCurrentRevision(ApplicationId applicationId) {
         String applicationResourceId = applicationId.getApplicationResourceId();
         List<Revision> revisions = revisionRepository.findCurrentRevision(applicationResourceId, PageRequest.of(0, 1));
+        return revisions.stream().findFirst();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#applicationId.projectResourceId)")
+    public Optional<Revision> getLastSuccessfulRevision(@Valid ApplicationId applicationId) {
+        String applicationResourceId = applicationId.getApplicationResourceId();
+        List<Revision> revisions = revisionRepository.findLastSuccessfulRevision(applicationResourceId, "SUCCESS", PageRequest.of(0, 1));
         return revisions.stream().findFirst();
     }
 
@@ -934,9 +952,9 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         args.put("gitCloneTaskName", "task-git-clone-".concat(revisionResourceId));
         args.put("gitResourceName", "git-resource-".concat(revisionResourceId));
         args.put("gitRepoUrl", applicationDetailsDto.getGitRepoUrl());
-        if(StringUtility.isNullOrEmpty(commitId)){
+        if (StringUtility.isNullOrEmpty(commitId) || "latest".equalsIgnoreCase(commitId)) {
             args.put("gitRevision", applicationDetailsDto.getGitRepoBranchName());
-        }else{
+        } else {
             args.put("gitRevision", commitId);
         }
 
@@ -1347,6 +1365,25 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         try {
             applicationResponseDto = objectMapper.readValue(application.getData(), ApplicationResponseDto.class);
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+        ApplicationDetailsDto applicationDetailsDto = getApplication(applicationId);
+        String kubeConfig = StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig());
+        String namespace = applicationDetailsDto.getDevKubernetesNamespace();
+        try {
+            V1DeploymentList deployments = KubernetesUtility.getDeploymentStatus(kubeConfig, namespace,
+                    "app-" + applicationId.getApplicationResourceId());
+            if (deployments.getItems().isEmpty()) {
+                //TODO handle empty deployment list.
+            } else {
+                V1Deployment deployment = deployments.getItems().get(0);
+                DeploymentStatus deploymentStatus = KubernetesUtility.getDeploymentStatusDetails(deployment);
+                System.out.println("Parsed deployment status: " + deploymentStatus);
+                applicationResponseDto.setDeploymentStatus(deploymentStatus);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ApiException e) {
             e.printStackTrace();
         }
         return applicationResponseDto;

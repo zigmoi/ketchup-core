@@ -128,6 +128,15 @@ public class ApplicationController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Current revision not found."));
     }
 
+    @GetMapping("/{application-resource-id}/last-successful-revision")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
+    public Revision getLastSuccessfulRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                       @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
+        ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
+        return applicationService.getLastSuccessfulRevision(applicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Last successful revision not found."));
+    }
+
     @PostMapping(value = "/{application-resource-id}/git-webhook/listen")
     @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public void handleGitWebHookRequests(@PathVariable("project-resource-id") String projectResourceId,

@@ -40,6 +40,8 @@ public interface ApplicationService {
 
     Optional<Revision> getCurrentRevision(@Valid ApplicationId applicationId);
 
+    Optional<Revision> getLastSuccessfulRevision(@Valid ApplicationId applicationId);
+
     Set<Revision> listAllRevisionsInApplication(@Valid ApplicationId applicationId);
 
     Set<Revision> listAllRevisionPipelinesInProjectWithStatus(@ValidProjectId String projectResourceId,

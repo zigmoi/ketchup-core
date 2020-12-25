@@ -14,6 +14,10 @@ import org.zigmoi.ketchup.helm.dtos.ReleaseStatusResponseDto;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
@@ -273,10 +277,11 @@ public class HelmServiceImpl implements HelmService {
 
 
     private String createTempKubeconfig(String kubeConfig) throws IOException {
-        File tmpFile = File.createTempFile("kubeconfig-", null);
-        FileWriter writer = new FileWriter(tmpFile);
+        Set<PosixFilePermission> fp = PosixFilePermissions.fromString("rwx------");
+        Path tmpFilePath = Files.createTempFile("kubeconfig-", null, PosixFilePermissions.asFileAttribute(fp));
+        FileWriter writer = new FileWriter(tmpFilePath.toAbsolutePath().toString());
         writer.write(kubeConfig);
         writer.close();
-        return tmpFile.getAbsolutePath();
+        return tmpFilePath.toAbsolutePath().toString();
     }
 }

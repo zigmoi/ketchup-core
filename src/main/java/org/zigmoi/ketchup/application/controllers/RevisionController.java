@@ -18,7 +18,9 @@ import org.zigmoi.ketchup.application.entities.ApplicationId;
 import org.zigmoi.ketchup.application.entities.Revision;
 import org.zigmoi.ketchup.application.entities.RevisionId;
 import org.zigmoi.ketchup.application.services.ApplicationService;
+import org.zigmoi.ketchup.application.services.ApplicationServiceImpl;
 import org.zigmoi.ketchup.application.services.DeploymentTriggerType;
+import org.zigmoi.ketchup.application.services.PipelineUtils;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.common.validations.ValidProjectId;
@@ -56,9 +58,9 @@ public class RevisionController {
     @PostMapping
     @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
     public Map<String, String> createRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
-                                              @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
+                                              @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
+                                              @RequestParam("commit-id") @NotBlank @Size(max = 100) String commitId) {
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
-        String commitId = "";
         return Collections.singletonMap("revisionResourceId",
                 applicationService.createRevision(DeploymentTriggerType.MANUAL.toString(), commitId, applicationId));
     }
@@ -92,11 +94,15 @@ public class RevisionController {
 
     @GetMapping("/{revision-resource-id}/pipeline/status/refresh")
     @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
-    public Revision refreshRevisionPipelineStatus(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+    public void refreshRevisionPipelineStatus(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                                   @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                                   @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) throws IOException, ApiException {
         RevisionId id = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
         Revision revision = applicationService.findRevisionById(id);
+        if ("success".equalsIgnoreCase(revision.getStatus()) || "failed".equalsIgnoreCase(revision.getStatus())) {
+            //ignore as db already has updated status.
+            return;
+        }
         if (revision.isRollback()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Operation not supported, cannot refresh status of rollback revision.");
         }
@@ -106,16 +112,23 @@ public class RevisionController {
         String namespace = getKubernetesNamespace(revision.getApplicationDataJson());
         JSONObject parsedStatus = KubernetesUtility.getPipelineRunStatus(kubeConfig, namespace, pipelineRunName);
         if (parsedStatus == null) {
-            return revision;
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Cannot refresh status, no status found, please try again later.");
         }
-        String commitId = getCommitIdFromJSON(parsedStatus);
+        String commitId = PipelineUtils.getCommitIdFromJSON(parsedStatus);
         if (commitId != null) {
             revision.setCommitId(commitId);
         }
-        revision.setStatus(parsePipelineStatusFromJSON(parsedStatus));
+        try {
+            String helmReleaseVersion = PipelineUtils.getHelmReleaseVersionFromJSON(parsedStatus);
+            if (helmReleaseVersion != null) {
+                revision.setHelmReleaseVersion(helmReleaseVersion);
+            }
+        } catch (Exception e) {
+            log.error("Error in getting helm release version, ", e);
+        }
+        revision.setStatus(PipelineUtils.parsePipelineStatusFromJSON(parsedStatus));
         revision.setPipelineStatusJson(parsedStatus.toString());
         applicationService.updateRevision(revision);
-        return revision;
     }
 
     @GetMapping("/{revision-resource-id}/pipeline/stop")
@@ -284,31 +297,5 @@ public class RevisionController {
         ApplicationDetailsDto applicationDetailsDto = applicationService.extractApplicationByRevisionId(revision);
         return KubernetesUtility.getPodLogs(StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig()),
                 applicationDetailsDto.getDevKubernetesNamespace(), podName, containerName, tailLines);
-    }
-
-    private String getCommitIdFromJSON(JSONObject parsedStatus) {
-        JSONArray tasks = parsedStatus.getJSONArray("tasks");
-        for (Object oTask : tasks) {
-            JSONObject task = (JSONObject) oTask;
-            if ("fetch-source-code".equalsIgnoreCase(task.getString("baseName"))) {
-                return task.getString("commitId");
-            }
-        }
-        return null;
-    }
-
-    private String parsePipelineStatusFromJSON(JSONObject parsedStatus) {
-        String statusPipeline = parsedStatus.getString("status");
-        String statusReasonPipeline = parsedStatus.getString("reason");
-        if (statusPipeline.equalsIgnoreCase("True")) {
-            return "SUCCESS";
-        } else if (statusPipeline.equalsIgnoreCase("Unknown")
-                || statusReasonPipeline.equalsIgnoreCase("Running")) {
-            return "IN PROGRESS";
-        } else if (statusPipeline.equalsIgnoreCase("False")) {
-            return "FAILED";
-        } else {
-            return "UNKNOWN";
-        }
     }
 }
