@@ -1,10 +1,13 @@
 package org.zigmoi.ketchup.application.controllers;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import io.kubernetes.client.openapi.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
+import org.zigmoi.ketchup.application.dtos.ApplicationResponseDto;
+import org.zigmoi.ketchup.application.dtos.RevisionResponseDto;
 import org.zigmoi.ketchup.application.entities.ApplicationId;
 import org.zigmoi.ketchup.application.entities.Revision;
 import org.zigmoi.ketchup.application.entities.RevisionId;
@@ -67,11 +72,37 @@ public class RevisionController {
 
     @GetMapping("/{revision-resource-id}")
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public Revision getRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+    public RevisionResponseDto getRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
                                 @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
                                 @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) {
         RevisionId revisionId = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
-        return applicationService.findRevisionById(revisionId);
+        Revision revision = applicationService.findRevisionById(revisionId);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        RevisionResponseDto revisionResponseDto = null;
+        try {
+            revisionResponseDto = objectMapper.readValue(revision.getApplicationDataJson(), RevisionResponseDto.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        revisionResponseDto.setRevisionId(revision.getId());
+        revisionResponseDto.setVersion(revision.getVersion());
+        revisionResponseDto.setStatus(revision.getStatus());
+        revisionResponseDto.setDeploymentTriggerType(revision.getDeploymentTriggerType());
+        revisionResponseDto.setErrorMessage(revision.getErrorMessage());
+        revisionResponseDto.setCommitId(revision.getCommitId());
+        revisionResponseDto.setHelmChartId(revision.getHelmChartId());
+        revisionResponseDto.setHelmReleaseId(revision.getHelmReleaseId());
+        revisionResponseDto.setHelmReleaseVersion(revision.getHelmReleaseVersion());
+        revisionResponseDto.setRollback(revision.isRollback());
+        revisionResponseDto.setOriginalRevisionVersionId(revision.getOriginalRevisionVersionId());
+        revisionResponseDto.setCreatedBy(revision.getCreatedBy());
+        revisionResponseDto.setCreatedOn(revision.getCreatedOn());
+        revisionResponseDto.setLastUpdatedBy(revision.getLastUpdatedBy());
+        revisionResponseDto.setLastUpdatedOn(revision.getLastUpdatedOn());
+        return revisionResponseDto;
     }
 
     @GetMapping
