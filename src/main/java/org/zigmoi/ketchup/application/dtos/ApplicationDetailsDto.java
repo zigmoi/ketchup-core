@@ -27,13 +27,14 @@ public class ApplicationDetailsDto {
     private String containerRegistryPassword;
     private String containerRepositoryName;
     private String containerImageName;
-    private String buildTool;
+    private String buildTool; // buildToolType is from settings which build tool this setting is for, whereas buildTool is selected in create application.
     private String buildToolType;
     private String buildToolSettingsData;
     private String baseBuildPath;
     private String buildToolSettingId;
     private String deploymentPipelineType;
     private String devKubernetesClusterSettingId;
+    private String devKubernetesBaseAddress;
     private String devKubeconfig;
     private String devKubernetesNamespace;
     private String prodKubernetesClusterSettingId;

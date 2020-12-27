@@ -27,6 +27,7 @@ public class ApplicationResponseDto {
     private String buildToolSettingId;
     private String deploymentPipelineType;
     private String devKubernetesClusterSettingId;
+    private String devKubernetesBaseAddress;
     private String devKubernetesNamespace;
     private String prodKubernetesClusterSettingId;
     private String prodKubernetesNamespace;

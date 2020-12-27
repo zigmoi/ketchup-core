@@ -1,7 +1,6 @@
 package org.zigmoi.ketchup.application.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Deployment;
@@ -48,7 +47,6 @@ import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.services.TenantProviderService;
 import org.zigmoi.ketchup.project.services.PermissionUtilsService;
 import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationResponseDto;
 import org.zigmoi.ketchup.application.entities.*;
 import org.zigmoi.ketchup.application.repositories.ApplicationRepository;
 import org.zigmoi.ketchup.application.repositories.PipelineArtifactRepository;
@@ -1314,9 +1312,18 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             //get all setting values and store it in application.
             final KubernetesClusterSettingsResponseDto devKubernetesCluster = settingService.getKubernetesCluster(projectResourceId, applicationRequestDto.getDevKubernetesClusterSettingId());
             final ContainerRegistrySettingsResponseDto containerRegistry = settingService.getContainerRegistry(projectResourceId, applicationRequestDto.getContainerRegistrySettingId());
-            //save settings for host alias settings
+            //TODO save settings for host alias settings
+
+            //TODO parse and store prod cluster base address.
+            String devKubernetesBaseAddress = "";
+            try {
+                devKubernetesBaseAddress = KubernetesUtility.getClusterIP(StringUtility.decodeBase64(devKubernetesCluster.getKubeconfig()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
             applicationJson.put("devKubeconfig", devKubernetesCluster.getKubeconfig());
+            applicationJson.put("devKubernetesBaseAddress", devKubernetesBaseAddress);
             applicationJson.put("containerRegistryType", containerRegistry.getType());
             applicationJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
             applicationJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
@@ -1343,7 +1350,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#applicationId.projectResourceId)")
     public ApplicationDetailsDto getApplication(ApplicationId applicationId) {
-        Application application = applicationRepository.getByApplicationResourceId(applicationId.getApplicationResourceId());
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found."));
         ObjectMapper objectMapper = new ObjectMapper();
         ApplicationDetailsDto applicationDetailsDto = null;
         try {
@@ -1357,19 +1365,11 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#applicationId.projectResourceId)")
-    public ApplicationResponseDto getApplicationDetails(ApplicationId applicationId) {
-        Application application = applicationRepository.getByApplicationResourceId(applicationId.getApplicationResourceId());
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ApplicationResponseDto applicationResponseDto = null;
-        try {
-            applicationResponseDto = objectMapper.readValue(application.getData(), ApplicationResponseDto.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public DeploymentStatus getLiveStatusForApplication(ApplicationId applicationId) {
         ApplicationDetailsDto applicationDetailsDto = getApplication(applicationId);
         String kubeConfig = StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig());
         String namespace = applicationDetailsDto.getDevKubernetesNamespace();
+        DeploymentStatus deploymentStatus = null;
         try {
             V1DeploymentList deployments = KubernetesUtility.getDeploymentStatus(kubeConfig, namespace,
                     "app-" + applicationId.getApplicationResourceId());
@@ -1377,16 +1377,15 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                 //TODO handle empty deployment list.
             } else {
                 V1Deployment deployment = deployments.getItems().get(0);
-                DeploymentStatus deploymentStatus = KubernetesUtility.getDeploymentStatusDetails(deployment);
+                deploymentStatus = KubernetesUtility.getDeploymentStatusDetails(deployment);
                 System.out.println("Parsed deployment status: " + deploymentStatus);
-                applicationResponseDto.setDeploymentStatus(deploymentStatus);
             }
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ApiException e) {
             e.printStackTrace();
         }
-        return applicationResponseDto;
+        return deploymentStatus;
     }
 
     @Override
@@ -1402,10 +1401,10 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     @Override
     @Transactional
-    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#projectResourceId)")
-    public void updateApplication(String projectResourceId, String applicationResourceId, ApplicationRequestDto applicationRequestDto) {
-        Application application = applicationRepository.getByApplicationResourceId(applicationResourceId);
-        ApplicationId applicationId = application.getId();
+    @PreAuthorize("@permissionUtilsService.canPrincipalUpdateApplication(#applicationId.projectResourceId)")
+    public void updateApplication(ApplicationId applicationId, ApplicationRequestDto applicationRequestDto) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found."));
         application.setDisplayName(applicationRequestDto.getDisplayName());
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -1414,11 +1413,20 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             applicationJson.put("applicationId", applicationIdJson);
 
             //get all setting values and store it in application.
-            final KubernetesClusterSettingsResponseDto devKubernetesCluster = settingService.getKubernetesCluster(projectResourceId, applicationRequestDto.getDevKubernetesClusterSettingId());
-            final ContainerRegistrySettingsResponseDto containerRegistry = settingService.getContainerRegistry(projectResourceId, applicationRequestDto.getContainerRegistrySettingId());
-            //save settings for host alias settings
+            final KubernetesClusterSettingsResponseDto devKubernetesCluster = settingService.getKubernetesCluster(applicationId.getProjectResourceId(), applicationRequestDto.getDevKubernetesClusterSettingId());
+            final ContainerRegistrySettingsResponseDto containerRegistry = settingService.getContainerRegistry(applicationId.getProjectResourceId(), applicationRequestDto.getContainerRegistrySettingId());
+            //TODO save settings for host alias settings
+
+            //TODO parse and store prod cluster base address.
+            String devKubernetesBaseAddress = "";
+            try {
+                devKubernetesBaseAddress = KubernetesUtility.getClusterIP(StringUtility.decodeBase64(devKubernetesCluster.getKubeconfig()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
             applicationJson.put("devKubeconfig", devKubernetesCluster.getKubeconfig());
+            applicationJson.put("devKubernetesBaseAddress", devKubernetesBaseAddress);
             applicationJson.put("containerRegistryType", containerRegistry.getType());
             applicationJson.put("containerRegistryUrl", containerRegistry.getRegistryUrl());
             applicationJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
@@ -1427,8 +1435,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
             String buildToolSettingId = applicationRequestDto.getBuildToolSettingId();
             if (buildToolSettingId != null && buildToolSettingId != "") {
-                final BuildToolSettingsResponseDto buildTool = settingService.getBuildTool(projectResourceId, applicationRequestDto.getBuildToolSettingId());
-                applicationJson.put("buildToolType", buildTool.getType());
+                final BuildToolSettingsResponseDto buildTool = settingService.getBuildTool(applicationId.getProjectResourceId(), applicationRequestDto.getBuildToolSettingId());
+                applicationJson.put("buildToolType", buildTool.getType()); // buildToolType is from settings which build tool this setting is for, whereas buildTool is selected in create application.
                 applicationJson.put("buildToolSettingsData", buildTool.getFileData());
             }
 

@@ -3,7 +3,7 @@ package org.zigmoi.ketchup.application.services;
 import org.springframework.validation.annotation.Validated;
 import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
 import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationResponseDto;
+import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
 import org.zigmoi.ketchup.application.entities.*;
 import org.zigmoi.ketchup.common.validations.ValidProjectId;
 import org.zigmoi.ketchup.common.validations.ValidResourceId;
@@ -67,11 +67,11 @@ public interface ApplicationService {
 
     ApplicationDetailsDto getApplication(@Valid ApplicationId applicationId);
 
-    ApplicationResponseDto getApplicationDetails(@Valid ApplicationId applicationId);
+    DeploymentStatus getLiveStatusForApplication(@Valid ApplicationId applicationId);
 
     List<Application> listAllApplicationsInProject(@ValidProjectId String projectResourceId);
 
-    void updateApplication(@ValidProjectId String projectResourceId, @ValidResourceId String applicationResourceId, @Valid ApplicationRequestDto applicationRequestDto);
+    void updateApplication(@Valid ApplicationId applicationId, @Valid ApplicationRequestDto applicationRequestDto);
 
     Map<String, Long> getDashboardDataForProject(@ValidProjectId String projectResourceId);
 }

@@ -316,6 +316,11 @@ public class KubernetesUtility {
         factory.startAllRegisteredInformers();
     }
 
+    public static String getClusterIP(String kubeConfig) throws IOException {
+        ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
+        return client.getBasePath();
+    }
+
     public static JSONObject getPipelineRunStatus(String kubeConfig, String namespace, String pipelineRunName) throws IOException, ApiException {
         ApiClient client = Config.fromConfig(IOUtils.toInputStream(kubeConfig, Charset.defaultCharset()));
         Configuration.setDefaultApiClient(client);

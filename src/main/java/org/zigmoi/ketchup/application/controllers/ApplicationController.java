@@ -3,6 +3,7 @@ package org.zigmoi.ketchup.application.controllers;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1PodList;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
 import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
 import org.zigmoi.ketchup.application.dtos.ApplicationResponseDto;
+import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
 import org.zigmoi.ketchup.application.entities.Application;
 import org.zigmoi.ketchup.application.entities.ApplicationId;
 import org.zigmoi.ketchup.application.entities.Revision;
@@ -30,10 +32,7 @@ import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 import javax.validation.constraints.NotBlank;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -68,9 +67,17 @@ public class ApplicationController {
     @GetMapping("/{application-resource-id}")
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public ApplicationResponseDto getApplication(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
-                                                 @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
+                                                 @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
+                                                 @RequestParam(name = "live-status", required = false, defaultValue = "false") boolean liveStatus) {
         ApplicationId id = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
-        return applicationService.getApplicationDetails(id);
+        ApplicationDetailsDto application = applicationService.getApplication(id);
+        ModelMapper modelMapper = new ModelMapper();
+        ApplicationResponseDto response = modelMapper.map(application, ApplicationResponseDto.class);
+        if (liveStatus) {
+            DeploymentStatus status = applicationService.getLiveStatusForApplication(id);
+            response.setDeploymentStatus(status);
+        }
+        return response;
     }
 
     @PutMapping("/{application-resource-id}")
@@ -83,7 +90,8 @@ public class ApplicationController {
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(violations);
         }
-        applicationService.updateApplication(projectResourceId, applicationResourceId, applicationRequestDto);
+        ApplicationId id = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
+        applicationService.updateApplication(id, applicationRequestDto);
     }
 
     @DeleteMapping("/{application-resource-id}")
@@ -131,7 +139,7 @@ public class ApplicationController {
     @GetMapping("/{application-resource-id}/last-successful-revision")
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public Revision getLastSuccessfulRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
-                                       @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
+                                              @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
         return applicationService.getLastSuccessfulRevision(applicationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Last successful revision not found."));
