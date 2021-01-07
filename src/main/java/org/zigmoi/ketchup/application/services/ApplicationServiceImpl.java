@@ -134,10 +134,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                     KubernetesUtility.updateConfigmapUsingYamlContent("config-defaults",
                             getNamespaceForTektonPipeline(applicationDetailsDto.getDevKubernetesClusterSettingId()), templatedContent, kubeConfig);
                 }
-            } catch (IOException e) {
-                throw new UnexpectedException(e.getMessage(), e);
             }
-
             tektonConfigAppliedToKubernetesCluster.put(applicationDetailsDto.getDevKubernetesClusterSettingId(), true);
         }
     }
@@ -160,6 +157,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         r.setVersion(revisionVersion);
         r.setRollback(false);
         r.setDeploymentTriggerType(trigger);
+//        r.setStatus("ACCEPTED");
 
         if (DeploymentTriggerType.GIT_WEBHOOK.toString().equalsIgnoreCase(trigger)) {
             if (StringUtility.isNullOrEmpty(commitId)) {
@@ -180,9 +178,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             r.setApplicationDataJson(objectMapper.writeValueAsString(applicationDetailsDto));
-        } catch (
-                JsonProcessingException e) {
-            e.printStackTrace();
+        } catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to parse application details.");
         }
 
         //generate pipeline all resources and save them, name can be parsed from them directly.
@@ -199,12 +196,20 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
         String kubeConfig = StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig());
 
-        queueAndDeployPipelineResources(pipelineArtifacts, kubeConfig, applicationDetailsDto, r);
         try {
-            KubernetesUtility.startDeploymentInformer(kubeConfig);
-        } catch (IOException e) {
-            logger.error("Failed to start informers.");
+            queueAndDeployPipelineResources(pipelineArtifacts, kubeConfig, applicationDetailsDto, r);
+        } catch (ApiException | IOException e) {
+            logger.error("Failed to deploy resources in cluster, ", e);
+            r.setStatus("FAILED");
+            r.setErrorMessage("Failed to deploy resources in cluster.");
+            revisionRepository.saveAndFlush(r);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to deploy application.");
         }
+//        try {
+//            KubernetesUtility.startDeploymentInformer(kubeConfig);
+//        } catch (IOException e) {
+//            logger.error("Failed to start informers.");
+//        }
         return revisionResourceId;
     }
 
@@ -215,7 +220,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     }
 
     private void queueAndDeployPipelineResources(List<PipelineArtifact> pipelineArtifacts, String kubeConfig,
-                                                 ApplicationDetailsDto applicationDetailsDto, Revision r) {
+                                                 ApplicationDetailsDto applicationDetailsDto, Revision r) throws IOException, ApiException {
         deployPipelineResources(pipelineArtifacts, kubeConfig, applicationDetailsDto, r);
     }
 
@@ -230,7 +235,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         Revision revision = revisionRepository.findById(revisionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         String.format("Revision with id %s not found.", revisionId.getRevisionResourceId())));
-        if(!"SUCCESS".equalsIgnoreCase(revision.getStatus())){
+        if (!"SUCCESS".equalsIgnoreCase(revision.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rollback is only supported for versions which were successfully deployed.");
         }
         ApplicationId applicationId = new ApplicationId(revisionId.getTenantId(), revisionId.getProjectResourceId(), revisionId.getApplicationResourceId());
@@ -459,94 +464,54 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                                 String.format("Pipeline Resource with id %s not found.", pipelineArtifactId.getPipelineArtifactResourceId())));
     }
 
-    private void deployPipelineResources(List<PipelineArtifact> pipelineArtifacts, String kubeConfig, ApplicationDetailsDto applicationDetailsDto, Revision revision) {
-        try {
+    private void deployPipelineResources(List<PipelineArtifact> pipelineArtifacts, String kubeConfig, ApplicationDetailsDto applicationDetailsDto, Revision revision) throws IOException, ApiException {
+            //cloud event config map.
             checkAndApplyTektonCloudEventURL(applicationDetailsDto, revision, kubeConfig);
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-        }
-        String namespace = applicationDetailsDto.getDevKubernetesNamespace();
-        pipelineArtifacts.stream()
-                .filter(r -> "pipeline-pvc".equalsIgnoreCase(r.getResourceType()))
-                .forEach(pipelineArtifact -> {
-                    try {
-                        KubernetesUtility.createPvcUsingYamlContent(pipelineArtifact.getResourceContent(), namespace, "false", kubeConfig);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (ApiException e) {
-                        e.printStackTrace();
-                    }
-                });
 
-        pipelineArtifacts.stream()
-                .filter(r -> "secret".equalsIgnoreCase(r.getResourceType()))
-                .forEach(secret -> {
-                    try {
-                        KubernetesUtility.createSecretUsingYamlContent(secret.getResourceContent(), namespace, "false", kubeConfig);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (ApiException e) {
-                        e.printStackTrace();
-                    }
-                });
+            String namespace = applicationDetailsDto.getDevKubernetesNamespace();
+            for (PipelineArtifact pipelineArtifact : pipelineArtifacts) {
+                if ("pipeline-pvc".equalsIgnoreCase(pipelineArtifact.getResourceType())) {
+                    KubernetesUtility.createPvcUsingYamlContent(pipelineArtifact.getResourceContent(), namespace, "false", kubeConfig);
+                }
+            }
 
-        //check service-account is not more than one.
-        pipelineArtifacts.stream()
-                .filter(r -> "service-account".equalsIgnoreCase(r.getResourceType()))
-                .forEach(serviceAccount -> {
-                    try {
-                        KubernetesUtility.createServiceAccountUsingYamlContent(serviceAccount.getResourceContent(), namespace, "false", kubeConfig);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (ApiException e) {
-                        e.printStackTrace();
-                    }
-                });
+            for (PipelineArtifact secret : pipelineArtifacts) {
+                if ("secret".equalsIgnoreCase(secret.getResourceType())) {
+                    KubernetesUtility.createSecretUsingYamlContent(secret.getResourceContent(), namespace, "false", kubeConfig);
+                }
+            }
 
-        pipelineArtifacts.stream()
-                .filter(r -> "configmap".equalsIgnoreCase(r.getResourceType()))
-                .forEach(pipelineResource -> {
-                    try {
-                        KubernetesUtility.createConfigmapUsingYamlContent(pipelineResource.getResourceContent(), namespace, "false", kubeConfig);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (ApiException e) {
-                        e.printStackTrace();
-                    }
-                });
+            //check service-account is not more than one.
+            for (PipelineArtifact serviceAccount : pipelineArtifacts) {
+                if ("service-account".equalsIgnoreCase(serviceAccount.getResourceType())) {
+                    KubernetesUtility.createServiceAccountUsingYamlContent(serviceAccount.getResourceContent(), namespace, "false", kubeConfig);
+                }
+            }
 
-        pipelineArtifacts.stream()
-                .filter(r -> "task".equalsIgnoreCase(r.getResourceType()))
-                .forEach(task -> {
-                    try {
-                        KubernetesUtility.createCRDUsingYamlContent(task.getResourceContent(), namespace, "tekton.dev", "v1beta1", "tasks", "false", kubeConfig);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (ApiException e) {
-                        e.printStackTrace();
-                    }
-                });
+            for (PipelineArtifact pipelineResource : pipelineArtifacts) {
+                if ("configmap".equalsIgnoreCase(pipelineResource.getResourceType())) {
+                    KubernetesUtility.createConfigmapUsingYamlContent(pipelineResource.getResourceContent(), namespace, "false", kubeConfig);
+                }
+            }
 
-        pipelineArtifacts.stream()
-                .filter(r -> "pipeline".equalsIgnoreCase(r.getResourceType()))
-                .forEach(pipeline -> {
-                    try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipeline.getResourceContent(), namespace, "tekton.dev", "v1beta1", "pipelines", "false", kubeConfig);
-                    } catch (IOException | ApiException e) {
-                        e.printStackTrace();
-                    }
-                });
+            for (PipelineArtifact task : pipelineArtifacts) {
+                if ("task".equalsIgnoreCase(task.getResourceType())) {
+                    KubernetesUtility.createCRDUsingYamlContent(task.getResourceContent(), namespace, "tekton.dev", "v1beta1", "tasks", "false", kubeConfig);
+                }
+            }
 
-        //check pipeline-run is not more than one.
-        pipelineArtifacts.stream()
-                .filter(r -> "pipeline-run".equalsIgnoreCase(r.getResourceType()))
-                .forEach(pipelineRun -> {
-                    try {
-                        KubernetesUtility.createCRDUsingYamlContent(pipelineRun.getResourceContent(), namespace, "tekton.dev", "v1beta1", "pipelineruns", "false", kubeConfig);
-                    } catch (IOException | ApiException e) {
-                        e.printStackTrace();
-                    }
-                });
+            for (PipelineArtifact pipeline : pipelineArtifacts) {
+                if ("pipeline".equalsIgnoreCase(pipeline.getResourceType())) {
+                    KubernetesUtility.createCRDUsingYamlContent(pipeline.getResourceContent(), namespace, "tekton.dev", "v1beta1", "pipelines", "false", kubeConfig);
+                }
+            }
+
+            //check pipeline-run is not more than one.
+            for (PipelineArtifact r : pipelineArtifacts) {
+                if ("pipeline-run".equalsIgnoreCase(r.getResourceType())) {
+                    KubernetesUtility.createCRDUsingYamlContent(r.getResourceContent(), namespace, "tekton.dev", "v1beta1", "pipelineruns", "false", kubeConfig);
+                }
+            }
     }
 
     private String buildTektonCloudEventSinkURL(Revision revision) {
@@ -870,6 +835,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         try {
             String content = getPipelineTemplateContent(baseResourcePath.concat("pipeline-run.yaml"));
             String templatedContent = getTemplatedPipelineResource(content, pipelineTemplatingVariables);
+            System.out.println(templatedContent);
             tknPipelineRun.setResourceContent(templatedContent);
             resources.add(tknPipelineRun);
         } catch (IOException e) {
@@ -944,6 +910,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         //makisu values config map
         args.put("makisuValuesSecretName", "secret-makisu-values-".concat(revisionResourceId));
         args.put("makisuValuesYaml", getMakisuRegistryConfig(applicationDetailsDto));
+        args.put("redisUrl", applicationDetailsDto.getContainerRegistryRedisUrl());
+        args.put("redisPassword", applicationDetailsDto.getContainerRegistryRedisPassword());
 
 
         //task git
@@ -979,7 +947,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
         //pipeline run
         args.put("pipelineRunName", "pipeline-run-".concat(revisionResourceId));
-        //also has "serviceAccountName", "pipelineName", "gitResourceName", "pipelinePvcName" which are already added.
+        //also has "serviceAccountName", "pipelineName", "gitResourceName", "pipelinePvcName", "redisUrl", "redisPassword"  which are already added.
 
         if (APP_TYPE_WEB_APPLICATION.equals(applicationDetailsDto.getApplicationType())) {
             if (BUILD_TOOL_MAVEN_3.equals(applicationDetailsDto.getBuildTool())) {
@@ -1043,7 +1011,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         containerRegistryValues.put("repository", getImageTagName(applicationDetailsDto, revisionVersion));
 
         LinkedHashMap<String, Object> serviceValues = new LinkedHashMap<>();
-        serviceValues.put("type", "ClusterIP");
+        serviceValues.put("type", applicationDetailsDto.getServiceType());
         serviceValues.put("port", Long.valueOf(applicationDetailsDto.getAppServerPort()));
 
         LinkedHashMap<String, Object> helmConfigValues = new LinkedHashMap<>();
@@ -1329,6 +1297,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             applicationJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
             applicationJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
             applicationJson.put("containerRepositoryName", containerRegistry.getRepository());
+            applicationJson.put("containerRegistryRedisUrl", containerRegistry.getRedisUrl());
+            applicationJson.put("containerRegistryRedisPassword", containerRegistry.getRedisPassword());
 
             String buildToolSettingId = applicationRequestDto.getBuildToolSettingId();
             if (buildToolSettingId != null && buildToolSettingId != "") {
@@ -1405,8 +1375,22 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     public void updateApplication(ApplicationId applicationId, ApplicationRequestDto applicationRequestDto) {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found."));
-        application.setDisplayName(applicationRequestDto.getDisplayName());
+
         ObjectMapper objectMapper = new ObjectMapper();
+        ApplicationDetailsDto applicationDetailsDto = null;
+        try {
+            applicationDetailsDto = objectMapper.readValue(application.getData(), ApplicationDetailsDto.class);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to parse application details.");
+        }
+
+        if(applicationDetailsDto.getServiceType().equalsIgnoreCase("NodePort")
+                && !applicationRequestDto.getServiceType().equalsIgnoreCase("NodePort")){
+           throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot update NodePort service to other types.");
+        }
+
+        application.setDisplayName(applicationRequestDto.getDisplayName());
+//        ObjectMapper objectMapper = new ObjectMapper();
         try {
             JSONObject applicationJson = new JSONObject(objectMapper.writeValueAsString(applicationRequestDto));
             JSONObject applicationIdJson = new JSONObject(objectMapper.writeValueAsString(applicationId));
@@ -1432,6 +1416,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             applicationJson.put("containerRegistryUsername", containerRegistry.getRegistryUsername());
             applicationJson.put("containerRegistryPassword", containerRegistry.getRegistryPassword());
             applicationJson.put("containerRepositoryName", containerRegistry.getRepository());
+            applicationJson.put("containerRegistryRedisUrl", containerRegistry.getRedisUrl());
+            applicationJson.put("containerRegistryRedisPassword", containerRegistry.getRedisPassword());
 
             String buildToolSettingId = applicationRequestDto.getBuildToolSettingId();
             if (buildToolSettingId != null && buildToolSettingId != "") {

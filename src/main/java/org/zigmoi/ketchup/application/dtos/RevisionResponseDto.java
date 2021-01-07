@@ -37,6 +37,7 @@ public class RevisionResponseDto {
     private String originalRevisionVersionId;
     private String applicationType;
     private String serviceName;
+    private String serviceType;
     private String appServerPort;
     private String replicas;
     private String deploymentStrategy;
@@ -53,6 +54,8 @@ public class RevisionResponseDto {
     private String containerRegistryUsername;
     private String containerRegistryPassword;
     private String containerRepositoryName;
+    private String containerRegistryRedisUrl;
+    private String containerRegistryRedisPassword;
     private String containerImageName;
     private String buildTool; // buildToolType is from settings which build tool this setting is for, whereas buildTool is selected in create application.
     private String buildToolType;

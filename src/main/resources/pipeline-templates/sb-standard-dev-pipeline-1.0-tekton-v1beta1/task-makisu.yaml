@@ -24,10 +24,10 @@ spec:
     default: .
   - name: MAKISU_CACHE_REDIS_ADDR
     description: Address for redis cache to use for makisu image id kv pairs.
-    default: redis-1583955302-master.default.svc.cluster.local:6379
+    default: my-release-redis-master.default.svc.cluster.local:6379
   - name: MAKISU_CACHE_REDIS_PASSWORD
     description: makisu cache redis password.
-    default: egQHM4ogxM
+    default: 7s5toBWAzh
 
   steps:
   - name: build-and-push

@@ -158,6 +158,16 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         settingsDto.setRegistryUsername(jo.getString("registryUsername"));
         settingsDto.setRegistryUrl(jo.getString("registryUrl"));
         settingsDto.setRepository(jo.getString("repository"));
+        if(jo.has("redisUrl")){
+            settingsDto.setRedisUrl(jo.getString("redisUrl"));
+        }else{
+            settingsDto.setRedisUrl("");
+        }
+        if(jo.has("redisPassword")){
+            settingsDto.setRedisPassword(jo.getString("redisPassword"));
+        }else{
+            settingsDto.setRedisPassword("");
+        }
     }
 
     private void convertToEntity(ContainerRegistrySettingsRequestDto settingsDto, Setting settingsEntity) {
@@ -167,6 +177,8 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         jo.put("registryUsername", settingsDto.getRegistryUsername());
         jo.put("registryUrl", settingsDto.getRegistryUrl());
         jo.put("repository", settingsDto.getRepository());
+        jo.put("redisUrl", settingsDto.getRedisUrl());
+        jo.put("redisPassword", settingsDto.getRedisPassword());
         settingsEntity.setData(jo.toString());
     }
     // container-registry api impl ends

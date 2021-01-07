@@ -21,4 +21,7 @@ public class ContainerRegistrySettingsResponseDto {
     private String registryUsername;
     private String registryPassword;
 
+    private String redisUrl;
+    private String redisPassword;
+
 }

@@ -10,6 +10,7 @@ public class ApplicationResponseDto {
     private String description;
     private String applicationType;
     private String serviceName;
+    private String serviceType;
     private String appServerPort;
     private String replicas;
     private String deploymentStrategy;

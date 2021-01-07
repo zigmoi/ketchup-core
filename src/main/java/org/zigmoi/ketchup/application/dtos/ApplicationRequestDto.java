@@ -25,6 +25,10 @@ public class ApplicationRequestDto {
     private String serviceName;
 
     @NotBlank
+    @Pattern(regexp = "ClusterIP|NodePort")
+    private String serviceType;
+
+    @NotBlank
     @Range(min = 1, max = 65535)
     private String appServerPort;
 

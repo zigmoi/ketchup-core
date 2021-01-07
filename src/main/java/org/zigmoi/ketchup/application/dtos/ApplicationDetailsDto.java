@@ -9,6 +9,7 @@ public class ApplicationDetailsDto {
     private String displayName;
     private String description;
     private String serviceName;
+    private String serviceType;
     private String appServerPort;
     private String applicationType;
     private String replicas;
@@ -26,6 +27,8 @@ public class ApplicationDetailsDto {
     private String containerRegistryUsername;
     private String containerRegistryPassword;
     private String containerRepositoryName;
+    private String containerRegistryRedisUrl;
+    private String containerRegistryRedisPassword;
     private String containerImageName;
     private String buildTool; // buildToolType is from settings which build tool this setting is for, whereas buildTool is selected in create application.
     private String buildToolType;
