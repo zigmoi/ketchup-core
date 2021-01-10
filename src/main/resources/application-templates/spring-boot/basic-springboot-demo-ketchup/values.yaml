@@ -1,0 +1,58 @@
+# Default values for basic-springboot-demo-ketchup.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+applicationRevisionId: v1
+replicaCount: 1
+deploymentStrategy: RollingUpdate
+
+image:
+  repository: image-address
+  pullPolicy: Always
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP #this is not accessible outside cluster.
+  port: 8080 # port on which service will serve request
+  #targetPort if not specified is same as port.
+  #nodePort (use any node-ip:node-port combination to access service from outside.)
+  #nodePort if not specified will be automatically picked.
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

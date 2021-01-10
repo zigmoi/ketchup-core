@@ -1,0 +1,23 @@
+To create and run a pipeline: (No task runs are applied in this.)
+cd standard-tkn-pipeline1
+kubectl apply -f task-helm.yaml
+kubectl apply -f task-makisu.yaml
+kubectl apply -f resource.yaml
+kubectl apply -f service-account.yaml
+kubectl apply -f secrets.yaml
+kubectl apply -f pipeline.yaml
+
+Should be executed at last:
+kubectl apply -f pipeline-run.yaml
+
+
+to delete:
+kubectl delete -f ../standard-tkn-pipeline1
+
+to check releases:
+helm list
+
+to delete releases:
+helm delete ketchup-sb-demo
+helm delete ketchup-sb-demo1
+

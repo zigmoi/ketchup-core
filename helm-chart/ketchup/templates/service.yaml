@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ketchup.fullname" . }}
+  labels:
+    {{- include "ketchup.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }} #targetPort will same as port and nodePort will be automatically picked.
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "ketchup.selectorLabels" . | nindent 4 }}

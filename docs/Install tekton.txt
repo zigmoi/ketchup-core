@@ -1,0 +1,33 @@
+Install tekton:
+
+disable firewall: (as root)
+systemctl disable firewalld
+systemctl status firewalld
+
+install tekton:
+kubectl apply -f https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
+
+check pods:
+kubectl get pods --namespace tekton-pipelines
+
+install dashboard:
+kubectl apply --filename https://github.com/tektoncd/dashboard/releases/download/v0.5.3/tekton-dashboard-release.yaml
+
+check pods:
+kubectl get pods --namespace tekton-pipelines
+
+install socat: (for port forwarding)
+sudo yum install socat
+
+port forward for public access to tekton dashboard.
+kubectl --namespace tekton-pipelines port-forward svc/tekton-dashboard 9097:9097 --address 0.0.0.0
+
+
+DOWNLOAD_URL=$(curl -Ls "https://api.github.com/repos/kubernetes-sigs/metrics-server/releases/latest" | jq -r .tarball_url)
+DOWNLOAD_VERSION=$(grep -o '[^/v]*$' <<< $DOWNLOAD_URL)
+curl -Ls $DOWNLOAD_URL -o metrics-server-$DOWNLOAD_VERSION.tar.gz
+mkdir metrics-server-$DOWNLOAD_VERSION
+tar -xzf metrics-server-$DOWNLOAD_VERSION.tar.gz --directory metrics-server-$DOWNLOAD_VERSION --strip-components 1
+kubectl apply -f metrics-server-$DOWNLOAD_VERSION/deploy/1.8+/
+
+kubectl get deployment metrics-server -n kube-system
