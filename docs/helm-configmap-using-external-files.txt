@@ -1,0 +1,40 @@
+in helm we can pass external file outside the chart using --set-file flag in install.
+we have to define a key in value.yaml for this file and we can set this key using --set-file flag.
+directly using .asconfig and .assecret didnt work, may be it can work on helm datatype file
+which is generated using helper functions .Files.Glob and .Files.Get these do not work on external files
+and can be used to read file present in the chart directory.
+application.properties can used to create configmap and it wont break values.yaml
+if used as a file rather than string.
+also it wont break kubernetes configmap.yaml if files is properly indented.
+
+ex: we need to pass a file /users/neo/application.properties in helm to create a configmap.
+we can define a variable in values.yaml to hold this file.
+variable can be left empty here and its value will be passed when running helm install using --set-file flag.
+we cannot pass path to this file and try reading it, it didnt work.
+
+values.yaml
+---------------
+configFile:
+
+make sure the indentation and use {{- is proper without {{- it was not working.
+configmap-template.yaml
+---------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ketchup.fullname" . }}
+  labels:
+    {{- include "ketchup.labels" . | nindent 4 }}
+data:
+  application.properties: |-
+     {{- .Values.applicationProperties | nindent 4}}
+
+considering chart name is ketchup and file location is /users/neo/application.properties.
+helm command:
+---------------
+helm install ketchup ./ketchup-0.1.0.tgz --set-file configFile=/users/neo/application.properties
+
+we can add --dry-run to set what templates are generated.
+
+we can specify volume and volumemount to put this file in pods.
+once install is done and pod starts, we can login and check if file with proper contents are present.

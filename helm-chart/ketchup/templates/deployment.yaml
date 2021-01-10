@@ -29,30 +29,28 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ .Values.image.repository }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-#          env:
-#            - name: spring.config.location
-#              value: "/app-config/application.properties"
           volumeMounts:
           - mountPath: /app-config
-            name: app-config-volume
+            name: app-config-secret-volume
+            readOnly: true
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /
+              path: /swagger-ui.html
               port: http
           readinessProbe:
             httpGet:
-              path: /
+              path: /swagger-ui.html
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-      - name: app-config-volume
-        configMap:
-          name: {{ include "ketchup.fullname" . }}
+      - name: app-config-secret-volume
+        secret:
+          secretName: {{ include "ketchup.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
