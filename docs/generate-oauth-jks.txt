@@ -1,0 +1,4 @@
+using keytool present in java installation to generate the keystore used in asymmetric signing.
+
+generate keystore:
+keytool -genkeypair -alias server-alias -keyalg RSA -keypass changeit -storepass changeit -keystore keystore.jks -dname CN=test.com -storetype PKCS12
