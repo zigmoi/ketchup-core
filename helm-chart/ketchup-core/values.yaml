@@ -1,4 +1,4 @@
-# Default values for ketchup.
+# Default values for ketchup-core.
 replicaCount: 1
 deploymentStrategy: RollingUpdate
 
@@ -29,7 +29,7 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
-  type: NodePort #this is not accessible outside cluster.
+  type: ClusterIP #this is not accessible outside cluster.
   port: 8097 # port on which service will serve request
   #targetPort if not specified is same as port.
   #nodePort (use any node-ip:node-port combination to access service from outside.)
