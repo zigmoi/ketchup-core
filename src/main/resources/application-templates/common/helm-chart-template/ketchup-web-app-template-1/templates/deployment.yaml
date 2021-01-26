@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "basic-springboot-demo-ketchup.fullname" . }}
+  name: {{ include "ketchup-web-app-template-1.fullname" . }}
   labels:
-    {{- include "basic-springboot-demo-ketchup.labels" . | nindent 4 }}
+    {{- include "ketchup-web-app-template-1.labels" . | nindent 4 }}
     applicationRevisionId: {{ .Values.applicationRevisionId }}
 spec:
   replicas: {{ .Values.replicaCount }}
@@ -11,18 +11,18 @@ spec:
     type: {{ .Values.deploymentStrategy}}
   selector:
     matchLabels:
-      {{- include "basic-springboot-demo-ketchup.selectorLabels" . | nindent 6 }}
+      {{- include "ketchup-web-app-template-1.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "basic-springboot-demo-ketchup.selectorLabels" . | nindent 8 }}
+        {{- include "ketchup-web-app-template-1.selectorLabels" . | nindent 8 }}
         applicationRevisionId: {{ .Values.applicationRevisionId }}
     spec:
     {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-      serviceAccountName: {{ include "basic-springboot-demo-ketchup.serviceAccountName" . }}
+      serviceAccountName: {{ include "ketchup-web-app-template-1.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:

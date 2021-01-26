@@ -3,7 +3,7 @@ replicaCount: 1
 deploymentStrategy: RollingUpdate
 
 image:
-  repository: ashimusmani/ketchup-core:0.1.0
+  repository: zigmoi/ketchup-core:0.1.0
   pullPolicy: Always
 
 imagePullSecrets: []

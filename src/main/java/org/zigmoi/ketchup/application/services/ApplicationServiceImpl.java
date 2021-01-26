@@ -936,7 +936,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         args.put("pipelineName", "pipeline-".concat(revisionResourceId));
         args.put("helmReleaseName", getHelmReleaseId(applicationResourceId));
         args.put("helmCommand", getHelmCommand());
-        args.put("helmChartUrl", "https://ashimusmani.github.io/helm-charts/basic-springboot-demo-ketchup-0.1.0.tgz");
+        args.put("helmChartUrl", "https://zigmoi.github.io/helm-charts/ketchup-web-app-template-1-0.1.0.tgz");
         args.put("containerRegistryUrl", applicationDetailsDto.getContainerRegistryUrl());
 
         String imageTag = getImageTagName(applicationDetailsDto, revisionVersion);
