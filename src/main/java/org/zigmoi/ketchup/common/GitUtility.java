@@ -84,7 +84,7 @@ public class GitUtility {
     }
 
     public static void main(String[] args) throws GitAPIException {
-        System.out.println(GitUtility.instance().testConnection("gitlab+deploy-token-116182", "ZAhC3nQA4qGcr1ovHCUY", "https://gitlab.com/zigmoi/ketchup/ketchup-demo-basicspringboot.git"));
+        System.out.println(GitUtility.instance().testConnection("gitlab-token", "gitlab-token-pwd", "repo-url"));
     }
 
     public Collection<Ref> lsRemote(String username, String password, String repoURL) throws GitAPIException {
