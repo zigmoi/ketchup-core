@@ -1,27 +1,28 @@
 # Ketchup Core
 Application to simplify deployment of web applications on kubernetes.
 
-#Installation:
-#Requirements:
+## Install:
+
+#### Prerequisites:
 1. Kubernetes cluster, version >= v1.16.0 and <= v1.19.0.
 2. Tekton pipelines, installed on cluster, version >= v0.19
 3. Helm CLI client, version >= 3
 4. Kubectl Client, version >= v1.16.0 and <= v1.19.0.
 5. Mysql server, version >= 5.7
 
-#Prepare Database:
+#### Prepare Database:
 1. Login into mysql and create mysql database schema to store all ketchup data.
 `create database ketchupdb;`
 2. Switch to ketchup database.
 `use ketchupdb;`
-3. Create ketchup tables with initial data.
+3. Create ketchup tables with initial [data](https://github.com/zigmoi/ketchup-core/blob/37386f41aae25d3414db435c9439eaf9271b56aa/src/main/resources/data.sql) .
 `source ketchupdb-init.sql`
-   
-#Using Helm:
+
+#### Install via Helm:
 1. Create an application.properties file in the current directory to store all ketchup configuration. 
    Sample:
 ```
-token.signing.key=213asdads@ahgsg123@aaa@$$@$$hjj
+token.signing.key=213asdads@ahgsg123@aaa@@hjj
 ketchup.base-url=http://localhost:8080/
 
 spring.jpa.hibernate.ddl-auto=none
@@ -75,11 +76,12 @@ kubectl port-forward $KETCHUP_API_SERVER_POD_NAME 8097:8097
 8. Access all API list via swagger UI in the browser using following URL.
 `http://localhost:8097/swagger-ui.html`
 
-#Ketchup UI:
+
+#### Install [Ketchup UI](https://github.com/zigmoi/ketchup-ui):
 1. Create UI configuration file config.js in current directory.
    Sample:
 ```
-window.REACT_APP_API_BASE_URL=`http://localhost:8097`;
+window.REACT_APP_API_BASE_URL="http://localhost:8097";
 ```
 2. Update window.REACT_APP_API_BASE_URL property to API server URL accessible outside kubernetes cluster.
 3. Run following helm commands to install ketchup API server:
@@ -107,8 +109,9 @@ username: admin@t1.com
 password: Pass@123
 
 
-#Develop
-#Requirements:
+## Build source.
+
+#### Prerequisites:
 1. Kubernetes cluster, version >= v1.18.0.
 2. Tekton pipelines, installed on cluster, version >= v0.19
 3. Helm CLI client, version >= 3
@@ -120,12 +123,22 @@ password: Pass@123
 9. Localtunnel, version >= 2.0.0
 10. Git, version >= 2.6.0
 
-## Clone code:
+#### Prepare Database:
+1. Login into mysql and create mysql database schema to store all ketchup data.
+   `create database ketchupdb;`
+2. Switch to ketchup database.
+   `use ketchupdb;`
+3. Create ketchup tables with initial data.
+   `source ketchupdb-init.sql`
+
+#### Compile and Run:
 1. Clone the code repo.
-   `git clone xx`
-2. Use eclipse to open the code.
-3. Update application.properties in src/main/resources folder.
+   `git clone https://github.com/zigmoi/ketchup-core.git`
+2. Update application.properties in src/main/resources folder.   
+3. Build and package jar, run following command inside the root directory of project.
+   `mvn clean install`
 4. Run application.
-5. Access using Ketchup UI or swagger UI.
-
-
+   `java -jar target/ketchup-core-0.0.1-SNAPSHOT.jar`
+5. Access all API list via swagger UI in the browser using following URL.
+   `http://localhost:8097/swagger-ui.html`
+6. (Optional) Install [Ketchup UI](https://github.com/zigmoi/ketchup-ui).
