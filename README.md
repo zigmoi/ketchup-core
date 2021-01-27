@@ -2,7 +2,7 @@
 Application to simplify deployment of web applications on kubernetes.
 * Deploy web apps to kubernetes cluster.
 * No Dockerfile file or kubernetes yaml files required.
-* Build packs for different runtimes like java, nodejs, ruby, python, golang.
+* Build packs for different runtimes like java, nodejs, ruby, python & golang.
 * Integrated Cloud Native [Tekton](https://tekton.dev/) CI/CD pipelines for application deployment.
 * Built in tasks for common operations like fetch and build source, build and store containers & deploy.
 * Faster and optimized in-cluster container builds using [Makisu](https://github.com/uber/makisu).  
@@ -68,9 +68,9 @@ spring.mvc.async.request-timeout=300000
 ```
 
 2. Update mysql details in application.properties using following properties.
-   a. spring.datasource.url
-   b. spring.datasource.username
-   c. spring.datasource.password
+   1. spring.datasource.url
+   2. spring.datasource.username
+   3. spring.datasource.password
 3. Update token.signing.key property to a random secret value.
 4. (Optional) Update Ketchup base URL (ketchup.base-url) property to a URL which can be used to access 
    ketchup application from kubernetes clusters where apps will be deployed.
