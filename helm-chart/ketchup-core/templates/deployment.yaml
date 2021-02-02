@@ -41,13 +41,13 @@ spec:
             httpGet:
               path: /swagger-ui.html
               port: {{ .Values.service.port }}
-            initialDelaySeconds: 10
+            initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /swagger-ui.html
               port: {{ .Values.service.port }}
-            initialDelaySeconds: 10
+            initialDelaySeconds: 30
             periodSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
