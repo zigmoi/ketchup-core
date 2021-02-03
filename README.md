@@ -33,7 +33,7 @@ create database ketchupdb;
 ```
 use ketchupdb;
 ```
-3. Create ketchup tables with initial [data](https://github.com/zigmoi/ketchup-core/blob/e47430513366747adfbacf633e7c5d8f0e8b985e/src/main/resources/ketchupdb-init.sql).
+3. Create ketchup tables with initial [data](https://github.com/zigmoi/ketchup-core/blob/2fe4c657da3e055245e357bc5067731853078afd/src/main/resources/ketchupdb-init.sql).
 ```
 source ketchupdb-init.sql
 ```
