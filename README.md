@@ -131,8 +131,8 @@ kubectl port-forward $KETCHUP_UI_POD_NAME 8080:80
 ```
 5. Access UI in the browser using following URL.
 `http://localhost:8080`
-6. Login using admin credentials in the demo t1.com tenant using following credentials.
-username: admin@t1.com 
+6. Login using admin credentials in the demo demo.com tenant using following credentials.
+username: admin@demo.com 
 password: Pass@123
 
 
