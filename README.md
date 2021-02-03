@@ -98,7 +98,9 @@ export KETCHUP_API_SERVER_POD_NAME=$(kubectl get pods --namespace default -l "ap
 kubectl port-forward $KETCHUP_API_SERVER_POD_NAME 8097:8097
 ```
 8. Access all API's via swagger UI in the browser using following URL.
-`http://localhost:8097/swagger-ui.html`
+```
+http://localhost:8097/swagger-ui.html
+```
 
 
 #### Install [Ketchup UI](https://github.com/zigmoi/ketchup-ui):
@@ -130,10 +132,14 @@ export KETCHUP_UI_POD_NAME=$(kubectl get pods --namespace default -l "app.kubern
 kubectl port-forward $KETCHUP_UI_POD_NAME 8080:80
 ```
 5. Access UI in the browser using following URL.
-`http://localhost:8080`
-6. Login using admin credentials in the demo demo.com tenant using following credentials.
-username: admin@demo.com 
+```
+http://localhost:8080
+```
+6. Login using admin credentials in the demo.com tenant using following credentials.
+```
+username: admin@demo.com
 password: Pass@123
+```
 
 
 ## Build source.
