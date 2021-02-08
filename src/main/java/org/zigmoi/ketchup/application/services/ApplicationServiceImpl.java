@@ -7,6 +7,7 @@ import io.kubernetes.client.openapi.models.V1Deployment;
 import io.kubernetes.client.openapi.models.V1DeploymentList;
 import org.apache.commons.collections.map.SingletonMap;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -871,7 +872,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
     public String getPipelineTemplateContent(String templatePath) throws IOException {
         Resource resource = resourceLoader.getResource(templatePath);
-        return FileUtils.readFileToString(resource.getFile(), StandardCharsets.UTF_8);
+        return IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+       // return FileUtils.readFileToString(resource.getFile(), StandardCharsets.UTF_8);
     }
 
     public Map<String, String> preparePipelineTemplatingVariables(ApplicationDetailsDto applicationDetailsDto, String revisionResourceId, String revisionVersion, String commitId) {
