@@ -107,22 +107,25 @@ kubectl port-forward $KETCHUP_API_SERVER_POD_NAME 8097:8097
 http://localhost:8097/swagger-ui.html
 ```
 
+#### Install [Ketchup UI](https://github.com/zigmoi/ketchup-ui)
 
-#### Install [Ketchup UI](https://github.com/zigmoi/ketchup-ui):
-1. Create UI configuration file config.js in the current directory. Here is sample below:
+1. Create UI configuration file config.js in the current directory. Here is sample below
 ```
 window.REACT_APP_API_BASE_URL="http://localhost:8097";
 ```
 2. Update window.REACT_APP_API_BASE_URL property to API server URL accessible outside kubernetes cluster.
-3. Run following helm commands to install ketchup API server:
-   applicationProperties variable is set to location of config.js file.
+3. Run following helm commands to install ketchup API server
+
+   applicationProperties variable is set to location of config.js file
+   
 ```
 helm repo add ketchup https://zigmoi.github.io/ketchup-helm-repo
 helm repo list
 helm repo update
 helm install ketchup-ui ketchup/ketchup-ui --set-file applicationProperties=./config.js
 ```  
-3. Check installation:
+3. Check installation
+
     1. Run the following command, it should list ketchup-ui as one of the releases.
     ```
     helm list
@@ -131,21 +134,20 @@ helm install ketchup-ui ketchup/ketchup-ui --set-file applicationProperties=./co
     ```
     kubectl get pods
     ```
-4. Run following commands to expose ketchup UI outside cluster.
+4. Run following commands to expose ketchup UI outside cluster
 ```
 export KETCHUP_UI_POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=ketchup-ui,app.kubernetes.io/instance=ketchup-ui" -o jsonpath="{.items[0].metadata.name}")
 kubectl port-forward $KETCHUP_UI_POD_NAME 8080:80
 ```
-5. Access UI in the browser using following URL.
+5. Access UI in the browser using following URL
 ```
 http://localhost:8080
 ```
-6. Login using admin credentials in the demo.com tenant using following credentials.
+6. Login using admin credentials in the demo.com tenant using following credentials
 ```
 username: admin@demo.com
 password: Pass@123
 ```
-
 
 ## Build source
 
