@@ -147,34 +147,35 @@ password: Pass@123
 ```
 
 
-## Build source.
+## Build source
 
-#### Prerequisites:
+#### Prerequisites
 1. Kubernetes cluster, version >= v1.16.0 and <= v1.19.0.
 2. [Tekton pipelines](https://tekton.dev/docs/getting-started/) installed on the cluster, version >= v0.19
 3. [Helm CLI client](https://helm.sh/docs/intro/install/), version >= 3
-4. [Kubectl Client](https://kubernetes.io/docs/tasks/tools/install-kubectl/), version >= v1.16.0 and <= v1.19.0.
-5. Mysql, version >= 5.7
+4. [Kubectl Client](https://kubernetes.io/docs/tasks/tools/install-kubectl/), version >= v1.16.0 and <= v1.19.0
+5. MySQL, version >= 5.7
 6. Java JDK, version >= 1.8
 7. Git, version >= 2.6.0
 
-#### Compile and Run:
-1. Clone the code repo.
+#### Compile and Run
+
+1. Clone the code repo
 ```
 git clone https://github.com/zigmoi/ketchup-core.git
 ```
-2. [Prepare database](#prepare-database).
-3. Update application.properties in src/main/resources folder.   
-4. Build and package jar, run following command inside the root directory of project.
+2. [Prepare database](#prepare-database)
+3. Update application.properties in src/main/resources folder
+4. Build and package jar, run following command inside the root directory of project
 ```
 mvn clean install
 ```
-5. Run application.
+5. Run application
 ```
 java -jar target/ketchup-core-0.0.1-SNAPSHOT.jar
 ```
-6. Access all API's via swagger UI in the browser using following URL.
+6. Access all API's via swagger UI in the browser using following URL
 ```
 http://localhost:8097/swagger-ui.html
 ```
-7. (Optional) Install [Ketchup UI](https://github.com/zigmoi/ketchup-ui) to work with API's via web interface.
+7. (Optional) Install [Ketchup UI](https://github.com/zigmoi/ketchup-ui) to work with API's via web interface
