@@ -1,46 +1,49 @@
 # Ketchup Core
-Application to simplify deployment of web applications on kubernetes.
-* Deploy web apps to kubernetes cluster.
-* No Dockerfile file or kubernetes yaml files required.
-* Build packs for different runtimes like java, nodejs, ruby, python & golang.
-* Integrated Cloud Native [Tekton](https://tekton.dev/) CI/CD pipelines for application deployment.
-* Built in tasks for common operations like fetch and build source, build and store containers & deploy.
-* Faster and optimized in-cluster container builds using [Makisu](https://github.com/uber/makisu).  
-* [Helm](https://helm.sh/) based deployment.
-* Git Webhook support for continuous integration.
-* Cluster level application visibility.
-* Support for application history and rollbacks.
-* Application and pipeline log streaming support.
-* Multi-tenancy and project level segregation support.
-* Built in user management and fine-grained access controls.
-* [Ketchup-UI](https://github.com/zigmoi/ketchup-ui) web based user interface for all operations. 
 
-## Install:
+Application to simplify deployment of web applications on kubernetes
+* Deploy web apps to kubernetes cluster
+* No Dockerfile file or kubernetes yaml files required
+* Build packs for different runtimes like java, nodejs, ruby, python & golang
+* Integrated Cloud Native [Tekton](https://tekton.dev/) CI/CD pipelines for application deployment
+* Built in tasks for common operations like fetch and build source, build and store containers & deploy
+* Faster and optimized in-cluster container builds using [Makisu](https://github.com/uber/makisu)
+* [Helm](https://helm.sh/) based deployment
+* Git Webhook support for continuous integration
+* Cluster level application visibility
+* Support for application history and rollbacks
+* Application and pipeline log streaming support
+* Multi-tenancy and project level segregation support
+* Built in user management and fine-grained access controls
+* [Ketchup-UI](https://github.com/zigmoi/ketchup-ui) web based user interface for all operations
 
-#### Prerequisites:
-1. Kubernetes cluster, version >= v1.16.0 and <= v1.19.0.
+## Install
+
+#### Prerequisites
+1. Kubernetes cluster, version >= v1.16.0 and <= v1.19.0
 2. [Tekton pipelines](https://tekton.dev/docs/getting-started/) installed on the cluster, version >= v0.19
 3. [Helm CLI client](https://helm.sh/docs/intro/install/), version >= 3
 4. [Kubectl Client](https://kubernetes.io/docs/tasks/tools/install-kubectl/), version >= v1.16.0 and <= v1.19.0.
-5. Mysql, version >= 5.7
+5. MySQL, version >= 5.7
 
-#### Prepare Database:
-1. Login into mysql and create mysql database schema to store all ketchup data.
+#### Prepare Database
+1. Login into mysql and create mysql database schema to store all ketchup data
 ```
 create database ketchupdb;
 ```
-2. Switch to ketchup database.
+2. Switch to ketchup database
 ```
 use ketchupdb;
 ```
-3. Create ketchup tables with initial [data](https://github.com/zigmoi/ketchup-core/blob/2fe4c657da3e055245e357bc5067731853078afd/src/main/resources/ketchupdb-init.sql).
+3. Create ketchup tables with initial [data](https://github.com/zigmoi/ketchup-core/blob/2fe4c657da3e055245e357bc5067731853078afd/src/main/resources/ketchupdb-init.sql)
 ```
 source ketchupdb-init.sql
 ```
 
-#### Install via Helm:
-1. Create an application.properties file in the current directory to store all ketchup configuration. 
-   Sample:
+#### Install via Helm
+
+1. Create an application.properties file in the current directory to store all ketchup configuration
+
+   Sample configuration:
 ```
 token.signing.key=213asdads@ahgsg123@aaa@@hjj
 ketchup.base-url=http://localhost:8080/
@@ -67,37 +70,39 @@ ketchup.tekton-event-sink-api-path=v1-alpha/applications/revisions/pipeline/tekt
 spring.mvc.async.request-timeout=300000
 ```
 
-2. Update mysql details in application.properties using following properties.
+2. Update mysql details in application.properties using following properties
    1. spring.datasource.url
    2. spring.datasource.username
    3. spring.datasource.password
-3. Update token.signing.key property to a random secret value.
+3. Update token.signing.key property to a random secret value
 4. (Optional) Update Ketchup base URL (ketchup.base-url) property to a URL which can be used to access 
-   ketchup application from kubernetes clusters where apps will be deployed.
-   Note: use internet accessible domain for CI using cloud git repositories like github and gitlab.
-5. Run following helm commands to install ketchup API server:
+   ketchup application from kubernetes clusters where apps will be deployed
+   Note: use internet accessible domain for CI using cloud git repositories like GitHub and Gitlab
+5. Run following helm commands to install ketchup API server
+
    applicationProperties variable is set to location of application.properties file.
+
 ```
 helm repo add ketchup https://zigmoi.github.io/ketchup-helm-repo
 helm repo list
 helm repo update
 helm install ketchup-core ketchup/ketchup-core --set-file applicationProperties=./application.properties
 ```  
-6. Check installation:
-    1. Run the following command, it should list ketchup-core as one of the releases.
+6. Check installation
+    1. Run the following command, it should list ketchup-core as one of the releases
     ```
     helm list
     ```
-    2. Run the following command, it should show one pod for ketchup-core.
+    2. Run the following command, it should show one pod for ketchup-core
     ```
     kubectl get pods
     ```
-7. Run following commands to expose ketchup API server outside cluster.
+7. Run following commands to expose ketchup API server outside cluster
 ```
 export KETCHUP_API_SERVER_POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=ketchup-core,app.kubernetes.io/instance=ketchup-core" -o jsonpath="{.items[0].metadata.name}")
 kubectl port-forward $KETCHUP_API_SERVER_POD_NAME 8097:8097
 ```
-8. Access all API's via swagger UI in the browser using following URL.
+8. Access all API's via swagger UI in the browser using following URL
 ```
 http://localhost:8097/swagger-ui.html
 ```
