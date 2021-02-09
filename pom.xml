@@ -15,6 +15,7 @@
     <name>ketchup-core</name>
     <description>Java based backend for k8s deployment utility.</description><properties>
         <java.version>1.8</java.version>
+        <io-kubernetes-client.version>10.0.1</io-kubernetes-client.version>
     </properties>
 
     <dependencies>
@@ -98,21 +99,21 @@
         <dependency>
             <groupId>io.kubernetes</groupId>
             <artifactId>client-java</artifactId>
-            <version>10.0.1</version>
+            <version>${io-kubernetes-client.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/io.kubernetes/client-java-spring-integration -->
         <dependency>
             <groupId>io.kubernetes</groupId>
             <artifactId>client-java-spring-integration</artifactId>
-            <version>10.0.0</version>
+            <version>${io-kubernetes-client.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/io.kubernetes/client-java-extended -->
         <dependency>
             <groupId>io.kubernetes</groupId>
             <artifactId>client-java-extended</artifactId>
-            <version>10.0.0</version>
+            <version>${io-kubernetes-client.version}</version>
         </dependency>
 
 
