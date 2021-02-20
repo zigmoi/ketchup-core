@@ -65,7 +65,7 @@ public class ApplicationRequestDto {
     private String gitRepoPollingInterval;
 
     @NotNull
-    @Pattern(regexp = "java-8|java-11")
+    @Pattern(regexp = "java-8|java-11|python-3.8")
     private String platform;
 
     @ValidResourceId
@@ -76,7 +76,7 @@ public class ApplicationRequestDto {
     private String containerImageName;
 
     @NotNull
-    @Pattern(regexp = "maven-3.3")
+    @Pattern(regexp = "maven-3.3|pip-3")
     private String buildTool;
 
     @NotBlank

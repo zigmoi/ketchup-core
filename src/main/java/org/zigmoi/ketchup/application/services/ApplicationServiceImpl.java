@@ -6,7 +6,6 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Deployment;
 import io.kubernetes.client.openapi.models.V1DeploymentList;
 import org.apache.commons.collections.map.SingletonMap;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.json.JSONObject;
@@ -32,26 +31,27 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
-import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
-import org.zigmoi.ketchup.common.KubernetesUtility;
-import org.zigmoi.ketchup.common.StringUtility;
-import org.zigmoi.ketchup.helm.dtos.ReleaseStatusResponseDto;
-import org.zigmoi.ketchup.helm.exceptions.CommandFailureException;
-import org.zigmoi.ketchup.project.dtos.settings.BuildToolSettingsResponseDto;
-import org.zigmoi.ketchup.project.dtos.settings.ContainerRegistrySettingsResponseDto;
-import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsResponseDto;
-import org.zigmoi.ketchup.project.services.SettingService;
 import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
-import org.zigmoi.ketchup.exception.UnexpectedException;
-import org.zigmoi.ketchup.helm.services.HelmService;
-import org.zigmoi.ketchup.iam.commons.AuthUtils;
-import org.zigmoi.ketchup.iam.services.TenantProviderService;
-import org.zigmoi.ketchup.project.services.PermissionUtilsService;
 import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
+import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
 import org.zigmoi.ketchup.application.entities.*;
 import org.zigmoi.ketchup.application.repositories.ApplicationRepository;
 import org.zigmoi.ketchup.application.repositories.PipelineArtifactRepository;
 import org.zigmoi.ketchup.application.repositories.RevisionRepository;
+import org.zigmoi.ketchup.common.KubernetesUtility;
+import org.zigmoi.ketchup.common.StringUtility;
+import org.zigmoi.ketchup.exception.ConfigurationException;
+import org.zigmoi.ketchup.exception.UnexpectedException;
+import org.zigmoi.ketchup.helm.dtos.ReleaseStatusResponseDto;
+import org.zigmoi.ketchup.helm.exceptions.CommandFailureException;
+import org.zigmoi.ketchup.helm.services.HelmService;
+import org.zigmoi.ketchup.iam.commons.AuthUtils;
+import org.zigmoi.ketchup.iam.services.TenantProviderService;
+import org.zigmoi.ketchup.project.dtos.settings.BuildToolSettingsResponseDto;
+import org.zigmoi.ketchup.project.dtos.settings.ContainerRegistrySettingsResponseDto;
+import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsResponseDto;
+import org.zigmoi.ketchup.project.services.PermissionUtilsService;
+import org.zigmoi.ketchup.project.services.SettingService;
 
 import javax.validation.Valid;
 import java.io.IOException;
@@ -852,10 +852,18 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             configMapValues.put("kind", "ConfigMap");
             configMapValues.put("apiVersion", "v1");
             configMapValues.put("metadata", new SingletonMap("name", pipelineTemplatingVariables.get("appDockerFileConfigMapName")));
-            String content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-mvn-template-1"));
+            String content = null;
+            if (PLATFORM_JAVA_8.equalsIgnoreCase(applicationDetailsDto.getPlatform())
+                    && BUILD_TOOL_MAVEN_3.equalsIgnoreCase(applicationDetailsDto.getBuildToolType())) {
+                content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-mvn-template-1"));
+            } else if (PLATFORM_PYTHON_38.equalsIgnoreCase(applicationDetailsDto.getPlatform())) {
+                content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-flask-template-1"));
+            } else {
+                throw new ConfigurationException("Failed to pick docker template for platform : "
+                        + applicationDetailsDto.getPlatform() + ", build-tool-type : " + applicationDetailsDto.getBuildToolType());
+            }
             configMapValues.put("data", new SingletonMap("Dockerfile",
                     getTemplatedPipelineResource(content, pipelineTemplatingVariables)));
-
             DumperOptions options = new DumperOptions();
             options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
             options.setPrettyFlow(true);
@@ -954,6 +962,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         if (APP_TYPE_WEB_APPLICATION.equals(applicationDetailsDto.getApplicationType())) {
             if (BUILD_TOOL_MAVEN_3.equals(applicationDetailsDto.getBuildTool())) {
                 args.putAll(getMaven3BuildToolDockerFileContent(applicationDetailsDto));
+            } else if (PLATFORM_PYTHON_38.equals(applicationDetailsDto.getPlatform())) {
+                args.putAll(getPip3BuildToolDockerFileContent(applicationDetailsDto));
             } else {
                 throw new UnsupportedOperationException("Build tool not supported : " + applicationDetailsDto.getBuildTool());
             }
@@ -973,6 +983,29 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 //        args.put("app.jar.name", "ketchup-demo-basicspringboot-0.0.1-SNAPSHOT.jar"); // TODO: 23/08/20 hardcoded
         args.put("app.port", applicationDetails.getAppServerPort());
         return args;
+    }
+
+    private Map<String, String> getPip3BuildToolDockerFileContent(ApplicationDetailsDto applicationDetails) {
+        Map<String, String> args = new HashMap<>();
+        args.put("python.image.name", getPip3ImageNameForPython3Platform(applicationDetails));
+        args.put("pip.install.requirements-filename", getPipInstallRequirementsFileName(applicationDetails));
+        args.put("app.port", applicationDetails.getAppServerPort());
+        return args;
+    }
+
+    private String getPipInstallRequirementsFileName(ApplicationDetailsDto applicationDetails) {
+        return "requirements.txt";
+    }
+
+    private String getPip3ImageNameForPython3Platform(ApplicationDetailsDto applicationDetails) {
+        if (isNullOrEmpty(applicationDetails.getPlatform())) {
+            throw new UnexpectedException("Platform cannot be null");
+        }
+        switch (applicationDetails.getPlatform()) {
+            case PLATFORM_PYTHON_38:
+                return IMAGE_PYTHON_38;
+        }
+        throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
     }
 
     private String getJREImageNameForJavaPlatform(ApplicationDetailsDto applicationDetails) {
