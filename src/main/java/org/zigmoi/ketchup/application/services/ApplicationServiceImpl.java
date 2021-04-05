@@ -858,6 +858,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                 content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-mvn-template-1"));
             } else if (PLATFORM_PYTHON_38.equalsIgnoreCase(applicationDetailsDto.getPlatform())) {
                 content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-flask-template-1"));
+            }  else if (PLATFORM_NODE_14.equalsIgnoreCase(applicationDetailsDto.getPlatform())) {
+                content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-node-template-1"));
             } else {
                 throw new ConfigurationException("Failed to pick docker template for platform : "
                         + applicationDetailsDto.getPlatform() + ", build-tool-type : " + applicationDetailsDto.getBuildToolType());
@@ -964,6 +966,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                 args.putAll(getMaven3BuildToolDockerFileContent(applicationDetailsDto));
             } else if (PLATFORM_PYTHON_38.equals(applicationDetailsDto.getPlatform())) {
                 args.putAll(getPip3BuildToolDockerFileContent(applicationDetailsDto));
+            }else if (BUILD_TOOL_NPM_6.equals(applicationDetailsDto.getBuildTool())) {
+                args.putAll(getNpm6BuildToolDockerFileContent(applicationDetailsDto));
             } else {
                 throw new UnsupportedOperationException("Build tool not supported : " + applicationDetailsDto.getBuildTool());
             }
@@ -989,6 +993,13 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         Map<String, String> args = new HashMap<>();
         args.put("python.image.name", getPip3ImageNameForPython3Platform(applicationDetails));
         args.put("pip.install.requirements-filename", getPipInstallRequirementsFileName(applicationDetails));
+        args.put("app.port", applicationDetails.getAppServerPort());
+        return args;
+    }
+
+    private Map<String, String> getNpm6BuildToolDockerFileContent(ApplicationDetailsDto applicationDetails) {
+        Map<String, String> args = new HashMap<>();
+        args.put("node.image.name", getNpmImageNameForNodePlatform(applicationDetails));
         args.put("app.port", applicationDetails.getAppServerPort());
         return args;
     }
@@ -1026,6 +1037,17 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         switch (applicationDetails.getPlatform()) {
             case PLATFORM_JAVA_8:
                 return IMAGE_MAVEN_3_JAVA_8;
+        }
+        throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
+    }
+
+    private String getNpmImageNameForNodePlatform(ApplicationDetailsDto applicationDetails) {
+        if (isNullOrEmpty(applicationDetails.getPlatform())) {
+            throw new UnexpectedException("Platform cannot be null");
+        }
+        switch (applicationDetails.getPlatform()) {
+            case PLATFORM_NODE_14:
+                return IMAGE_NPM6_NODE_14;
         }
         throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
     }
