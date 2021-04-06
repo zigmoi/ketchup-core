@@ -8,6 +8,7 @@ import io.kubernetes.client.openapi.models.V1DeploymentList;
 import org.apache.commons.collections.map.SingletonMap;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -899,8 +900,13 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         //git secret
         args.put("gitRepoSecretName", "git-secret-".concat(revisionResourceId));
         args.put("gitRepoBaseUrl", applicationDetailsDto.getGitRepoUrl());
-        args.put("gitRepoUsername", applicationDetailsDto.getGitRepoUsername());
-        args.put("gitRepoPassword", applicationDetailsDto.getGitRepoPassword());
+        if(StringUtility.isNullOrEmpty(applicationDetailsDto.getGitRepoUsername())){
+            args.put("gitRepoUsername", "test");
+            args.put("gitRepoPassword", "test");
+        }else{
+            args.put("gitRepoUsername", applicationDetailsDto.getGitRepoUsername());
+            args.put("gitRepoPassword", StringUtility.isNullOrEmpty(applicationDetailsDto.getGitRepoPassword()) ? "" : applicationDetailsDto.getGitRepoPassword());
+        }
 
         //kubeconfig secret
         args.put("kubeConfigSecretName", "kubeconfig-secret-".concat(revisionResourceId));

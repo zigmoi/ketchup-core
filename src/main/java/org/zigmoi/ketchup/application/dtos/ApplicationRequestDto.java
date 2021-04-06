@@ -45,11 +45,9 @@ public class ApplicationRequestDto {
     @Size(max = 250)
     private String gitRepoUrl;
 
-    @NotBlank
     @Size(max = 100)
     private String gitRepoUsername;
 
-    @NotBlank
     @Size(max = 100)
     private String gitRepoPassword;
 
