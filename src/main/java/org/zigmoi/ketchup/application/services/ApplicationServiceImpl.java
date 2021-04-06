@@ -860,6 +860,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                 content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-flask-template-1"));
             }  else if (PLATFORM_NODE_14.equalsIgnoreCase(applicationDetailsDto.getPlatform())) {
                 content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-node-template-1"));
+            }else if (PLATFORM_GOLANG_1_6.equalsIgnoreCase(applicationDetailsDto.getPlatform())) {
+                content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-golang-template-1"));
             } else {
                 throw new ConfigurationException("Failed to pick docker template for platform : "
                         + applicationDetailsDto.getPlatform() + ", build-tool-type : " + applicationDetailsDto.getBuildToolType());
@@ -968,6 +970,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                 args.putAll(getPip3BuildToolDockerFileContent(applicationDetailsDto));
             }else if (BUILD_TOOL_NPM_6.equals(applicationDetailsDto.getBuildTool())) {
                 args.putAll(getNpm6BuildToolDockerFileContent(applicationDetailsDto));
+            }else if (BUILD_TOOL_GOLANG_1_6.equals(applicationDetailsDto.getBuildTool())) {
+                args.putAll(getGolangBuildToolDockerFileContent(applicationDetailsDto));
             } else {
                 throw new UnsupportedOperationException("Build tool not supported : " + applicationDetailsDto.getBuildTool());
             }
@@ -1000,6 +1004,13 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     private Map<String, String> getNpm6BuildToolDockerFileContent(ApplicationDetailsDto applicationDetails) {
         Map<String, String> args = new HashMap<>();
         args.put("node.image.name", getNpmImageNameForNodePlatform(applicationDetails));
+        args.put("app.port", applicationDetails.getAppServerPort());
+        return args;
+    }
+
+    private Map<String, String> getGolangBuildToolDockerFileContent(ApplicationDetailsDto applicationDetails) {
+        Map<String, String> args = new HashMap<>();
+        args.put("golang.image.name", getGolangImageNameForGolangPlatform(applicationDetails));
         args.put("app.port", applicationDetails.getAppServerPort());
         return args;
     }
@@ -1048,6 +1059,17 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         switch (applicationDetails.getPlatform()) {
             case PLATFORM_NODE_14:
                 return IMAGE_NPM6_NODE_14;
+        }
+        throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
+    }
+
+    private String getGolangImageNameForGolangPlatform(ApplicationDetailsDto applicationDetails) {
+        if (isNullOrEmpty(applicationDetails.getPlatform())) {
+            throw new UnexpectedException("Platform cannot be null");
+        }
+        switch (applicationDetails.getPlatform()) {
+            case PLATFORM_GOLANG_1_6:
+                return IMAGE_GOLANG_1_6;
         }
         throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
     }
