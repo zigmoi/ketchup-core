@@ -863,6 +863,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                 content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-node-template-1"));
             }else if (PLATFORM_GOLANG_1_6.equalsIgnoreCase(applicationDetailsDto.getPlatform())) {
                 content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-golang-template-1"));
+            }else if (PLATFORM_DOTNETCORE_5.equalsIgnoreCase(applicationDetailsDto.getPlatform())) {
+                content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-asp-dot-net-core-template-1"));
             } else {
                 throw new ConfigurationException("Failed to pick docker template for platform : "
                         + applicationDetailsDto.getPlatform() + ", build-tool-type : " + applicationDetailsDto.getBuildToolType());
@@ -956,7 +958,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         args.put("pipelineName", "pipeline-".concat(revisionResourceId));
         args.put("helmReleaseName", getHelmReleaseId(applicationResourceId));
         args.put("helmCommand", getHelmCommand());
-        args.put("helmChartUrl", "https://zigmoi.github.io/ketchup-helm-repo/ketchup-web-app-template-1-0.1.1.tgz");
+        args.put("helmChartUrl", "https://zigmoi.github.io/ketchup-helm-repo/ketchup-web-app-template-1-0.1.2.tgz");
         args.put("containerRegistryUrl", applicationDetailsDto.getContainerRegistryUrl());
 
         String imageTag = getImageTagName(applicationDetailsDto, revisionVersion);
@@ -978,6 +980,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                 args.putAll(getNpm6BuildToolDockerFileContent(applicationDetailsDto));
             }else if (BUILD_TOOL_GOLANG_1_6.equals(applicationDetailsDto.getBuildTool())) {
                 args.putAll(getGolangBuildToolDockerFileContent(applicationDetailsDto));
+            }else if (BUILD_TOOL_DOTNETCORE_5.equals(applicationDetailsDto.getBuildTool())) {
+                args.putAll(getDotNetCoreBuildToolDockerFileContent(applicationDetailsDto));
             } else {
                 throw new UnsupportedOperationException("Build tool not supported : " + applicationDetailsDto.getBuildTool());
             }
@@ -1017,6 +1021,14 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     private Map<String, String> getGolangBuildToolDockerFileContent(ApplicationDetailsDto applicationDetails) {
         Map<String, String> args = new HashMap<>();
         args.put("golang.image.name", getGolangImageNameForGolangPlatform(applicationDetails));
+        args.put("app.port", applicationDetails.getAppServerPort());
+        return args;
+    }
+
+    private Map<String, String> getDotNetCoreBuildToolDockerFileContent(ApplicationDetailsDto applicationDetails) {
+        Map<String, String> args = new HashMap<>();
+        args.put("aspdotnetcore.sdk.image.name", getDotNetCoreSdkImageNameForDotNetCorePlatform(applicationDetails));
+        args.put("aspdotnetcore.runtime.image.name", getDotNetCoreRuntimeImageNameForDotNetCorePlatform(applicationDetails));
         args.put("app.port", applicationDetails.getAppServerPort());
         return args;
     }
@@ -1076,6 +1088,28 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         switch (applicationDetails.getPlatform()) {
             case PLATFORM_GOLANG_1_6:
                 return IMAGE_GOLANG_1_6;
+        }
+        throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
+    }
+
+    private String getDotNetCoreSdkImageNameForDotNetCorePlatform(ApplicationDetailsDto applicationDetails) {
+        if (isNullOrEmpty(applicationDetails.getPlatform())) {
+            throw new UnexpectedException("Platform cannot be null");
+        }
+        switch (applicationDetails.getPlatform()) {
+            case PLATFORM_DOTNETCORE_5:
+                return IMAGE_SDK_DOTNETCORE_5;
+        }
+        throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
+    }
+
+    private String getDotNetCoreRuntimeImageNameForDotNetCorePlatform(ApplicationDetailsDto applicationDetails) {
+        if (isNullOrEmpty(applicationDetails.getPlatform())) {
+            throw new UnexpectedException("Platform cannot be null");
+        }
+        switch (applicationDetails.getPlatform()) {
+            case PLATFORM_DOTNETCORE_5:
+                return IMAGE_RUNTIME_DOTNETCORE_5;
         }
         throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
     }
@@ -1435,9 +1469,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                 deploymentStatus = KubernetesUtility.getDeploymentStatusDetails(deployment);
                 System.out.println("Parsed deployment status: " + deploymentStatus);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ApiException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return deploymentStatus;

@@ -63,7 +63,7 @@ public class ApplicationRequestDto {
     private String gitRepoPollingInterval;
 
     @NotNull
-    @Pattern(regexp = "java-8|java-11|python-3.8|node-14.16.0|golang-1.16")
+    @Pattern(regexp = "java-8|java-11|python-3.8|node-14.16.0|golang-1.16|dot-net-core5")
     private String platform;
 
     @ValidResourceId
@@ -74,7 +74,7 @@ public class ApplicationRequestDto {
     private String containerImageName;
 
     @NotNull
-    @Pattern(regexp = "maven-3.3|pip-3|npm-6.14.12|golang-1.16")
+    @Pattern(regexp = "maven-3.3|pip-3|npm-6.14.12|golang-1.16|dot-net-core5")
     private String buildTool;
 
     @NotBlank
