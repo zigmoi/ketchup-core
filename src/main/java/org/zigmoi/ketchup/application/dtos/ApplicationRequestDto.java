@@ -74,7 +74,7 @@ public class ApplicationRequestDto {
     private String containerImageName;
 
     @NotNull
-    @Pattern(regexp = "maven-3.3|pip-3|npm-6.14.12|golang-1.16|dot-net-core5")
+    @Pattern(regexp = "maven-3.3|pip-3|npm-6.14.11|golang-1.16|dot-net-core5")
     private String buildTool;
 
     @NotBlank
