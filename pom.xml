@@ -82,12 +82,6 @@
             <artifactId>lombok</artifactId>
             <version>1.18.8</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.maven.shared/maven-invoker -->
-        <dependency>
-            <groupId>org.apache.maven.shared</groupId>
-            <artifactId>maven-invoker</artifactId>
-            <version>3.0.1</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit -->
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
@@ -95,28 +89,17 @@
             <version>5.4.0.201906121030-r</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.kubernetes/client-java -->
-        <!-- https://mvnrepository.com/artifact/io.kubernetes/client-java -->
         <dependency>
             <groupId>io.kubernetes</groupId>
             <artifactId>client-java</artifactId>
             <version>${io-kubernetes-client.version}</version>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/io.kubernetes/client-java-spring-integration -->
-        <dependency>
-            <groupId>io.kubernetes</groupId>
-            <artifactId>client-java-spring-integration</artifactId>
-            <version>${io-kubernetes-client.version}</version>
-        </dependency>
-
         <!-- https://mvnrepository.com/artifact/io.kubernetes/client-java-extended -->
         <dependency>
             <groupId>io.kubernetes</groupId>
             <artifactId>client-java-extended</artifactId>
             <version>${io-kubernetes-client.version}</version>
         </dependency>
-
-
 
         <!-- https://mvnrepository.com/artifact/com.jayway.jsonpath/json-path -->
         <dependency>
@@ -149,23 +132,6 @@
             <artifactId>aws-java-sdk-ecr</artifactId>
             <version>1.11.463</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.github.docker-java/docker-java -->
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java</artifactId>
-            <version>3.1.5</version>
-        </dependency>
-        <dependency>
-            <groupId>net.openhft</groupId>
-            <artifactId>zero-allocation-hashing</artifactId>
-            <version>0.6</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.velocity/velocity -->
-        <dependency>
-            <groupId>org.apache.velocity</groupId>
-            <artifactId>velocity</artifactId>
-            <version>1.7</version>
-        </dependency>
         <dependency>
             <groupId>org.zeroturnaround</groupId>
             <artifactId>zt-exec</artifactId>
@@ -185,18 +151,6 @@
             <groupId>io.springfox</groupId>
             <artifactId>springfox-swagger-ui</artifactId>
             <version>2.9.2</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.xerial.snappy/snappy-java -->
-        <dependency>
-            <groupId>org.xerial.snappy</groupId>
-            <artifactId>snappy-java</artifactId>
-            <version>1.1.7.3</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>29.0-jre</version>
         </dependency>
         <dependency>
             <groupId>org.modelmapper</groupId>
