@@ -11,11 +11,14 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
 import org.zigmoi.ketchup.application.dtos.ApplicationResponseDto;
 import org.zigmoi.ketchup.application.dtos.RevisionResponseDto;
@@ -33,6 +36,7 @@ import org.zigmoi.ketchup.common.validations.ValidResourceId;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.project.services.PermissionUtilsService;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
@@ -40,6 +44,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -229,21 +234,31 @@ public class RevisionController {
 
     @GetMapping(value = "/{revision-resource-id}/pipeline/logs/stream/direct")
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public void streamRevisionPipelineLogsDirect(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
-                                                 @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
-                                                 @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId,
-                                                 @RequestParam("podName") @NotBlank @Size(max = 250) String podName,
-                                                 @RequestParam("containerName") @NotBlank @Size(max = 250) String containerName,
-                                                 @RequestParam(value = "tailLines", required = false) Integer tailLines,
-                                                 HttpServletResponse response) throws IOException, ApiException {
+    public void streamRevisionPipelineLogs(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                           @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
+                                           @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId,
+                                           @RequestParam("podName") @NotBlank @Size(max = 250) String podName,
+                                           @RequestParam("containerName") @NotBlank @Size(max = 250) String containerName,
+                                           @RequestParam(value = "tailLines", required = false) Integer tailLines,
+                                           HttpServletResponse response) throws IOException, ApiException {
         validatePipelinePodLogAccess(revisionResourceId, podName);
         RevisionId revisionId = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
         if ("1".equalsIgnoreCase(containerName)) {
             containerName = null;
         }
+
+        ServletOutputStream os = response.getOutputStream();
+        response.setContentType(MediaType.TEXT_PLAIN_VALUE);
         try (InputStream logStream = getLogsInputStream(revisionId, podName, containerName, tailLines)) {
-            //noinspection UnstableApiUsage
-            ByteStreams.copy(logStream, response.getOutputStream());
+            byte[] buffer = new byte[4 * 1024];
+            int bytesRead;
+            while ((bytesRead = logStream.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+                os.flush();
+                response.flushBuffer();
+                // System.out.write(buffer);
+            }
+            os.close();
         }
     }
 
@@ -261,40 +276,14 @@ public class RevisionController {
         }
     }
 
-    @GetMapping(value = "/{revision-resource-id}/pipeline/logs/stream/sse")
-    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public SseEmitter streamRevisionPipelineLogsSSE(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
-                                                    @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
-                                                    @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId,
-                                                    @RequestParam("podName") @NotBlank @Size(max = 250) String podName,
-                                                    @RequestParam("containerName") @NotBlank @Size(max = 250) String containerName,
-                                                    @RequestParam(value = "tailLines", required = false) Integer tailLines) {
-        validatePipelinePodLogAccess(revisionResourceId, podName);
-        RevisionId revisionId = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
-        SseEmitter emitter = new SseEmitter(300_000L); //server will break connection after 300 sec.
-        nonBlockingService.execute(() -> {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(getLogsInputStream(revisionId, podName, containerName, tailLines)))) {
-                String response;
-                while ((response = reader.readLine()) != null) {
-                    SseEmitter.SseEventBuilder eventBuilderDataStream = SseEmitter.event().data(response, MediaType.TEXT_PLAIN);
-                    emitter.send(eventBuilderDataStream);
-                }
-            } catch (Exception e) {
-                log.error(e.getLocalizedMessage(), e);
-                emitter.complete();
-            }
-        });
-        return emitter;
-    }
-
     @GetMapping(value = "/current/application-logs/stream")
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
     public void streamAppLogsForCurrentRevision(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
-                                                @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
-                                                @RequestParam("podName") @NotBlank @Size(max = 250) String podName,
-                                                @RequestParam("containerName") @NotBlank @Size(max = 250) String containerName,
-                                                @RequestParam(value = "tailLines", required = false) Integer tailLines,
-                                                HttpServletResponse response) throws IOException, ApiException {
+                                                                                @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
+                                                                                @RequestParam("podName") @NotBlank @Size(max = 250) String podName,
+                                                                                @RequestParam("containerName") @NotBlank @Size(max = 250) String containerName,
+                                                                                @RequestParam(value = "tailLines", required = false) Integer tailLines,
+                                                                                HttpServletResponse response) throws ApiException, IOException {
 
         validateApplicationPodLogAccess(applicationResourceId, podName);
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
@@ -307,9 +296,19 @@ public class RevisionController {
         if ("1".equalsIgnoreCase(containerName)) {
             containerName = null;
         }
+
+        ServletOutputStream os = response.getOutputStream();
+        response.setContentType(MediaType.TEXT_PLAIN_VALUE);
         try (InputStream logStream = getLogsInputStream(revision.getId(), podName, containerName, tailLines)) {
-            //noinspection UnstableApiUsage
-            ByteStreams.copy(logStream, response.getOutputStream());
+            byte[] buffer = new byte[4 * 1024];
+            int bytesRead;
+            while ((bytesRead = logStream.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+                os.flush();
+                response.flushBuffer();
+               // System.out.write(buffer);
+            }
+            os.close();
         }
     }
 
