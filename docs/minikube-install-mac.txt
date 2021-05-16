@@ -1,0 +1,28 @@
+Minikube installation:
+
+1. brew install minikube
+brew install installs everything, docker not needed.
+2. minikube start --insecure-registry "10.0.0.0/24"
+creates and starts cluster, insecure registry is too add cidr for all registries,
+insecure registry value doesnt change unless cluster is deleted and restarted.
+this doesnt work to allow kubernetes to pull images from registry running locally.
+value needs to be added docker config to make it work.
+3. minikube addons enable registry
+enable local docker registry in minikube to install local registry in cluster in kube-system namespace.
+4. setup insecure registry to work with minikube cluster.
+vi ~/.minikube/machines/minikube/config.json
+update insecure registry value with minikube-vm ip:5000.
+use echo $(minikube ip) to get its values.
+restart minikube to let it take affect, cluster recreation is not needed.
+This registry is accessible(push and pull) from inside the cluster using minikube-ip:5000.
+To stop the cluster: minikube stop
+To start cluster: minikube start --insecure-registry "10.0.0.0/24"
+5. to access cluster from host or localhost, port forward the docker registry pod in kube-system namespace.
+kubectl port-forward -n kube-system registry-f6mqv 5000:5000
+use localhost:5000 as its address to push and pull images.
+use docker-env to access minikube docker.
+use minikube vm ip:5000 to access from within cluster in ketchup.
+6. minikube stop
+To stop the cluster.
+7. minikube delete
+To delete cluster.
