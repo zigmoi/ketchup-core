@@ -100,4 +100,7 @@ public class ApplicationRequestDto {
 
     @Size(max = 100) //can be null or blank as its optional.
     private String prodKubernetesNamespace;
+
+    @Size(max=250) //mandatory for python apps, optional otherwise.
+    private String gunicornAppLocation;
 }

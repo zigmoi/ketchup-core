@@ -43,4 +43,5 @@ public class ApplicationDetailsDto {
     private String prodKubernetesClusterSettingId;
     private String prodKubeconfig;
     private String prodKubernetesNamespace;
+    private String gunicornAppLocation;
 }

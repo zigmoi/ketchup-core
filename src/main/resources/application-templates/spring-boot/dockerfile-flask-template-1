@@ -4,5 +4,6 @@ WORKDIR /app
 ADD ./* /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENTRYPOINT ["python"]
-CMD ["/app/app.py"]
+EXPOSE ${app.port}
+CMD ["gunicorn", "--bind", "0.0.0.0:${app.port}", "${gunicorn.app.location}"]
+

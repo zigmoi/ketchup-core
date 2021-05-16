@@ -61,6 +61,7 @@ public class ApplicationController {
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(violations);
         }
+        //TODO validate conditional fields, like gunicorn app location should be provided when python platform is selected.
         applicationService.createApplication(projectResourceId, applicationRequestDto);
     }
 
@@ -90,6 +91,7 @@ public class ApplicationController {
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(violations);
         }
+        //TODO validate conditional fields, like gunicorn app location should be provided when python platform is selected.
         ApplicationId id = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
         applicationService.updateApplication(id, applicationRequestDto);
     }

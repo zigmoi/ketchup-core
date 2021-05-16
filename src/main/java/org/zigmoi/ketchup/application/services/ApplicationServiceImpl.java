@@ -1008,6 +1008,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         args.put("python.image.name", getPip3ImageNameForPython3Platform(applicationDetails));
         args.put("pip.install.requirements-filename", getPipInstallRequirementsFileName(applicationDetails));
         args.put("app.port", applicationDetails.getAppServerPort());
+        args.put("gunicorn.app.location", applicationDetails.getGunicornAppLocation());
         return args;
     }
 
@@ -1128,6 +1129,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     public String getHelmValuesYaml(ApplicationDetailsDto applicationDetailsDto, String revisionVersion, String imagePullSecretName) {
         LinkedHashMap<String, Object> containerRegistryValues = new LinkedHashMap<>();
         containerRegistryValues.put("repository", getImageTagName(applicationDetailsDto, revisionVersion));
+        containerRegistryValues.put("pullPolicy", "IfNotPresent");
 
         LinkedHashMap<String, Object> serviceValues = new LinkedHashMap<>();
         serviceValues.put("type", applicationDetailsDto.getServiceType());

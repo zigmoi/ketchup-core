@@ -32,5 +32,6 @@ public class ApplicationResponseDto {
     private String devKubernetesNamespace;
     private String prodKubernetesClusterSettingId;
     private String prodKubernetesNamespace;
+    private String gunicornAppLocation;
     private DeploymentStatus deploymentStatus;
 }
