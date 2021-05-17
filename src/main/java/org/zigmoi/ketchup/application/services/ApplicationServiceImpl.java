@@ -952,6 +952,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
 
         //task makisu
         args.put("makisuBuildImageTaskName", "task-makisu-build-".concat(revisionResourceId));
+        args.put("buildContextPath", applicationDetailsDto.getBaseBuildPath());
+
         //also has "gitResourceName" which is already added.
 
         //pipeline
@@ -1031,6 +1033,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         args.put("aspdotnetcore.sdk.image.name", getDotNetCoreSdkImageNameForDotNetCorePlatform(applicationDetails));
         args.put("aspdotnetcore.runtime.image.name", getDotNetCoreRuntimeImageNameForDotNetCorePlatform(applicationDetails));
         args.put("app.port", applicationDetails.getAppServerPort());
+        args.put("dotnetcore.project.location", applicationDetails.getDotnetcoreProjectLocation());
         return args;
     }
 

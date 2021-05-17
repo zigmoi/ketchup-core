@@ -103,4 +103,7 @@ public class ApplicationRequestDto {
 
     @Size(max=250) //mandatory for python apps, optional otherwise.
     private String gunicornAppLocation;
+
+    @Size(max=250) //mandatory for dot net apps, optional otherwise.
+    private String dotnetcoreProjectLocation;
 }

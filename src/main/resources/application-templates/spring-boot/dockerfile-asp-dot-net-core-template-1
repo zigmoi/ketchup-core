@@ -1,19 +1,20 @@
 FROM ${aspdotnetcore.sdk.image.name} AS build-env
 WORKDIR /app
 
-# Copy csproj and restore as distinct layers
-COPY *.sln .
-COPY aspnetapp/*.csproj ./aspnetapp/
+#changing project location causes issues in serving static content leading to 404 errors.
+# Copy csproj from /workspace/output to /app/project-location and restore as distinct layers
+COPY *.sln /app/
+COPY ./${dotnetcore.project.location}/*.csproj /app/${dotnetcore.project.location}/
 RUN dotnet restore
 
 # Copy everything else and build
-COPY aspnetapp/. ./aspnetapp/
-WORKDIR /app/aspnetapp
+COPY ./${dotnetcore.project.location}/. /app/${dotnetcore.project.location}/
+WORKDIR /app/${dotnetcore.project.location}
 RUN dotnet publish -c release -o out --no-restore
 
 # Build runtime image
 FROM ${aspdotnetcore.runtime.image.name}
 WORKDIR /app
-COPY --from=build-env /app/aspnetapp/out /app
+COPY --from=build-env /app/${dotnetcore.project.location}/out /app
 EXPOSE ${app.port}
 ENTRYPOINT ["/bin/sh", "-c", "dotnet /app/*[^.Views].dll"]

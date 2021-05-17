@@ -44,4 +44,5 @@ public class ApplicationDetailsDto {
     private String prodKubeconfig;
     private String prodKubernetesNamespace;
     private String gunicornAppLocation;
+    private String dotnetcoreProjectLocation;
 }

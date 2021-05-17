@@ -11,6 +11,7 @@ spec:
     - name: image-tag
     - name: makisu-cache-redis-addr
     - name: makisu-cache-redis-password
+    - name: makisu-build-context-path
     - name: helm-image-name
     - name: helm-chart-url
     - name: helm-chart-release-name
@@ -48,7 +49,7 @@ spec:
         - name: IMAGE_TAG
           value: $(params.image-tag)
         - name: MAKISU_CONTEXT_PATH
-          value: .
+          value: $(params.makisu-build-context-path)
         - name: MAKISU_CACHE_REDIS_ADDR
           value: $(params.makisu-cache-redis-addr)
         - name: MAKISU_CACHE_REDIS_PASSWORD

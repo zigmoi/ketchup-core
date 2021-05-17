@@ -26,6 +26,8 @@ spec:
       value: "${redisUrl}"
     - name: "makisu-cache-redis-password"
       value: "${redisPassword}"
+    - name: "makisu-build-context-path"
+      value: "${buildContextPath}"
     - name: "helm-image-name"
       value: "alpine/helm:latest"
     - name: "helm-chart-url"

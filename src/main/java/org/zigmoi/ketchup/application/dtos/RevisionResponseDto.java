@@ -70,4 +70,6 @@ public class RevisionResponseDto {
     private String prodKubernetesClusterSettingId;
     private String prodKubeconfig;
     private String prodKubernetesNamespace;
+    private String gunicornAppLocation;
+    private String dotnetcoreProjectLocation;
 }
