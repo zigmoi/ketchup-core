@@ -3,9 +3,9 @@
 Application to simplify deployment of web applications on kubernetes
 * Deploy web apps to kubernetes cluster
 * No Dockerfile file or kubernetes yaml files required
-* Build packs for different runtimes like java, nodejs, ruby, python & golang
+* Build packs for different runtimes like java, node-js, react-js, python, dot-net-core & golang
 * Integrated Cloud Native [Tekton](https://tekton.dev/) CI/CD pipelines for application deployment
-* Built in tasks for common operations like fetch and build source, build and store containers & deploy
+* Built in tasks for common operations like fetch and build source, build and store containers & deploy apps
 * Faster and optimized in-cluster container builds using [Makisu](https://github.com/uber/makisu)
 * [Helm](https://helm.sh/) based deployment
 * Git Webhook support for continuous integration
