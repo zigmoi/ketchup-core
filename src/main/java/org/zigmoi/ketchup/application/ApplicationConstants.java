@@ -13,6 +13,7 @@ public class ApplicationConstants {
     public final static String PLATFORM_NODE_14 = "node-14.16.0";
     public final static String PLATFORM_GOLANG_1_6 = "golang-1.16";
     public final static String PLATFORM_DOTNETCORE_5 = "dot-net-core5";
+    public final static String PLATFORM_REACT = "react";
     public final static String IMAGE_MAVEN_3_JAVA_8 = "maven:3.5.2-jdk-8-alpine";
     public final static String IMAGE_JRE_JAVA_8 = "openjdk:8-jre-slim-buster";
     public final static String IMAGE_PYTHON_38 = "python:3.8-alpine";

@@ -63,7 +63,7 @@ public class ApplicationRequestDto {
     private String gitRepoPollingInterval;
 
     @NotNull
-    @Pattern(regexp = "java-8|java-11|python-3.8|node-14.16.0|golang-1.16|dot-net-core5")
+    @Pattern(regexp = "java-8|java-11|python-3.8|node-14.16.0|golang-1.16|dot-net-core5|react")
     private String platform;
 
     @ValidResourceId

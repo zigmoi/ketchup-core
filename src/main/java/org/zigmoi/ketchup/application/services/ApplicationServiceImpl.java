@@ -865,6 +865,8 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
                 content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-golang-template-1"));
             }else if (PLATFORM_DOTNETCORE_5.equalsIgnoreCase(applicationDetailsDto.getPlatform())) {
                 content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-asp-dot-net-core-template-1"));
+            } else if (PLATFORM_REACT.equalsIgnoreCase(applicationDetailsDto.getPlatform())) {
+                content = getPipelineTemplateContent(deploymentAppResourceBasePath.concat("dockerfile-node-react-template-1"));
             } else {
                 throw new ConfigurationException("Failed to pick docker template for platform : "
                         + applicationDetailsDto.getPlatform() + ", build-tool-type : " + applicationDetailsDto.getBuildToolType());
@@ -1080,6 +1082,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
         }
         switch (applicationDetails.getPlatform()) {
             case PLATFORM_NODE_14:
+            case PLATFORM_REACT:
                 return IMAGE_NPM6_NODE_14;
         }
         throw new UnsupportedOperationException("Platform : " + applicationDetails.getPlatform() + "not supported");
