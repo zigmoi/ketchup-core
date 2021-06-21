@@ -2,31 +2,21 @@ package org.zigmoi.ketchup.application.controllers;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteStreams;
 import io.kubernetes.client.openapi.ApiException;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONArray;
 import org.json.JSONObject;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationResponseDto;
 import org.zigmoi.ketchup.application.dtos.RevisionResponseDto;
-import org.zigmoi.ketchup.application.entities.ApplicationId;
-import org.zigmoi.ketchup.application.entities.Revision;
-import org.zigmoi.ketchup.application.entities.RevisionId;
+import org.zigmoi.ketchup.application.entities.*;
 import org.zigmoi.ketchup.application.services.ApplicationService;
-import org.zigmoi.ketchup.application.services.ApplicationServiceImpl;
 import org.zigmoi.ketchup.application.services.DeploymentTriggerType;
 import org.zigmoi.ketchup.application.services.PipelineUtils;
 import org.zigmoi.ketchup.common.KubernetesUtility;
@@ -40,11 +30,8 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -327,5 +314,26 @@ public class RevisionController {
         ApplicationDetailsDto applicationDetailsDto = applicationService.extractApplicationByRevisionId(revision);
         return KubernetesUtility.getPodLogs(StringUtility.decodeBase64(applicationDetailsDto.getDevKubeconfig()),
                 applicationDetailsDto.getDevKubernetesNamespace(), podName, containerName, tailLines);
+    }
+
+    @GetMapping(value = "/{revision-resource-id}/artifacts/get")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
+    public Set<PipelineArtifact> getRevisionArtifacts(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                                      @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
+                                                      @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId) {
+        RevisionId revisionId = new RevisionId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId);
+        Set<PipelineArtifact> artifacts = applicationService.listAllPipelineArtifactsInRevision(revisionId);
+        artifacts.forEach(a -> a.setResourceContent(""));
+        return artifacts;
+    }
+
+    @GetMapping(value = "/{revision-resource-id}/artifacts/get/{artifact-resource-id}")
+    @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
+    public PipelineArtifact getRevisionArtifacts(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                                 @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
+                                                 @PathVariable("revision-resource-id") @ValidResourceId String revisionResourceId,
+                                                 @PathVariable("artifact-resource-id") @ValidResourceId String pipelineArtifactResourceId) {
+        PipelineArtifactId artifactId = new PipelineArtifactId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId, revisionResourceId, pipelineArtifactResourceId);
+        return applicationService.getPipelineArtifactsById(artifactId);
     }
 }
