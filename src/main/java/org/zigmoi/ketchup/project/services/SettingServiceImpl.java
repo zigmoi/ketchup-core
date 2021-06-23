@@ -1,5 +1,6 @@
 package org.zigmoi.ketchup.project.services;
 
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -7,6 +8,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.zigmoi.ketchup.common.KubernetesUtility;
+import org.zigmoi.ketchup.common.StringUtility;
 import org.zigmoi.ketchup.common.TransformUtility;
 import org.zigmoi.ketchup.iam.commons.AuthUtils;
 import org.zigmoi.ketchup.iam.services.TenantProviderService;
@@ -18,6 +21,7 @@ import org.zigmoi.ketchup.project.repositories.SettingRepository;
 
 import java.util.*;
 
+@Slf4j
 @Service
 public class SettingServiceImpl extends TenantProviderService implements SettingService {
 
@@ -193,6 +197,7 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         for (Setting settingsEntity : settingRepository.findAllByProjectResourceIdAndType(projectResourceId,
                 SettingType.KUBERNETES_CLUSTER.toString())) {
             KubernetesClusterSettingsResponseDto settingsDto = new KubernetesClusterSettingsResponseDto();
+
             settingsDto.setProjectResourceId(settingsEntity.getProjectResourceId());
             settingsDto.setSettingResourceId(settingsEntity.getSettingResourceId());
             settingsDto.setDisplayName(settingsEntity.getDisplayName());
@@ -201,6 +206,13 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
             settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
             settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
             convertToDto(settingsEntity, settingsDto);
+
+            try {
+                String devKubernetesBaseAddress = KubernetesUtility.getClusterIP(StringUtility.decodeBase64(settingsDto.getKubeconfig()));
+                settingsDto.setBaseAddress(devKubernetesBaseAddress);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
             settings.add(settingsDto);
         }
         return settings;
@@ -251,6 +263,12 @@ public class SettingServiceImpl extends TenantProviderService implements Setting
         settingsDto.setLastUpdatedOn(settingsEntity.getLastUpdatedOn());
         settingsDto.setLastUpdatedBy(settingsEntity.getLastUpdatedBy());
         convertToDto(settingsEntity, settingsDto);
+        try {
+            String devKubernetesBaseAddress = KubernetesUtility.getClusterIP(StringUtility.decodeBase64(settingsDto.getKubeconfig()));
+            settingsDto.setBaseAddress(devKubernetesBaseAddress);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
         return settingsDto;
     }
 

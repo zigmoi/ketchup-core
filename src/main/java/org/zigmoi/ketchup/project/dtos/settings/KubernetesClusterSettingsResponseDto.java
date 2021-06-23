@@ -16,4 +16,5 @@ public class KubernetesClusterSettingsResponseDto {
     private String lastUpdatedBy;
 
     private String kubeconfig;
+    private String baseAddress;
 }

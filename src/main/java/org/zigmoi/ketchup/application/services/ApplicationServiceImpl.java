@@ -1534,7 +1534,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             try {
                 devKubernetesBaseAddress = KubernetesUtility.getClusterIP(StringUtility.decodeBase64(devKubernetesCluster.getKubeconfig()));
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e.getMessage(), e);
             }
 
             applicationJson.put("devKubeconfig", devKubernetesCluster.getKubeconfig());
