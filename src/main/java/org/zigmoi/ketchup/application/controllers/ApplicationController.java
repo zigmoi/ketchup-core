@@ -101,9 +101,13 @@ public class ApplicationController {
     @DeleteMapping("/{application-resource-id}")
     @PreAuthorize("@permissionUtilsService.canPrincipalDeleteApplication(#projectResourceId)")
     public void deleteApplication(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
-                                  @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
+                                  @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
+                                  @RequestParam (required = false) Boolean force) {
         ApplicationId id = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
-        applicationService.deleteApplication(id);
+        if (force == null){
+            force = Boolean.FALSE;
+        }
+        applicationService.deleteApplication(id, force);
     }
 
     @GetMapping

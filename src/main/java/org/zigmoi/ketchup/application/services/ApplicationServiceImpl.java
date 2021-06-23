@@ -8,7 +8,6 @@ import io.kubernetes.client.openapi.models.V1DeploymentList;
 import org.apache.commons.collections.map.SingletonMap;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
-import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -360,7 +359,7 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Override
     @Transactional
     @PreAuthorize("@permissionUtilsService.canPrincipalDeleteApplication(#applicationId.projectResourceId)")
-    public void deleteApplication(ApplicationId applicationId) {
+    public void deleteApplication(ApplicationId applicationId, boolean force) {
         Optional<Revision> activeRevision = getCurrentRevision(applicationId);
         if (activeRevision.isPresent()) {
             ApplicationDetailsDto applicationDetailsDto = applicationJsonToDto(activeRevision.get().getApplicationDataJson());
@@ -369,10 +368,14 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
             try {
                 helmService.uninstallChart("app-" + applicationId.getApplicationResourceId(), namespace, kubeConfig);
             } catch (CommandFailureException e) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Operation failed.");
+                if (force){
+                    logger.error(e.getMessage(), e);
+                }else {
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Operation failed.");
+                }
             }
         } else {
-            System.out.println("No active revision found to uninstall.");
+            logger.info("No active revision found to uninstall.");
         }
 
         List<Revision> revisions = revisionRepository.findAllByApplicationResourceId(applicationId.getApplicationResourceId());

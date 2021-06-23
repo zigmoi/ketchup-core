@@ -34,7 +34,7 @@ public interface ApplicationService {
 
     void deleteRevision(@Valid RevisionId revisionId);
 
-    void deleteApplication(@Valid ApplicationId applicationId);
+    void deleteApplication(@Valid ApplicationId applicationId, boolean force);
 
     void updateRevision(@Valid Revision revision);
 
