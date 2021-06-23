@@ -2,6 +2,7 @@ package org.zigmoi.ketchup.application.dtos;
 
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -9,6 +10,11 @@ import java.util.Map;
 public class PlatformConfigWrapperDto {
 
     private List<PlatformConfigDto> dtos;
+
+    public void add(PlatformConfigDto dto){
+        if (dtos == null) dtos = new ArrayList<>();
+        dtos.add(dto);
+    }
 
     public PlatformConfigDto getPlatformConfig(String platformName){
         for (PlatformConfigDto node: dtos){

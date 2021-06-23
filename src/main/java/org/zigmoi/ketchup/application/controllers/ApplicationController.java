@@ -10,15 +10,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationResponseDto;
-import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
+import org.zigmoi.ketchup.application.dtos.*;
 import org.zigmoi.ketchup.application.entities.Application;
 import org.zigmoi.ketchup.application.entities.ApplicationId;
 import org.zigmoi.ketchup.application.entities.Revision;
 import org.zigmoi.ketchup.application.services.ApplicationService;
 import org.zigmoi.ketchup.application.services.DeploymentTriggerType;
+import org.zigmoi.ketchup.application.services.PlatformConfigReader;
 import org.zigmoi.ketchup.common.GitWebHookParserUtility;
 import org.zigmoi.ketchup.common.KubernetesUtility;
 import org.zigmoi.ketchup.common.StringUtility;
@@ -61,7 +59,9 @@ public class ApplicationController {
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(violations);
         }
-        //TODO validate conditional fields, like gunicorn app location should be provided when python platform is selected.
+        if (!PlatformConfigReader.instance().getPlatformConfig().isValid(applicationRequestDto.getPlatform(), applicationRequestDto.getBuildTool())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Invalid mapping for platform %s and build tool %s", applicationRequestDto.getPlatform(), applicationRequestDto.getBuildTool()));
+        }
         applicationService.createApplication(projectResourceId, applicationRequestDto);
     }
 
@@ -91,7 +91,9 @@ public class ApplicationController {
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(violations);
         }
-        //TODO validate conditional fields, like gunicorn app location should be provided when python platform is selected.
+        if (!PlatformConfigReader.instance().getPlatformConfig().isValid(applicationRequestDto.getPlatform(), applicationRequestDto.getBuildTool())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format("Invalid mapping for platform %s and build tool %s", applicationRequestDto.getPlatform(), applicationRequestDto.getBuildTool()));
+        }
         ApplicationId id = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
         applicationService.updateApplication(id, applicationRequestDto);
     }
