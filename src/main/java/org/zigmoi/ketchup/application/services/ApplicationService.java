@@ -1,6 +1,7 @@
 package org.zigmoi.ketchup.application.services;
 
 import org.springframework.validation.annotation.Validated;
+import org.zigmoi.ketchup.application.dtos.ApplicationBasicResponseDto;
 import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
 import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
 import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
@@ -69,7 +70,7 @@ public interface ApplicationService {
 
     DeploymentStatus getLiveStatusForApplication(@Valid ApplicationId applicationId);
 
-    List<Application> listAllApplicationsInProject(@ValidProjectId String projectResourceId);
+    List<ApplicationBasicResponseDto> listAllApplicationsInProject(@ValidProjectId String projectResourceId, Boolean full);
 
     void updateApplication(@Valid ApplicationId applicationId, @Valid ApplicationRequestDto applicationRequestDto);
 

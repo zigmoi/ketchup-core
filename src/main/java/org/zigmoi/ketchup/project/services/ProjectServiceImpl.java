@@ -74,7 +74,7 @@ public class ProjectServiceImpl extends TenantProviderService implements Project
         }
 
         //delete all applications (revisions, artifacts etc.) and uninstall app from cluster.
-        applicationService.listAllApplicationsInProject(projectResourceId)
+        applicationService.listAllApplicationsInProject(projectResourceId, false)
                 .parallelStream()
                 .forEach(application -> applicationService.deleteApplication(application.getId(), true));
 

@@ -112,8 +112,10 @@ public class ApplicationController {
 
     @GetMapping
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public List<Application> listAllApplicationsInProject(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId) {
-        return applicationService.listAllApplicationsInProject(projectResourceId);
+    public List<ApplicationBasicResponseDto> listAllApplicationsInProject(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                                                          @RequestParam (required = false) Boolean full) {
+        if (full == null) full = Boolean.TRUE;
+        return applicationService.listAllApplicationsInProject(projectResourceId, full);
     }
 
     @GetMapping("/{application-resource-id}/instances")

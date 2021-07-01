@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.zigmoi.ketchup.application.dtos.ApplicationBasicResponseDto;
 import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
 import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
 import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
@@ -53,6 +54,7 @@ import org.zigmoi.ketchup.project.dtos.settings.KubernetesClusterSettingsRespons
 import org.zigmoi.ketchup.project.services.PermissionUtilsService;
 import org.zigmoi.ketchup.project.services.SettingService;
 
+import javax.persistence.Tuple;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -1489,12 +1491,41 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public List<Application> listAllApplicationsInProject(String projectResourceId) {
-        return applicationRepository.findAll()
-                .stream()
-                .filter(application ->
-                        application.getId().getProjectResourceId().equalsIgnoreCase(projectResourceId))
-                .collect(Collectors.toList());
+    public List<ApplicationBasicResponseDto> listAllApplicationsInProject(String projectResourceId, Boolean full) {
+        List<ApplicationBasicResponseDto> response = new ArrayList<>();
+        if (full){
+            List<Application> applications = applicationRepository.findAll()
+                    .stream()
+                    .filter(application ->
+                            application.getId().getProjectResourceId().equalsIgnoreCase(projectResourceId))
+                    .collect(Collectors.toList());
+            for (Application application: applications){
+                ApplicationBasicResponseDto dto = new ApplicationBasicResponseDto();
+                dto.setId(application.getId());
+                dto.setType(application.getType());
+                dto.setDisplayName(application.getDisplayName());
+                dto.setData(application.getData());
+                dto.setCreatedOn(application.getCreatedOn());
+                dto.setCreatedBy(application.getCreatedBy());
+                dto.setLastUpdatedOn(application.getLastUpdatedOn());
+                dto.setLastUpdatedBy(application.getLastUpdatedBy());
+                response.add(dto);
+            }
+        }else {
+            List<Tuple> tuples = applicationRepository.listAllApplicationsInProjectCustomByProjectResourceId(projectResourceId);
+            tuples.forEach(t -> {
+                ApplicationBasicResponseDto dto = new ApplicationBasicResponseDto();
+                dto.setId(t.get(0, ApplicationId.class));
+                dto.setType(t.get(1, String.class));
+                dto.setDisplayName(t.get(2, String.class));
+                dto.setCreatedOn(t.get(3, Date.class));
+                dto.setCreatedBy(t.get(4, String.class));
+                dto.setLastUpdatedOn(t.get(5, Date.class));
+                dto.setLastUpdatedBy(t.get(6, String.class));
+                response.add(dto);
+            });
+        }
+        return response;
     }
 
     @Override
