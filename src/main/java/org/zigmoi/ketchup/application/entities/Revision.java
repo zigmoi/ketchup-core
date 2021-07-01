@@ -8,7 +8,7 @@ import org.hibernate.validator.constraints.Range;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import org.zigmoi.ketchup.common.validations.ValidResourceId;
+import org.zigmoi.ketchup.application.dtos.RevisionBasicResponseDto;
 import org.zigmoi.ketchup.iam.entities.TenantEntity;
 
 import javax.persistence.*;
@@ -16,7 +16,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
-import java.util.*;
+import java.util.Date;
 
 @Data
 @EntityListeners(AuditingEntityListener.class)
@@ -87,4 +87,27 @@ public class Revision {
     @Column(columnDefinition="TEXT")
     private String applicationDataJson;
 
+    public RevisionBasicResponseDto toBasicResponseDto(){
+        RevisionBasicResponseDto dto = new RevisionBasicResponseDto();
+        dto.setId(this.id);
+        dto.setCreatedOn(this.createdOn);
+        dto.setCreatedBy(this.createdBy);
+        dto.setLastUpdatedOn(this.lastUpdatedOn);
+        dto.setLastUpdatedBy(this.lastUpdatedBy);
+        dto.setVersion(this.version);
+        dto.setStatus(this.status);
+        dto.setDeploymentTriggerType(this.deploymentTriggerType);
+        dto.setCommitId(this.commitId);
+        dto.setHelmChartId(this.helmChartId);
+        dto.setHelmReleaseId(this.helmReleaseId);
+        dto.setHelmReleaseVersion(this.helmReleaseVersion);
+        dto.setRollback(this.rollback);
+        dto.setOriginalRevisionVersionId(this.originalRevisionVersionId);
+
+        /* FAT fields */
+        dto.setErrorMessage(this.errorMessage);
+        dto.setPipelineStatusJson(this.pipelineStatusJson);
+        dto.setApplicationDataJson(this.applicationDataJson);
+        return dto;
+    }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.zigmoi.ketchup.application.entities.Revision;
 import org.zigmoi.ketchup.application.entities.RevisionId;
 
+import javax.persistence.Tuple;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -17,6 +18,11 @@ public interface RevisionRepository extends JpaRepository<Revision, RevisionId> 
 
     @Query("select distinct r from Revision r where r.id.applicationResourceId = :applicationResourceId order by r.createdOn DESC")
     Set<Revision> findDistinctByApplicationResourceIdOrderByCreatedOnDesc(String applicationResourceId);
+
+    @Query("select r.id, r.createdOn, r.createdBy, r.lastUpdatedOn, r.lastUpdatedBy, r.version, r.status, r.deploymentTriggerType, r.commitId," +
+            " r.helmChartId, r.helmReleaseId, r.helmReleaseVersion, r.rollback, r.originalRevisionVersionId" +
+            " from Revision r where r.id.applicationResourceId = :applicationResourceId order by r.createdOn DESC")
+    List<Tuple> findApplicationResourceRevisionsByApplicationResourceId(String applicationResourceId);
 
     @Query("select r from Revision r where r.id.applicationResourceId = :applicationResourceId")
     List<Revision> findAllByApplicationResourceId(String applicationResourceId);

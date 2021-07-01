@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
+import org.zigmoi.ketchup.application.dtos.RevisionBasicResponseDto;
 import org.zigmoi.ketchup.application.dtos.RevisionResponseDto;
 import org.zigmoi.ketchup.application.entities.*;
 import org.zigmoi.ketchup.application.services.ApplicationService;
@@ -33,6 +34,7 @@ import javax.validation.constraints.Size;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -99,10 +101,12 @@ public class RevisionController {
 
     @GetMapping
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#projectResourceId)")
-    public Set<Revision> listAllRevisions(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
-                                          @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId) {
+    public List<RevisionBasicResponseDto> listAllRevisions(@PathVariable("project-resource-id") @ValidProjectId String projectResourceId,
+                                                           @PathVariable("application-resource-id") @ValidResourceId String applicationResourceId,
+                                                           @RequestParam (required = false) Boolean full) {
+        if (full == null) full = Boolean.TRUE;
         ApplicationId applicationId = new ApplicationId(AuthUtils.getCurrentTenantId(), projectResourceId, applicationResourceId);
-        return applicationService.listAllRevisionsInApplication(applicationId);
+        return applicationService.listAllRevisionsInApplication(applicationId, full);
     }
 
     @GetMapping("/{revision-resource-id}/rollback")

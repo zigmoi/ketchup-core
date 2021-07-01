@@ -31,10 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
-import org.zigmoi.ketchup.application.dtos.ApplicationBasicResponseDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
-import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
+import org.zigmoi.ketchup.application.dtos.*;
 import org.zigmoi.ketchup.application.entities.*;
 import org.zigmoi.ketchup.application.repositories.ApplicationRepository;
 import org.zigmoi.ketchup.application.repositories.PipelineArtifactRepository;
@@ -425,8 +422,36 @@ public class ApplicationServiceImpl extends TenantProviderService implements App
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("@permissionUtilsService.canPrincipalReadApplication(#applicationId.projectResourceId)")
-    public Set<Revision> listAllRevisionsInApplication(ApplicationId applicationId) {
-        return revisionRepository.findDistinctByApplicationResourceIdOrderByCreatedOnDesc(applicationId.getApplicationResourceId());
+    public List<RevisionBasicResponseDto> listAllRevisionsInApplication(ApplicationId applicationId, Boolean full) {
+        List<RevisionBasicResponseDto> response = new ArrayList<>();
+        if (full){
+            Set<Revision> revisions = revisionRepository.findDistinctByApplicationResourceIdOrderByCreatedOnDesc(applicationId.getApplicationResourceId());
+            for (Revision revision: revisions){
+                RevisionBasicResponseDto dto = revision.toBasicResponseDto();
+                response.add(dto);
+            }
+        }else {
+            List<Tuple> tuples = revisionRepository.findApplicationResourceRevisionsByApplicationResourceId(applicationId.getApplicationResourceId());
+            tuples.forEach(t -> {
+                RevisionBasicResponseDto dto = new RevisionBasicResponseDto();
+                dto.setId(t.get(0, RevisionId.class));
+                dto.setCreatedOn(t.get(1, Date.class));
+                dto.setCreatedBy(t.get(2, String.class));
+                dto.setLastUpdatedOn(t.get(3, Date.class));
+                dto.setLastUpdatedBy(t.get(4, String.class));
+                dto.setVersion(t.get(5, String.class));
+                dto.setStatus(t.get(6, String.class));
+                dto.setDeploymentTriggerType(t.get(7, String.class));
+                dto.setCommitId(t.get(8, String.class));
+                dto.setHelmChartId(t.get(9, String.class));
+                dto.setHelmReleaseId(t.get(10, String.class));
+                dto.setHelmReleaseVersion(t.get(11, String.class));
+                dto.setRollback(t.get(12, Boolean.class));
+                dto.setOriginalRevisionVersionId(t.get(13, String.class));
+                response.add(dto);
+            });
+        }
+        return response;
     }
 
     @Override

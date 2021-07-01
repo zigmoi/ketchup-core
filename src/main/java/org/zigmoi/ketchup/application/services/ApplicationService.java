@@ -1,10 +1,7 @@
 package org.zigmoi.ketchup.application.services;
 
 import org.springframework.validation.annotation.Validated;
-import org.zigmoi.ketchup.application.dtos.ApplicationBasicResponseDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationDetailsDto;
-import org.zigmoi.ketchup.application.dtos.ApplicationRequestDto;
-import org.zigmoi.ketchup.application.dtos.DeploymentStatus;
+import org.zigmoi.ketchup.application.dtos.*;
 import org.zigmoi.ketchup.application.entities.*;
 import org.zigmoi.ketchup.common.validations.ValidProjectId;
 import org.zigmoi.ketchup.common.validations.ValidResourceId;
@@ -43,7 +40,7 @@ public interface ApplicationService {
 
     Optional<Revision> getLastSuccessfulRevision(@Valid ApplicationId applicationId);
 
-    Set<Revision> listAllRevisionsInApplication(@Valid ApplicationId applicationId);
+    List<RevisionBasicResponseDto> listAllRevisionsInApplication(@Valid ApplicationId applicationId, Boolean full);
 
     Set<Revision> listAllRevisionPipelinesInProjectWithStatus(@ValidProjectId String projectResourceId,
                                                               @NotBlank  @Pattern(regexp = "IN PROGRESS|SUCCESS|FAILED") String status);
